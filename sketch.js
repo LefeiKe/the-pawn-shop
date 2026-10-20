@@ -176,10 +176,6 @@ function drawIntro() {
     text("Make smart deals and grow your little shop.", width / 2, 133);
   
     // How to play
-    fill(237, 218, 188);
-    noStroke();
-    rect(119, 152, 626, 142);
-  
     fill(65, 40, 28);
     textAlign(LEFT);
     textStyle(BOLD);
@@ -190,32 +186,33 @@ function drawIntro() {
     textSize(17);
     text("Buy items offered by customers.", 142, 213);
     text("Sell items that match the buyer's category.", 142, 242);
-    text("Watch your inventory space and buyer budgets.", 142, 271);
+    text("Use your earnings to unlock shop upgrades.", 142, 271);
+    text("Explore new mechanisms as the game moves on!", 142, 300);
   
     // Tips for making smart deals
     fill(237, 218, 188);
     noStroke();
-    rect(119, 305, 626, 144);
+    rect(123, 312, 620, 123);
   
     fill(65, 40, 28);
     textAlign(LEFT);
     textStyle(BOLD);
     textSize(21);
-    text("BEFORE YOU MAKE A DEAL...", 142, 335);
+    text("BEFORE YOU MAKE A DEAL...", 142, 343);
   
     textStyle(NORMAL);
     textSize(16);
-    text("Look at the price, your budget, and available bag space.", 142, 386);
-    text("Not every offer is a good deal.", 142, 362);
-    text("Save your earnings to unlock useful shop upgrades.", 142, 410);
+    text("Look at the price, your budget, and available bag space.", 142, 369);
+    text("Not every offer is a good deal.", 142, 393);
+    text("Don't spend all your money!", 142, 417);
   
     // Daily rules
     fill(86, 61, 42);
     textAlign(CENTER);
     textSize(15);
-    text("OPEN 8 AM - MIDNIGHT  |  DAILY RENT $10", 432, 460);
+    text("OPEN 8 AM - MIDNIGHT", 432, 457);
   
-    drawButton("START GAME", 317, 474, 230, true, color(70, 115, 65));
+    drawButton("START GAME", 317, 474, 220, true, color(70, 115, 65));
   }
   
 
@@ -1139,9 +1136,10 @@ function mousePressed() {
   if (showIntro) {
 
     if (mouseX >= 317 && mouseX <= 547 &&
-        mouseY >= 466 && mouseY <= 498) {
+        mouseY >= 474 && mouseY <= 506) {
 
-        showIntro = false;
+      showIntro = false;
+
     }
 
     return;

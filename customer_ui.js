@@ -22,10 +22,10 @@ let pawnIntroPausedGame = false;
 let pawnConversation = '';
 const pawnTypeNames = {Regular:'REGULAR CUSTOMER',Bargain:'BARGAIN HUNTER',Collector:'WEALTHY COLLECTOR',Suspicious:'SUSPICIOUS SELLER',Inspector:'SHOP VISITOR'};
 const pawnTypeExplanations = {
-  Regular:['REGULAR CUSTOMERS','Most visitors are everyday buyers and sellers.','Fair trades help build trust over time.'],
+  Regular:['REGULAR CUSTOMERS','The most common visitors to your pawn shop.','Fair trades help build trust over time.'],
   Bargain:['BARGAIN HUNTERS','These customers have tighter budgets.','They are especially difficult to negotiate with.'],
   Collector:['WEALTHY COLLECTORS','Collectors can spend more than ordinary buyers.','Their offers may be especially profitable.'],
-  Suspicious:['SUSPICIOUS SELLERS','These visitors may bring unusual items.','Consider the risk before accepting an offer.']
+  Suspicious:['SUSPICIOUS SELLERS','These visitors seem to be in a hurry to make a deal.','They are often surprisingly flexible with their prices.']
 };
 const pawnDialogue = {
   Regular:{sell:['I FOUND A FEW THINGS TO SELL.','WOULD YOU BE INTERESTED IN THESE?','I HOPE THIS IS A FAIR PRICE.'],category:['DO YOU HAVE ANYTHING USEFUL?','I AM LOOKING FOR SOMETHING TODAY.','LET ME SEE WHAT YOU HAVE IN STOCK.']},
@@ -213,8 +213,7 @@ function pawnTradeBoard() {
   pawnPanel(280,95,562,458);
   pawnPanel(300,112,520,66);
   let greeting = pawnConversation || 'WELCOME TO THE PAWN SHOP.';
-  pawnText(greeting,319,143,17,477);
-  pawnText(pawnVisitor ? pawnVisitor.name.toUpperCase() + ': LET US MAKE A DEAL!' : '',319,162,13,477);
+  pawnText(greeting,319,150,20,477);
   if (currentTrade.type === 'sell') {
     pawnText('SELLER OFFERS ' + currentTrade.items.length + ' ITEMS',310,207,16);
     pawnText('TOTAL: $' + bundleTotal().toFixed(2),310,229,16);
