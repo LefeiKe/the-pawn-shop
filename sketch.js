@@ -78,7 +78,7 @@ async function setup() {
     canvas.parent("game");
 
     noSmooth();
-    textFont("Press Start 2P");
+    textFont("Pixelify Sans");
 
     shopBg = await loadImage("images/shop.png");
     shopkeeper = await loadImage("images/shopkeeper.png");
@@ -121,7 +121,7 @@ function draw() {
     if (closing) {
         fill(255);
         textAlign(CENTER);
-        textSize(20);
+        textSize(24);
         text("SHOP CLOSED", width / 2, 200);
     }
 
@@ -157,50 +157,67 @@ function pixelBoard(x, y, w, h) {
 }
 
 
+
 function drawIntro() {
-
-  // Darken the background
-  noStroke();
-  fill(0, 0, 0, 170);
-  rect(0, 0, width, height);
-
-  // Introduction window
-  pixelBoard(90, 55, 684, 470);
-
-  fill(65, 40, 28);
-  textAlign(CENTER);
-
-  textSize(12);
-  text("WELCOME TO THE PAWN SHOP!", 432, 100);
-
-  textAlign(LEFT);
-  textSize(9);
-
-  text("YOUR GOAL", 125, 145);
-
-  textSize(8);
-  text("Buy low and sell high to earn money!", 125, 173);
-
-  textSize(9);
-  text("HOW TO PLAY", 125, 220);
-
-  textSize(8);
-  text("Buy items offered by sellers.", 125, 249);
-  text("Sell items that match the buyer's category.", 125, 275);
-  text("Watch your inventory and buyer budgets.", 125, 301);
-
-  textSize(9);
-  text("DAILY RULES", 125, 350);
-
-  textSize(8);
-  text("Open: 8 AM - 12 AM", 125, 378);
-  text("Daily rent: $10", 125, 404);
-  text("Review your receipt after closing.", 125, 430);
-
-  drawButton("START GAME", 317, 466, 230, true,
-             color(70, 115, 65));
-}
-
+    noStroke();
+    fill(0, 0, 0, 180);
+    rect(0, 0, width, height);
+    pixelBoard(90, 55, 684, 470);
+  
+    textFont("Pixelify Sans");
+    fill(65, 40, 28);
+    textAlign(CENTER);
+    textStyle(BOLD);
+    textSize(29);
+    text("WELCOME TO THE PAWN SHOP", width / 2, 102);
+  
+    textStyle(NORMAL);
+    textSize(18);
+    text("Make smart deals and grow your little shop.", width / 2, 133);
+  
+    // How to play
+    fill(237, 218, 188);
+    noStroke();
+    rect(119, 152, 626, 142);
+  
+    fill(65, 40, 28);
+    textAlign(LEFT);
+    textStyle(BOLD);
+    textSize(21);
+    text("HOW TO PLAY", 142, 183);
+  
+    textStyle(NORMAL);
+    textSize(17);
+    text("Buy items offered by customers.", 142, 213);
+    text("Sell items that match the buyer's category.", 142, 242);
+    text("Watch your inventory space and buyer budgets.", 142, 271);
+  
+    // Tips for making smart deals
+    fill(237, 218, 188);
+    noStroke();
+    rect(119, 305, 626, 144);
+  
+    fill(65, 40, 28);
+    textAlign(LEFT);
+    textStyle(BOLD);
+    textSize(21);
+    text("BEFORE YOU MAKE A DEAL...", 142, 335);
+  
+    textStyle(NORMAL);
+    textSize(16);
+    text("Look at the price, your budget, and available bag space.", 142, 386);
+    text("Not every offer is a good deal.", 142, 362);
+    text("Save your earnings to unlock useful shop upgrades.", 142, 410);
+  
+    // Daily rules
+    fill(86, 61, 42);
+    textAlign(CENTER);
+    textSize(15);
+    text("OPEN 8 AM - MIDNIGHT  |  DAILY RENT $10", 432, 460);
+  
+    drawButton("START GAME", 317, 474, 230, true, color(70, 115, 65));
+  }
+  
 
 // Day and money
 function drawInfo() {
@@ -208,7 +225,7 @@ function drawInfo() {
 
     fill(65, 40, 28);
     textAlign(LEFT);
-    textSize(10);
+    textSize(15);
 
     text("DAY " + dayNumber, 24, 40);
     text("MONEY $" + money.toFixed(2), 24, 63);
@@ -238,7 +255,7 @@ function drawClock() {
 
     fill(65, 40, 28);
     textAlign(CENTER);
-    textSize(10);
+    textSize(15);
 
     text(hour12 + ":" + nf(minute, 2) + " " + period, 763, 44);
 }
@@ -295,7 +312,7 @@ function drawBagIcon() {
 
     fill(65, 40, 28);
     textAlign(CENTER);
-    textSize(8);
+    textSize(12);
 
     text("BAG " + inventory.length, 275, 31);
 }
@@ -306,11 +323,11 @@ function drawBag() {
 
     fill(65, 40, 28);
     textAlign(LEFT);
-    textSize(12);
+    textSize(18);
 
     text("YOUR BAG (" + inventory.length + "/" + bagLimit + ")", 151, 139);
 
-    textSize(9);
+    textSize(14);
 
     if (inventory.length === 0) {
         text("Your bag is empty.", 151, 182);
@@ -342,11 +359,11 @@ function drawGameOver() {
 
   fill(160, 70, 60);
   textAlign(CENTER);
-  textSize(20);
+  textSize(24);
   text("GAME OVER", 432, 195);
 
   fill(65, 40, 28);
-  textSize(9);
+  textSize(14);
 
   text("YOUR SHOP HAS GONE BANKRUPT!", 432, 250);
   text("FINAL BALANCE: $" + money.toFixed(2), 432, 290);
@@ -414,7 +431,7 @@ function drawReceipt() {
 
   fill(65, 40, 28);
   textAlign(CENTER);
-  textSize(12);
+  textSize(18);
   text("DAY " + dayNumber + " RECEIPT", 432, 72);
 
   let boughtItems = {};
@@ -460,7 +477,7 @@ function drawReceipt() {
   }
 
   textAlign(LEFT);
-  textSize(9);
+  textSize(14);
 
   // BOUGHT
   text("BOUGHT", 155, 112);
@@ -469,7 +486,7 @@ function drawReceipt() {
   text("-$" + totalBought.toFixed(2), 705, 112);
 
   let y = 137;
-  textSize(8);
+  textSize(12);
 
   for (let name in boughtItems) {
 
@@ -494,14 +511,14 @@ function drawReceipt() {
 
   fill(65, 40, 28);
   textAlign(LEFT);
-  textSize(9);
+  textSize(14);
   text("SOLD", 155, y);
 
   textAlign(RIGHT);
   text("+$" + totalSold.toFixed(2), 705, y);
 
   y += 25;
-  textSize(8);
+  textSize(12);
 
   for (let name in soldItems) {
 
@@ -532,7 +549,7 @@ function drawReceipt() {
 
   // Daily operating fee
   textAlign(LEFT);
-  textSize(9);
+  textSize(14);
   text("SHOP OPERATION / RENT", 155, 433);
 
   textAlign(RIGHT);
@@ -541,7 +558,7 @@ function drawReceipt() {
   // Net cash profit
   let profit = totalSold - totalBought - 10;
 
-  textSize(10);
+  textSize(15);
   textAlign(LEFT);
   text("NET PROFIT", 155, 466);
 
@@ -869,17 +886,21 @@ function drawSprite(sheet, feetX, feetY, size, col, row) {
 // Pixel-art button
 function drawButton(label, x, y, w, enabled, colorValue) {
     noStroke();
-
     fill(enabled ? colorValue : color(110, 103, 91));
     rect(x, y, w, 32);
 
     fill(255);
     textAlign(CENTER);
-    textSize(9);
-
-    text(label, x + w / 2, y + 21);
+    textStyle(NORMAL);
+    // Enlarge button labels, but shrink longer labels so they never spill out.
+    let buttonSize = 16;
+    textSize(buttonSize);
+    while (textWidth(label) > w - 14 && buttonSize > 10) {
+        buttonSize--;
+        textSize(buttonSize);
+    }
+    text(label, x + w / 2, y + 22);
 }
-
 
 function drawBudgetWarning() {
 
@@ -898,10 +919,10 @@ function drawBudgetWarning() {
   fill(65, 40, 28);
   textAlign(CENTER);
 
-  textSize(12);
+  textSize(18);
   text("BUDGET WARNING", 432, 210);
 
-  textSize(9);
+  textSize(14);
   text("Expected: $" + expected.toFixed(2), 432, 250);
   text("Buyer can pay: $" + actual.toFixed(2), 432, 280);
   text("You earn $" + difference.toFixed(2) + " less.", 432, 310);
@@ -1016,7 +1037,7 @@ function drawBoard() {
 
   fill(65, 40, 28);
   textAlign(LEFT);
-  textSize(9);
+  textSize(14);
 
   if (currentTrade.type === "sell") {
 
@@ -1051,7 +1072,7 @@ function drawBoard() {
       let entries = availableItems();
       text("BUYER WANTS: " + currentTrade.category, 135, 375);
 
-      textSize(8);
+      textSize(12);
       text("BUDGET $" + currentTrade.budget +
         " | SELECTED $" + selectedTotal().toFixed(2),
         135, 397);
