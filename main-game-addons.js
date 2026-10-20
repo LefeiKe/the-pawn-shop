@@ -23,6 +23,7 @@ let additionalStorage = 0;
 let bargainAttempted = false;
 let bargainFeedback = "";
 let upgradeFeedback = "";
+let menuPausedGame = false;
 
 function mouseInBox(x, y, w, h) {
   return mouseX >= x && mouseX <= x + w &&
@@ -189,6 +190,12 @@ drawBag = function() {
 let originalDrawBoard = drawBoard;
 drawBoard = function() {
   originalDrawBoard();
+  if (currentTrade && currentTrade.type === "sell") {
+    let valid = inventory.length + currentTrade.items.length <= getShopCapacity() && money >= bundleTotal();
+    drawButton("BUY ALL", 150, 520, 185, valid, color(70, 115, 65));
+    fill(65, 40, 28); textAlign(LEFT); textSize(8);
+    text("TOTAL $" + bundleTotal().toFixed(2), 600, 399);
+  }
   if (!currentTrade || !visitingProfile) return;
   pixelBoard(113, 313, 638, 29);
   fill(65, 40, 28);
@@ -225,10 +232,14 @@ let originalMousePressed = mousePressed;
 mousePressed = function() {
   if (!showIntro && !gameOver && peopleMenu !== "") {
     if (peopleMenu === "relationships") {
-      if (mouseInBox(338, 459, 188, 32)) peopleMenu = "";
+      if (mouseInBox(338, 459, 188, 32)) {
+        peopleMenu = "";
+        if (menuPausedGame) { togglePause(); menuPausedGame = false; }
+      }
     } else if (peopleMenu === "upgrades") {
       if (mouseInBox(344, 497, 175, 32)) {
         peopleMenu = "";
+        if (menuPausedGame) { togglePause(); menuPausedGame = false; }
       } else if (purchasedUpgrades[4] && mouseInBox(600, 449, 150, 32)) {
         orderProduct();
       } else {
@@ -250,11 +261,13 @@ mousePressed = function() {
   if (!showIntro && !gameOver && !showReceipt && !showBudgetWarning) {
     if (mouseInBox(333, 10, 118, 32)) {
       peopleMenu = "relationships";
+      if (!gamePaused) { togglePause(); menuPausedGame = true; }
       showBag = false;
       return;
     }
     if (mouseInBox(464, 10, 130, 32)) {
       peopleMenu = "upgrades";
+      if (!gamePaused) { togglePause(); menuPausedGame = true; }
       showBag = false;
       return;
     }
@@ -285,11 +298,8 @@ mousePressed = function() {
   }
   let wasWaiting = customerState === "waiting";
   let wasBuyer = wasWaiting && currentTrade && currentTrade.type !== "sell";
-  let wasConfirmed = wasBuyer && mouseInBox(150, 520, 185, 32) &&
-                     selectedItems.length > 0 && !showBag && !closing;
   let wasRejected = wasWaiting && mouseInBox(505, 520, 185, 32) && !showBag && !closing;
   originalMousePressed();
-  if (wasConfirmed && customerState === "leaving") modifyRelationship(3);
   if (wasRejected && customerState === "leaving") modifyRelationship(-1);
 };
 
@@ -304,6 +314,14 @@ restartGame = function() {
   bargainAttempted = false;
   bargainFeedback = "";
   upgradeFeedback = "";
+  menuPausedGame = false;
+};
+
+// Buyer sales may also finish through the budget confirmation popup.
+let baseCompleteBuyerSale = completeBuyerSale;
+completeBuyerSale = function() {
+  baseCompleteBuyerSale();
+  modifyRelationship(3);
 };
 // Expose a simple hook to teammates; invoke when their mini-game finishes.
 function pawnShopMiniGameResult(moneyDelta, relationDelta) {
