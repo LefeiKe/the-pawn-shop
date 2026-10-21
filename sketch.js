@@ -109,38 +109,7 @@ function draw() {
     drawClock();
     drawPauseButton();
     drawBagIcon();
-
-    if (customerState === "waiting" && !closing) {
-        drawBoard();
-    }
-
-    if (showBag) {
-        drawBag();
-    }
-
-    if (closing) {
-        fill(255);
-        textAlign(CENTER);
-        textSize(24);
-        text("SHOP CLOSED", width / 2, 200);
-    }
-
-    if (showBudgetWarning) {
-      drawBudgetWarning();
-    }
-
-    if (showReceipt) {
-      drawReceipt();
-    }
-
-    if (showIntro) {
-      drawIntro();
-    }
-
-    if (gameOver) {
-      drawGameOver();
-    }
-}
+    
 
 // Reusable pixel-art board
 function pixelBoard(x, y, w, h) {
