@@ -51,17 +51,7 @@ function shopMenuCard(x, y, w, h) {
   fill(243, 219, 180); rect(x + 3, y + 3, w - 6, h - 6);
 }
 // Same simple text helper used by the menu screens.
-function shopLine(s, x, y, size, maxWidth = 450) {
-  fill(63, 40, 30);
-  textAlign(LEFT);
-  textStyle(NORMAL);
-  textSize(size);
-  while (textWidth(s) > maxWidth && size > 11) {
-    size--;
-    textSize(size);
-  }
-  text(s, x, y);
-}
+
 
 function shopDrawTabs() {
   // Draw HUD tabs only during normal play, not in intro/receipt etc.
@@ -73,8 +63,8 @@ function shopDrawTabs() {
 function shopDrawPeople() {
   noStroke(); fill(0, 0, 0, 175); rect(0, 0, width, height);
   pixelBoard(116, 57, 632, 462);
-  shopLine("CUSTOMER RELATIONSHIPS", 145, 102, 22);
-  shopLine("Every group starts at 50 / 100", 145, 131, 14);
+  { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(22); text("CUSTOMER RELATIONSHIPS", 145, 102); };
+  { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(14); text("Every group starts at 50 / 100", 145, 131); };
 
   let groups = ["Regular", "Bargain", "Collector", "Suspicious"];
   let names = ["REGULAR CUSTOMERS", "BARGAIN HUNTERS", "WEALTHY COLLECTORS", "SUSPICIOUS SELLERS"];
@@ -82,8 +72,8 @@ function shopDrawPeople() {
     let y = 151 + i * 74;
     let score = pawnRelationship[groups[i]];
     shopMenuCard(140, y, 584, 66);
-    shopLine(names[i], 155, y + 22, 17, 450);
-    shopLine(score + "/100", 638, y + 22, 16, 70);
+    { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(17); text(names[i], 155, y + 22, 450, 28); };
+    { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(16); text(score + "/100", 638, y + 22, 70, 28); };
     fill(119, 94, 68); rect(155, y + 36, 548, 12);
     fill(score >= 60 ? color(78, 128, 77) : color(198, 143, 70));
     rect(155, y + 36, 548 * score / 100, 12);
@@ -94,13 +84,13 @@ function shopDrawPeople() {
 function shopDrawUpgrades() {
   noStroke(); fill(0, 0, 0, 175); rect(0, 0, width, height);
   pixelBoard(94, 33, 676, 508);
-  shopLine("SHOP UPGRADES", 125, 74, 22);
-  shopLine("BALANCE: $" + money.toFixed(2), 125, 103, 16);
+  { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(22); text("SHOP UPGRADES", 125, 74); };
+  { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(16); text("BALANCE: $" + money.toFixed(2), 125, 103); };
   for (let i = 0; i < 5; i++) {
     let y = 120 + i * 69;
     shopMenuCard(119, y, 626, 62);
-    shopLine(shopUpgradeTitles[i], 134, y + 22, 17, 450);
-    shopLine(shopUpgradeDescriptions[i], 134, y + 43, 14, 455);
+    { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(17); text(shopUpgradeTitles[i], 134, y + 22, 450, 28); };
+    { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(14); text(shopUpgradeDescriptions[i], 134, y + 43, 455, 28); };
     let owned = shopUpgrades[i];
     drawButton(owned ? "OWNED" : "$" + shopUpgradePrices[i],
                609, y + 15, 116, !owned && money >= shopUpgradePrices[i],
@@ -110,7 +100,7 @@ function shopDrawUpgrades() {
     drawButton("ORDER $8", 568, 474, 156,
                money >= 8 && inventory.length < shopCapacity(), color(73, 120, 72));
   }
-  shopLine(shopMessage.substring(0, 34), 125, 504, 12);
+  { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(12); text(shopMessage.substring(0, 34), 125, 504); };
   drawButton("CLOSE", 350, 501, 166, true, color(98, 67, 46));
 }
 
@@ -158,7 +148,7 @@ drawBag = function() {
   shopPreviousDrawBag();
   // Original bag title uses bagLimit; cover only its title with a corrected one.
   fill(221, 191, 143); noStroke(); rect(146, 116, 537, 31);
-  shopLine("YOUR BAG (" + inventory.length + "/" + shopCapacity() + ")", 151, 139, 20);
+  { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(20); text("YOUR BAG (" + inventory.length + "/" + shopCapacity() + ")", 151, 139); };
 };
 
 // Supplement customer_ui's trade screen, without changing its portrait layout.
@@ -173,7 +163,7 @@ pawnTradeBoard = function() {
     if (currentTrade.type === "sell") {
       for (let idx of currentTrade.items) value += products[idx].value;
     } else value = products[currentTrade.product].value;
-    shopLine("CATALOG VALUE: $" + value.toFixed(2), 501, 230, 14);
+    { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(14); text("CATALOG VALUE: $" + value.toFixed(2), 501, 230); };
   }
   if (pawnScore() >= 60 && !shopBargained) {
     pawnButton("BARGAIN", 481, 489, 152, true, color(157, 113, 55));
