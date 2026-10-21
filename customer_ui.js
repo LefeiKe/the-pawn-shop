@@ -44,10 +44,10 @@ function pawnDrawIntro() {
   pawnPanel(123,116,618,341);
   let lines = pawnTypeExplanations[pawnIntroType];
   if (!lines) return;
-  pawnText('NEW CUSTOMER TYPE!',165,171,23,540);
-  pawnText(lines[0],165,220,22,540);
-  pawnText(lines[1],165,272,17,540);
-  pawnText(lines[2],165,303,17,540);
+  { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(23); text('NEW CUSTOMER TYPE!', 165, 171, 540, 28); };
+  { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(22); text(lines[0], 165, 220, 540, 28); };
+  { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(17); text(lines[1], 165, 272, 540, 28); };
+  { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(17); text(lines[2], 165, 303, 540, 28); };
   pawnButton('CONTINUE',333,381,198,true,color(70,115,65));
 }
 function pawnStartIntroIfNeeded() {
@@ -165,17 +165,7 @@ function pawnPanel(x,y,w,h) {
   fill(226,196,149); rect(x+10,y+10,w-20,h-20);
 }
 // Draw readable text without letting it run outside its allotted space.
-function pawnText(str, x, y, size, maxWidth = 470) {
-  fill(63, 40, 30);
-  textAlign(LEFT);
-  textStyle(NORMAL);
-  textSize(size);
-  while (textWidth(str) > maxWidth && size > 11) {
-    size--;
-    textSize(size);
-  }
-  text(str, x, y);
-}
+
 function pawnButton(label,x,y,w,enabled,shade) {
   noStroke();
   fill(enabled ? shade : color(109,99,84)); rect(x,y,w,36);
@@ -197,14 +187,14 @@ function pawnPortrait() {
     // Squared, already-exported portrait: no new library or image processing.
     image(pawnPortraits[pawnVisitor.name],37,110,218,218);
   }
-  pawnText(pawnVisitor ? pawnVisitor.name.toUpperCase() : 'CUSTOMER',43,358,23,205);
+  { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(23); text(pawnVisitor ? pawnVisitor.name.toUpperCase() : 'CUSTOMER', 43, 358, 205, 28); };
   // Two lines keep the complete category inside the portrait panel.
   let fullType = pawnVisitor ? pawnTypeNames[pawnVisitor.type] : '';
-  pawnText(fullType,43,388,17,205);
-  pawnText('RELATIONSHIP',43,435,15,205);
+  { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(17); text(fullType, 43, 388, 205, 28); };
+  { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(15); text('RELATIONSHIP', 43, 435, 205, 28); };
   fill(115,91,72); rect(43,449,205,14);
   fill(199,139,60);rect(43,449,205*pawnScore()/100,14);
-  pawnText(pawnScore() + ' / 100',43,488,16);
+  { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(16); text(pawnScore() + ' / 100', 43, 488); };
 }
 function pawnTradeBoard() {
   pawnRows = [];
@@ -213,38 +203,38 @@ function pawnTradeBoard() {
   pawnPanel(280,95,562,458);
   pawnPanel(300,112,520,66);
   let greeting = pawnConversation || 'WELCOME TO THE PAWN SHOP.';
-  pawnText(greeting,319,150,20,477);
+  { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(20); text(greeting, 319, 150, 477, 28); };
   if (currentTrade.type === 'sell') {
-    pawnText('SELLER OFFERS ' + currentTrade.items.length + ' ITEMS',310,207,16);
-    pawnText('TOTAL: $' + bundleTotal().toFixed(2),310,229,16);
+    { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(16); text('SELLER OFFERS ' + currentTrade.items.length + ' ITEMS', 310, 207); };
+    { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(16); text('TOTAL: $' + bundleTotal().toFixed(2), 310, 229); };
     let items = currentTrade.items;
     for (let i=0; i<items.length && i<4; i++) {
       let product = products[items[i]];
       pawnPanel(306,242+i*47,504,44);
-      pawnText(product.name.toUpperCase(),324,268+i*47,16);
-      pawnText('$'+product.value.toFixed(2),710,268+i*47,15,88);
+      { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(16); text(product.name.toUpperCase(), 324, 268+i*47); };
+      { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(15); text('$'+product.value.toFixed(2), 710, 268+i*47, 88, 28); };
     }
     let canBuy = inventory.length + items.length <= bagLimit && money >= bundleTotal();
     pawnButton('BUY ALL',312,489,152,canBuy,color(60,112,67));
   } else {
-    pawnText('WANTS: ' + currentTrade.category.toUpperCase(),310,207,16);
-    pawnText('BUDGET $'+currentTrade.budget+' | SELECTED $'+selectedTotal().toFixed(2),310,229,15,480);
+    { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(16); text('WANTS: ' + currentTrade.category.toUpperCase(), 310, 207); };
+    { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(15); text('BUDGET $'+currentTrade.budget+' | SELECTED $'+selectedTotal().toFixed(2), 310, 229, 480, 28); };
     let entries = availableItems();
     for(let i=0; i<entries.length && i<4; i++) {
       let idx=entries[i];let item=products[inventory[idx].product];
       let y=242+i*47;
       pawnPanel(306,y,504,44);
       let checked=selectedItems.includes(idx);
-      pawnText((checked?'[X] ':'[ ] ')+item.name.toUpperCase(),324,y+26,14);
-      pawnText('$'+buyerPrice(inventory[idx].product).toFixed(2),705,y+26,15,90);
+      { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(14); text((checked?'[X] ':'[ ] ')+item.name.toUpperCase(), 324, y+26); };
+      { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(15); text('$'+buyerPrice(inventory[idx].product).toFixed(2), 705, y+26, 90, 28); };
       pawnRows.push({index:idx,x:306,y:y,w:504,h:44});
     }
-    if(entries.length===0) pawnText('NO MATCHING ITEMS IN BAG',324,275,14);
-    if(entries.length>4) pawnText('SHOWING FIRST 4 MATCHING ITEMS',324,455,12);
+    if(entries.length===0) { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(14); text('NO MATCHING ITEMS IN BAG', 324, 275); };
+    if(entries.length>4) { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(12); text('SHOWING FIRST 4 MATCHING ITEMS', 324, 455); };
     pawnButton('SELL',312,489,152,selectedItems.length>0,color(60,112,67));
   }
   pawnButton('REJECT',651,489,152,true,color(156,63,52));
-  pawnText(pawnMessage.substring(0,50),310,468,12);
+  { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(12); text(pawnMessage.substring(0,50), 310, 468); };
 }
 let pawnOldDraw = draw;
 draw = function() {
