@@ -2,82 +2,245 @@
 // Load AFTER sketch.js, customer_ui.js and shop_systems.js.
 // Does not change trading layout, art, fonts, buttons or trade mechanics.
 
+
 const naturalCustomerLines = {
   Regular: {
     sell: [
-      "Hey! Mind taking a look at what I've got?",
-      "I'm clearing out a few things. Interested?",
-      "I thought I'd stop by and see what you'd offer.",
-      "Hopefully we can make a deal.",
+      "Hey! Mind taking a look?",
+      "I'm clearing out a few things.",
+      "What would you offer for these?",
+      "Hopefully we can make a deal!",
       "Hey there! Got a minute?",
-      "I figured you might be interested in these.",
-      "Let's see if we can agree on a price.",
-      "I was hoping to get a little cash today.",
-      "I thought these might be worth something.",
-      "Think you could make me a decent offer?",
-      "I've got a few things I don't need anymore.",
-      "I wasn't sure what to do with these, so here I am!",
-      "I wonder how much I could get for these.",
-      "I hope you'll find these interesting.",
-      "I've got something you might want to see.",
+      "Thought you might like these.",
+      "Let's agree on a price!",
+      "I could use some extra cash.",
+      "Think these are worth something?",
+      "Can you make me a good offer?",
+      "I don't need these anymore.",
+      "I brought a few things to sell.",
+      "How much could I get for these?",
+      "Hope these catch your interest!",
+      "I've got something to show you.",
       "How's business going?",
       "Hope you're having a good day!"
     ],
+
     category: [
-      "Hi! Mind if I take a look around?",
-      "I'm hoping to find something useful.",
-      "Let's see what you've got today.",
-      "I thought I'd stop by while I was nearby.",
+      "Hi! Mind if I look around?",
+      "I'm looking for something useful.",
+      "Let's see what you've got!",
+      "Just passing by!",
       "This place looks interesting!",
-      "You never know what you'll find in a place like this.",
-      "I've got a little time to look around.",
-      "I wonder what you've got in stock today!",
-      "I'm curious to see what's available.",
-      "Oh, you're open! Perfect timing.",
-      "I've heard some good things about this place!",
-      "I'm looking for something at a reasonable price.",
+      "You never know what you'll find!",
+      "I've got some time to browse.",
+      "Anything new in stock?",
+      "I'm curious what's available.",
+      "Oh, you're open! Perfect!",
+      "I've heard good things about you!",
+      "Looking for a reasonable price.",
       "Anything interesting for sale?",
-      "Let's see if something catches my eye.",
-      "Hopefully I'll find what I'm looking for.",
+      "Let's see what catches my eye.",
+      "Hope I find something nice!",
       "How's business going?",
       "Hope you're having a good day!"
     ],
-    accepted: ["Thanks! That worked out nicely.", "Great, see you next time!", "Pleasure doing business with you.", "That's perfect. Thank you!"],
-    rejected: ["No worries. Maybe next time!", "That's all right. I'll come back another day.", "Oh well, thanks anyway.", "Maybe we'll have better luck next time."],
-    bargainYes: ["Sure, that sounds fair!", "All right, I can work with that.", "You've got yourself a deal!"],
-    bargainNo: ["Sorry, I'd rather stick with my original price.", "Hmm, I don't think that works for me.", "I'd prefer not to go any lower."]
+
+    accepted: [
+      "Thanks! That worked out nicely.",
+      "Great, see you next time!",
+      "Pleasure doing business with you.",
+      "That's perfect. Thank you!"
+    ],
+
+    rejected: [
+      "No worries. Maybe next time!",
+      "That's all right. Another day!",
+      "Oh well, thanks anyway.",
+      "Better luck next time!"
+    ],
+
+    bargainYes: [
+      "Sure, that sounds fair!",
+      "All right, I can work with that.",
+      "You've got yourself a deal!"
+    ],
+
+    bargainNo: [
+      "I'd rather keep my price.",
+      "Hmm, that doesn't work for me.",
+      "I'd prefer not to go any lower."
+    ]
   },
+
   Bargain: {
-    sell: ["I'm hoping we can agree on a good price.", "Let's see how sharp your bargaining skills are.", "I've got a pretty good offer for you today.", "I'm sure we can work something out."],
-    category: ["I'm here to see if you've got any good deals.", "I'm keeping a close eye on my budget today.", "I always love finding a bargain.", "Let's see if your prices can impress me."],
-    accepted: ["Not bad! I might come back for more.", "All right, we have a deal.", "Now that's more like it!", "A fair deal for both of us, I suppose."],
-    rejected: ["Too bad. I'll keep looking.", "Guess we'll have to agree to disagree.", "Maybe we'll find a better deal next time.", "All right, I'll try somewhere else."],
-    bargainYes: ["Fine, you drive a hard bargain!", "You got me. Deal!", "All right, but only this once!"],
-    bargainNo: ["No thanks. That price doesn't work for me.", "That's a little more than I wanted to spend.", "I'm not budging on this one.", "Nice try, but I'm sticking to my price."]
+    sell: [
+      "Let's agree on a good price.",
+      "Think you can beat my offer?",
+      "I've got a great deal for you!",
+      "Let's work something out.",
+      "I know what these are worth!",
+      "Don't try to lowball me!"
+    ],
+
+    category: [
+      "Got any good deals?",
+      "I'm on a tight budget today.",
+      "I love finding a bargain!",
+      "Let's see those prices!",
+      "Hope your prices are reasonable.",
+      "Got anything on sale?"
+    ],
+
+    accepted: [
+      "Not bad! I might come back.",
+      "All right, we have a deal.",
+      "Now that's more like it!",
+      "Fair enough, I suppose."
+    ],
+
+    rejected: [
+      "Too bad. I'll keep looking.",
+      "Guess we can't agree.",
+      "Maybe next time!",
+      "I'll try somewhere else."
+    ],
+
+    bargainYes: [
+      "Fine, you drive a hard bargain!",
+      "You got me. Deal!",
+      "All right, but only this once!"
+    ],
+
+    bargainNo: [
+      "No thanks. Too expensive!",
+      "That's more than I'd like to pay.",
+      "I'm not budging on this one.",
+      "Nice try! My price stands."
+    ]
   },
+
   Collector: {
-    sell: ["I thought this might interest your shop.", "I've decided to part with a few possessions.", "Perhaps you'll appreciate what I've brought.", "Let's see if we can reach an agreement."],
-    category: ["I'm curious to see what's new in your shop.", "I do enjoy discovering unexpected treasures.", "Show me what you have to offer today.", "I'm in the mood to browse your collection."],
-    accepted: ["Excellent. A pleasure, as always.", "Splendid! I'm quite pleased.", "A satisfactory arrangement.", "Very good. Until next time."],
-    rejected: ["A pity. Perhaps another time.", "Very well, I understand.", "That's unfortunate, but no matter.", "I'll return when the timing is better."],
-    bargainYes: ["Very well. That seems reasonable.", "I can agree to those terms.", "An interesting proposal. Accepted."],
-    bargainNo: ["I'm afraid I must decline.", "I believe my original offer is appropriate.", "I don't think that adjustment is necessary."]
+    sell: [
+      "This might interest your shop.",
+      "I'm parting with a few things.",
+      "Perhaps you'll appreciate these.",
+      "Shall we discuss a price?",
+      "I hope you value quality.",
+      "I've brought something special."
+    ],
+
+    category: [
+      "Anything new in your shop?",
+      "I do enjoy finding treasures.",
+      "Show me what you've got.",
+      "I'm here to browse.",
+      "I'm looking for something rare.",
+      "Anything worth collecting?"
+    ],
+
+    accepted: [
+      "Excellent. A pleasure!",
+      "Splendid! I'm quite pleased.",
+      "A satisfactory arrangement.",
+      "Very good. Until next time."
+    ],
+
+    rejected: [
+      "A pity. Perhaps another time.",
+      "Very well, I understand.",
+      "That's unfortunate.",
+      "Perhaps another day."
+    ],
+
+    bargainYes: [
+      "Very well. That seems reasonable.",
+      "I can agree to those terms.",
+      "An interesting offer. Accepted."
+    ],
+
+    bargainNo: [
+      "I'm afraid I must decline.",
+      "My original offer is fair.",
+      "I see no need to adjust it."
+    ]
   },
+
   Suspicious: {
-    sell: ["Let's keep this quick, all right?", "I've got something to get off my hands.", "We can make a deal without too many questions.", "I'd appreciate a little discretion."],
-    category: ["Just looking. Don't mind me.", "You got anything interesting today?", "Let's keep this between us, okay?", "I'm not staying long."],
-    accepted: ["Good. We're done here.", "Nice doing business. Keep it quiet.", "All right. I'll be going now.", "That's settled, then."],
-    rejected: ["Suit yourself.", "Your loss, I guess.", "Fine. Forget I was here.", "Whatever. I'll find another buyer."],
-    bargainYes: ["Fine. Just make it quick.", "All right, you win.", "Deal. Now let's move on."],
-    bargainNo: ["Not a chance.", "That's not happening.", "My price stays where it is.", "You're asking too much."]
+    sell: [
+      "Let's keep this quick.",
+      "Need to get these off my hands.",
+      "No need for too many questions.",
+      "Let's keep this between us.",
+      "I'm in a bit of a hurry.",
+      "Just give me your best offer."
+    ],
+
+    category: [
+      "Just looking. Don't mind me.",
+      "Got anything interesting?",
+      "Let's keep this quiet, okay?",
+      "I'm not staying long.",
+      "Show me what you've got.",
+      "Just passing through."
+    ],
+
+    accepted: [
+      "Good. We're done here.",
+      "Nice doing business. Keep quiet.",
+      "All right. I'll be going now.",
+      "That's settled, then."
+    ],
+
+    rejected: [
+      "Suit yourself.",
+      "Your loss, I guess.",
+      "Forget I was here.",
+      "Whatever. I'll find another shop."
+    ],
+
+    bargainYes: [
+      "Fine. Just make it quick.",
+      "All right, you win.",
+      "Deal. Now let's move on."
+    ],
+
+    bargainNo: [
+      "Not a chance.",
+      "That's not happening.",
+      "My price stays where it is.",
+      "You're asking too much."
+    ]
   },
+
   Inspector: {
-    sell: ["I'd like to discuss an offer.", "Let's take care of this properly."],
-    category: ["I'd like to take a look around.", "Interesting shop you've got here."],
-    accepted: ["Thank you for your cooperation."], rejected: ["Understood."],
-    bargainYes: ["That seems reasonable."], bargainNo: ["I'll have to decline."]
+    sell: [
+      "I'd like to discuss an offer.",
+      "Let's handle this properly."
+    ],
+
+    category: [
+      "Mind if I look around?",
+      "Interesting shop you've got here."
+    ],
+
+    accepted: [
+      "Thank you for your cooperation."
+    ],
+
+    rejected: [
+      "Understood."
+    ],
+
+    bargainYes: [
+      "That seems reasonable."
+    ],
+
+    bargainNo: [
+      "I'll have to decline."
+    ]
   }
 };
+
 
 let lastCustomerDialogue = '';
 let customerReaction = '';

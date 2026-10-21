@@ -203,7 +203,7 @@ function pawnTradeBoard() {
   pawnPanel(280,95,562,458);
   pawnPanel(300,112,520,66);
   let greeting = pawnConversation || 'WELCOME TO THE PAWN SHOP.';
-  { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(20); text(greeting, 319, 150, 477, 28); };
+  { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(20); text(greeting, 319, 135, 477, 28); };
   if (currentTrade.type === 'sell') {
     { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(16); text('SELLER OFFERS ' + currentTrade.items.length + ' ITEMS', 310, 207); };
     { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(16); text('TOTAL: $' + bundleTotal().toFixed(2), 310, 229); };
@@ -212,7 +212,7 @@ function pawnTradeBoard() {
       let product = products[items[i]];
       pawnPanel(306,242+i*47,504,44);
       { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(16); text(product.name.toUpperCase(), 324, 268+i*47); };
-      { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(15); text('$'+product.value.toFixed(2), 710, 268+i*47, 88, 28); };
+      { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(15); textAlign(RIGHT); text('$' + product.value.toFixed(2), 790, 268 + i * 47); };
     }
     let canBuy = inventory.length + items.length <= bagLimit && money >= bundleTotal();
     pawnButton('BUY ALL',312,489,152,canBuy,color(60,112,67));
@@ -226,7 +226,7 @@ function pawnTradeBoard() {
       pawnPanel(306,y,504,44);
       let checked=selectedItems.includes(idx);
       { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(14); text((checked?'[X] ':'[ ] ')+item.name.toUpperCase(), 324, y+26); };
-      { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(15); text('$'+buyerPrice(inventory[idx].product).toFixed(2), 705, y+26, 90, 28); };
+      { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(15); textAlign(RIGHT); text('$' + buyerPrice(inventory[idx].product).toFixed(2), 790, y + 26); };
       pawnRows.push({index:idx,x:306,y:y,w:504,h:44});
     }
     if(entries.length===0) { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(14); text('NO MATCHING ITEMS IN BAG', 324, 275); };
