@@ -1,3 +1,7 @@
+// ============================================================
+// MAIN GAME
+// ============================================================
+
 let customerRoute = [
   { x: 170, y: 510 },  // 0: Enter through left door
   { x: 170, y: 410 },  // 1: Walk up
@@ -24,13 +28,22 @@ let shopBg, shopkeeper;
 let customers = [];
 let currentCustomer;
 
+// A Product object stores the information for one shop item.
+class Product {
+  constructor(name, category, value) {
+    this.name = name;
+    this.category = category;
+    this.value = value;
+  }
+}
+
 const products = [
-    { name: "Watch", category: "Daily", value: 35 },
-    { name: "Phone", category: "Daily", value: 60 },
-    { name: "Bread", category: "Food", value: 15 },
-    { name: "Apple", category: "Food", value: 10 },
-    { name: "Hammer", category: "Tools", value: 40 },
-    { name: "Shovel", category: "Tools", value: 30 }
+    new Product("Watch", "Daily", 35),
+    new Product("Phone", "Daily", 60),
+    new Product("Bread", "Food", 15),
+    new Product("Apple", "Food", 10),
+    new Product("Hammer", "Tools", 40),
+    new Product("Shovel", "Tools", 30)
 ];
 
 let gamePaused = false;
@@ -1293,3 +1306,1381 @@ function mousePressed() {
     }
 
 }
+
+;
+
+// ============================================================
+// CUSTOMER PORTRAITS AND TRADING
+// ============================================================
+
+// The Pawn Shop - customer sprites, portraits and redesigned trading screen.
+// Load AFTER sketch.js. Uses only p5.js + ordinary JavaScript.
+// Asset folders: images/customer_spritesheets/ and images/customer_portraits/
+
+// Each visitor has a name and a customer type.
+class CustomerProfile {
+  constructor(name, type) {
+    this.name = name;
+    this.type = type;
+  }
+}
+
+let pawnProfiles = [
+  new CustomerProfile('Mia', 'Regular'), new CustomerProfile('Noah', 'Regular'),
+  new CustomerProfile('Emma', 'Regular'), new CustomerProfile('Leo', 'Regular'),
+  new CustomerProfile('Rose', 'Regular'), new CustomerProfile('Sophie', 'Regular'),
+  new CustomerProfile('Jay', 'Bargain'), new CustomerProfile('Lily', 'Bargain'),
+  new CustomerProfile('Victoria', 'Collector'), new CustomerProfile('Edward', 'Collector'),
+  new CustomerProfile('Marcus', 'Suspicious'), new CustomerProfile('Alex', 'Inspector')
+];
+let pawnSprites = {};
+let pawnPortraits = {};
+let pawnVisitor = null;
+let pawnMessage = '';
+let pawnRelationship = {Regular:50,Bargain:50,Collector:50,Suspicious:50};
+let pawnReady = false;
+let pawnIntroSeen = {Regular:false,Bargain:false,Collector:false,Suspicious:false};
+let pawnIntroType = '';
+let pawnIntroPausedGame = false;
+let pawnConversation = '';
+const pawnTypeNames = {Regular:'REGULAR CUSTOMER',Bargain:'BARGAIN HUNTER',Collector:'WEALTHY COLLECTOR',Suspicious:'SUSPICIOUS SELLER',Inspector:'SHOP VISITOR'};
+const pawnTypeExplanations = {
+  Regular:['REGULAR CUSTOMERS','The most common visitors to your pawn shop.','Fair trades help build trust over time.'],
+  Bargain:['BARGAIN HUNTERS','These customers have tighter budgets.','They are especially difficult to negotiate with.'],
+  Collector:['WEALTHY COLLECTORS','Collectors can spend more than ordinary buyers.','Their offers may be especially profitable.'],
+  Suspicious:['SUSPICIOUS SELLERS','These visitors seem to be in a hurry to make a deal.','They are often surprisingly flexible with their prices.']
+};
+const pawnDialogue = {
+  Regular:{sell:['I FOUND A FEW THINGS TO SELL.','WOULD YOU BE INTERESTED IN THESE?','I HOPE THIS IS A FAIR PRICE.'],category:['DO YOU HAVE ANYTHING USEFUL?','I AM LOOKING FOR SOMETHING TODAY.','LET ME SEE WHAT YOU HAVE IN STOCK.']},
+  Bargain:{sell:['I THINK THIS IS A GREAT DEAL.','HOW MUCH CAN YOU GIVE ME?','I REALLY NEED A GOOD PRICE.'],category:['MY BUDGET IS A LITTLE TIGHT.','ANY CHANCE OF A GOOD DEAL?','I AM TRYING NOT TO SPEND TOO MUCH.']},
+  Collector:{sell:['THIS MIGHT INTEREST YOU.','I BROUGHT SOMETHING FROM MY COLLECTION.','I KNOW GOOD ITEMS WHEN I SEE THEM.'],category:['I AM LOOKING FOR SOMETHING SPECIAL.','QUALITY MATTERS MORE THAN PRICE.','SHOW ME YOUR FINEST STOCK.']},
+  Suspicious:{sell:['NO NEED TO ASK TOO MANY QUESTIONS.','I HAVE AN INTERESTING OFFER FOR YOU.','TRUST ME, THIS IS A BARGAIN.'],category:['JUST SHOW ME WHAT YOU HAVE.','I AM ONLY LOOKING AROUND.','KEEP THIS BETWEEN US, ALL RIGHT?']}
+};
+function pawnNewConversation() {
+  if (!pawnVisitor) return '';
+  let options = pawnDialogue[pawnVisitor.type];
+  if (!options) return 'WELCOME TO THE SHOP.';
+  return random(currentTrade.type === 'sell' ? options.sell : options.category);
+}
+function pawnDrawIntro() {
+  noStroke(); fill(0,0,0,190); rect(0,0,width,height);
+  pawnPanel(123,116,618,341);
+  let lines = pawnTypeExplanations[pawnIntroType];
+  if (!lines) return;
+  { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(23); text('NEW CUSTOMER TYPE!', 165, 171, 540, 28); };
+  { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(22); text(lines[0], 165, 220, 540, 28); };
+  { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(17); text(lines[1], 165, 272, 540, 28); };
+  { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(17); text(lines[2], 165, 303, 540, 28); };
+  pawnButton('CONTINUE',333,381,198,true,color(70,115,65));
+}
+function pawnStartIntroIfNeeded() {
+  if (!pawnTradeActive() || pawnIntroType || !pawnVisitor) return;
+  let t=pawnVisitor.type;
+  if (pawnIntroSeen[t] === false) {
+    pawnIntroSeen[t] = true;
+    pawnIntroType = t;
+    pawnIntroPausedGame = !gamePaused;
+    if (pawnIntroPausedGame) togglePause();
+  }
+}
+function pawnCloseIntro() {
+  pawnIntroType = '';
+  if (pawnIntroPausedGame) togglePause();
+  pawnIntroPausedGame = false;
+}
+let pawnRows = []; // [{index,x,y,w,h}] - current clickable buyer rows
+
+// Gradual customer introduction:
+// Day 1: regulars only.
+// Later days: at most one NEW type per day. Previously unlocked types
+// can continue visiting without a limit.
+// Inspector is reserved for Sara's future mini-game.
+let pawnUnlockedTypes = {Regular:true, Bargain:false, Collector:false, Suspicious:false};
+let pawnNewTypeDay = -1;
+function pawnPickVisitor() {
+  let types = ['Regular', 'Bargain', 'Collector', 'Suspicious'];
+  let weights = [60, 20, 12, 8];
+  let allowed = [];
+  let total = 0;
+  for (let i = 0; i < types.length; i++) {
+    let type = types[i];
+    let canVisit = pawnUnlockedTypes[type] ||
+      (dayNumber > 1 && pawnNewTypeDay !== dayNumber);
+    if (canVisit) {
+      allowed.push({type:type, weight:weights[i]});
+      total += weights[i];
+    }
+  }
+
+  let roll = random(total);
+  let selected = 'Regular';
+  for (let entry of allowed) {
+    if (roll < entry.weight) {
+      selected = entry.type;
+      break;
+    }
+    roll -= entry.weight;
+  }
+
+  // Lock out OTHER unseen types for the rest of this day.
+  if (!pawnUnlockedTypes[selected]) {
+    pawnUnlockedTypes[selected] = true;
+    pawnNewTypeDay = dayNumber;
+  }
+  let choices = pawnProfiles.filter(p => p.type === selected);
+  return random(choices);
+}
+function pawnHit(x,y,w,h) {
+  return mouseX >= x && mouseX <= x+w && mouseY >= y && mouseY <= y+h;
+}
+function pawnScore() {
+  if (!pawnVisitor) return 50;
+  return pawnRelationship[pawnVisitor.type] || 50;
+}
+function pawnChangeScore(amount) {
+  if (!pawnVisitor) return;
+  let type = pawnVisitor.type;
+  pawnRelationship[type] = constrain(pawnRelationship[type] + amount,0,100);
+}
+function pawnTradeActive() {
+  return pawnReady && !showIntro && !showReceipt && !showBudgetWarning &&
+         !gameOver && !closing && customerState === 'waiting' && currentTrade;
+}
+
+// Keep all the original setup work (shopkeeper, background, original assets).
+let pawnOldSetup = setup;
+setup = async function() {
+  await pawnOldSetup();
+  for (let p of pawnProfiles) {
+    let file = p.name.toLowerCase() + '.png';
+    pawnSprites[p.name] = await loadImage('images/customer_spritesheets/' + file);
+    pawnPortraits[p.name] = await loadImage('images/customer_portraits/' + file);
+  }
+  pawnReady = true;
+};
+
+// Preserve customer route + original trade generation; replace random sprite.
+let pawnOldGenerate = generateCustomer;
+generateCustomer = function() {
+  pawnOldGenerate();
+  if (!pawnReady) return;
+  pawnVisitor = pawnPickVisitor();
+  currentCustomer = pawnSprites[pawnVisitor.name];
+  pawnMessage = '';
+  pawnConversation = pawnNewConversation();
+  // Collector has more to spend; bargain hunters have less.
+  if (pawnVisitor.type === 'Collector') {
+    currentTrade.budget = floor(currentTrade.budget * 1.5);
+    currentTrade.markup *= 1.1;
+  }
+  if (pawnVisitor.type === 'Bargain') {
+    currentTrade.budget = floor(currentTrade.budget * 0.85);
+    currentTrade.markup *= 0.93;
+  }
+  selectedItems = [];
+};
+
+// Panel with safe padding, fixed positions and no text running off the canvas.
+function pawnPanel(x,y,w,h) {
+  noStroke();
+  fill(60,38,28); rect(x,y,w,h);
+  fill(140,91,56); rect(x+4,y+4,w-8,h-8);
+  fill(226,196,149); rect(x+10,y+10,w-20,h-20);
+}
+// Draw readable text without letting it run outside its allotted space.
+
+function pawnButton(label,x,y,w,enabled,shade) {
+  noStroke();
+  fill(enabled ? shade : color(109,99,84)); rect(x,y,w,36);
+  fill(255);
+  textAlign(CENTER);
+  textStyle(BOLD);
+  let size = 17;
+  textSize(size);
+  while (textWidth(label) > w - 16 && size > 11) {
+    size--;
+    textSize(size);
+  }
+  text(label, x + w / 2, y + 25);
+  textStyle(NORMAL);
+}
+function pawnPortrait() {
+  pawnPanel(22,95,248,458);
+  if (pawnVisitor && pawnPortraits[pawnVisitor.name]) {
+    // Squared, already-exported portrait: no new library or image processing.
+    image(pawnPortraits[pawnVisitor.name],37,110,218,218);
+  }
+  { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(23); text(pawnVisitor ? pawnVisitor.name.toUpperCase() : 'CUSTOMER', 43, 358, 205, 28); };
+  // Two lines keep the complete category inside the portrait panel.
+  let fullType = pawnVisitor ? pawnTypeNames[pawnVisitor.type] : '';
+  { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(17); text(fullType, 43, 388, 205, 28); };
+  { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(15); text('RELATIONSHIP', 43, 435, 205, 28); };
+  fill(115,91,72); rect(43,449,205,14);
+  fill(199,139,60);rect(43,449,205*pawnScore()/100,14);
+  { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(16); text(pawnScore() + ' / 100', 43, 488); };
+}
+function pawnTradeBoard() {
+  pawnRows = [];
+  fill(0,0,0,158); noStroke(); rect(0,0,width,height);
+  pawnPortrait();
+  pawnPanel(280,95,562,458);
+  pawnPanel(300,112,520,66);
+  let greeting = pawnConversation || 'WELCOME TO THE PAWN SHOP.';
+  { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(20); text(greeting, 319, 135, 477, 28); };
+  if (currentTrade.type === 'sell') {
+    { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(16); text('SELLER OFFERS ' + currentTrade.items.length + ' ITEMS', 310, 207); };
+    { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(16); text('TOTAL: $' + bundleTotal().toFixed(2), 310, 229); };
+    let items = currentTrade.items;
+    for (let i=0; i<items.length && i<4; i++) {
+      let product = products[items[i]];
+      pawnPanel(306,242+i*47,504,44);
+      { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(16); text(product.name.toUpperCase(), 324, 268+i*47); };
+      { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(15); textAlign(RIGHT); text('$' + product.value.toFixed(2), 790, 268 + i * 47); };
+    }
+    let canBuy = inventory.length + items.length <= bagLimit && money >= bundleTotal();
+    pawnButton('BUY ALL',312,489,152,canBuy,color(60,112,67));
+  } else {
+    { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(16); text('WANTS: ' + currentTrade.category.toUpperCase(), 310, 207); };
+    { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(15); text('BUDGET $'+currentTrade.budget+' | SELECTED $'+selectedTotal().toFixed(2), 310, 229, 480, 28); };
+    let entries = availableItems();
+    for(let i=0; i<entries.length && i<4; i++) {
+      let idx=entries[i];let item=products[inventory[idx].product];
+      let y=242+i*47;
+      pawnPanel(306,y,504,44);
+      let checked=selectedItems.includes(idx);
+      { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(14); text((checked?'[X] ':'[ ] ')+item.name.toUpperCase(), 324, y+26); };
+      { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(15); textAlign(RIGHT); text('$' + buyerPrice(inventory[idx].product).toFixed(2), 790, y + 26); };
+      pawnRows.push({index:idx,x:306,y:y,w:504,h:44});
+    }
+    if(entries.length===0) { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(14); text('NO MATCHING ITEMS IN BAG', 324, 275); };
+    if(entries.length>4) { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(12); text('SHOWING FIRST 4 MATCHING ITEMS', 324, 455); };
+    pawnButton('SELL',312,489,152,selectedItems.length>0,color(60,112,67));
+  }
+  pawnButton('REJECT',651,489,152,true,color(156,63,52));
+  { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(12); text(pawnMessage.substring(0,50), 310, 468); };
+}
+let pawnOldDraw = draw;
+draw = function() {
+  pawnOldDraw();
+  if(pawnTradeActive()) pawnTradeBoard();
+  pawnStartIntroIfNeeded();
+  if (pawnIntroType) pawnDrawIntro();
+};
+
+// New trade board interactions; all unrelated input still uses existing handler.
+let pawnOldMouse = mousePressed;
+mousePressed = function() {
+  if (pawnIntroType) {
+    if (pawnHit(333,381,198,36)) pawnCloseIntro();
+    return;
+  }
+  if(!pawnTradeActive()) {pawnOldMouse();return;}
+  if(gamePaused || showBag) {pawnOldMouse();return;}
+  // Reject current customer.
+  if(pawnHit(651,489,152,36)) {
+    pawnChangeScore(-1);
+    finishTrade();return;
+  }
+  if(currentTrade.type==='sell') {
+    if(pawnHit(312,489,152,36)) {
+      let total=bundleTotal();
+      if(inventory.length+currentTrade.items.length>bagLimit){pawnMessage='NOT ENOUGH SPACE';return;}
+      if(total>money){pawnMessage='NOT ENOUGH MONEY';return;}
+      money-=total;
+      for(let idx of currentTrade.items) {
+        inventory.push({product:idx,boughtFor:products[idx].value});
+        dailyLog.push({type:'BUY',name:products[idx].name,amount:products[idx].value});
+      }
+      pawnChangeScore(3);finishTrade();return;
+    }
+  } else {
+    for(let row of pawnRows) {
+      if(pawnHit(row.x,row.y,row.w,row.h)) {
+        let pos=selectedItems.indexOf(row.index);
+        if(pos===-1)selectedItems.push(row.index);
+        else selectedItems.splice(pos,1);
+        return;
+      }
+    }
+    if(pawnHit(312,489,152,36)) {
+      if(!selectedItems.length){pawnMessage='SELECT AN ITEM FIRST';return;}
+      if(selectedTotal()>currentTrade.budget)showBudgetWarning=true;
+      else completeBuyerSale();
+      return;
+    }
+  }
+};
+let pawnOldCompleteSale = completeBuyerSale;
+completeBuyerSale = function() {
+  pawnOldCompleteSale();pawnChangeScore(3);
+};
+let pawnOldRestart = restartGame;
+restartGame = function() {
+  pawnOldRestart();
+  pawnRelationship = {Regular:50,Bargain:50,Collector:50,Suspicious:50};
+  pawnVisitor=null;pawnMessage='';pawnRows=[];
+  pawnIntroSeen={Regular:false,Bargain:false,Collector:false,Suspicious:false};
+  pawnIntroType='';pawnIntroPausedGame=false;pawnConversation='';
+  pawnUnlockedTypes={Regular:true,Bargain:false,Collector:false,Suspicious:false};
+  pawnNewTypeDay=-1;
+};
+
+
+;
+
+// ============================================================
+// SHOP UPGRADES AND RELATIONSHIPS
+// ============================================================
+
+// THE PAWN SHOP - relationships, upgrades, bargaining
+// Add AFTER sketch.js and customer_ui.js in index.html.
+// Only p5.js + beginner JavaScript (arrays, objects, functions and mousePressed).
+
+let shopMenu = "";             // "people", "upgrades", or ""
+let shopMenuPaused = false;
+let shopUpgrades = [false, false, false, false, false];
+let shopUpgradeTitles = ["PRICE CATALOG", "STORAGE +2", "DISPLAY SHELVES",
+                         "ADVERTISING", "ORDERING HOTLINE"];
+let shopUpgradePrices = [90, 130, 120, 100, 160];
+let shopUpgradeDescriptions = [
+  "Show original item values during trading.",
+  "Increase bag space by two items.",
+  "Earn 5% more on sales.",
+  "Attract customers more frequently.",
+  "Order an Apple for $8 whenever you have space."
+];
+let shopMessage = "";
+let shopBargained = false;
+let shopTradeMultiplier = 1;
+
+// One centralized capacity check. Used by the trading UI and bag.
+// Fix a score of 0 displaying as 50 in the earlier customer UI.
+pawnScore = function() {
+  if (!pawnVisitor) return 50;
+  return pawnRelationship[pawnVisitor.type];
+};
+
+function shopCapacity() {
+  return bagLimit + (shopUpgrades[1] ? 2 : 0);
+}
+
+function shopCloseMenu() {
+  shopMenu = "";
+  if (shopMenuPaused) togglePause();
+  shopMenuPaused = false;
+}
+function shopOpenMenu(which) {
+  shopMenu = which;
+  showBag = false;
+  if (!gamePaused) {
+    togglePause();
+    shopMenuPaused = true;
+  } else {
+    shopMenuPaused = false;
+  }
+}
+function shopMenuCard(x, y, w, h) {
+  noStroke();
+  fill(116, 78, 51); rect(x, y, w, h);
+  fill(243, 219, 180); rect(x + 3, y + 3, w - 6, h - 6);
+}
+// Same simple text helper used by the menu screens.
+
+
+function shopDrawTabs() {
+  // Draw HUD tabs only during normal play, not in intro/receipt etc.
+  if (showIntro || showReceipt || gameOver || closing) return;
+  drawButton("PEOPLE", 328, 12, 124, true, color(98, 67, 46));
+  drawButton("UPGRADES", 462, 12, 140, true, color(98, 67, 46));
+}
+
+function shopDrawPeople() {
+  noStroke(); fill(0, 0, 0, 175); rect(0, 0, width, height);
+  pixelBoard(116, 57, 632, 462);
+  { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(22); text("CUSTOMER RELATIONSHIPS", 145, 102); };
+  { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(14); text("Every group starts at 50 / 100", 145, 131); };
+
+  let groups = ["Regular", "Bargain", "Collector", "Suspicious"];
+  let names = ["REGULAR CUSTOMERS", "BARGAIN HUNTERS", "WEALTHY COLLECTORS", "SUSPICIOUS SELLERS"];
+  for (let i = 0; i < groups.length; i++) {
+    let y = 151 + i * 74;
+    let score = pawnRelationship[groups[i]];
+    shopMenuCard(140, y, 584, 66);
+    { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(17); text(names[i], 155, y + 22, 450, 28); };
+    { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(16); text(score + "/100", 638, y + 22, 70, 28); };
+    fill(119, 94, 68); rect(155, y + 36, 548, 12);
+    fill(score >= 60 ? color(78, 128, 77) : color(198, 143, 70));
+    rect(155, y + 36, 548 * score / 100, 12);
+  }
+  drawButton("CLOSE", 347, 462, 170, true, color(98, 67, 46));
+}
+
+function shopDrawUpgrades() {
+  noStroke(); fill(0, 0, 0, 175); rect(0, 0, width, height);
+  pixelBoard(94, 33, 676, 508);
+  { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(22); text("SHOP UPGRADES", 125, 74); };
+  { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(16); text("BALANCE: $" + money.toFixed(2), 125, 103); };
+  for (let i = 0; i < 5; i++) {
+    let y = 120 + i * 69;
+    shopMenuCard(119, y, 626, 62);
+    { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(17); text(shopUpgradeTitles[i], 134, y + 22, 450, 28); };
+    { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(14); text(shopUpgradeDescriptions[i], 134, y + 43, 455, 28); };
+    let owned = shopUpgrades[i];
+    drawButton(owned ? "OWNED" : "$" + shopUpgradePrices[i],
+               609, y + 15, 116, !owned && money >= shopUpgradePrices[i],
+               color(73, 120, 72));
+  }
+  if (shopUpgrades[4]) {
+    drawButton("ORDER $8", 568, 474, 156,
+               money >= 8 && inventory.length < shopCapacity(), color(73, 120, 72));
+  }
+  { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(12); text(shopMessage.substring(0, 34), 125, 504); };
+  drawButton("CLOSE", 350, 501, 166, true, color(98, 67, 46));
+}
+
+// Save prior wrappers, so customer movement and trade logic continue to run.
+let shopPreviousDraw = draw;
+draw = function() {
+  shopPreviousDraw();
+  if (showIntro || showReceipt || gameOver) return;
+  if (pawnIntroType) return;
+  shopDrawTabs();
+  if (shopMenu === "people") shopDrawPeople();
+  if (shopMenu === "upgrades") shopDrawUpgrades();
+};
+
+let shopPreviousGenerate = generateCustomer;
+generateCustomer = function() {
+  shopPreviousGenerate();
+  shopBargained = false;
+  shopTradeMultiplier = 1;
+  if (pawnVisitor && pawnVisitor.type !== "Inspector") {
+    let score = pawnRelationship[pawnVisitor.type];
+    // Small, predictable relationship discount/bonus for sales.
+    currentTrade.markup *= 1 + (score - 50) * 0.002;
+  }
+};
+
+let shopPreviousBuyerPrice = buyerPrice;
+buyerPrice = function(index) {
+  let price = shopPreviousBuyerPrice(index);
+  if (shopUpgrades[2]) price *= 1.05;
+  return Number(price.toFixed(2));
+};
+let shopPreviousBundleTotal = bundleTotal;
+bundleTotal = function() {
+  return Number((shopPreviousBundleTotal() * shopTradeMultiplier).toFixed(2));
+};
+let shopPreviousArrival = scheduleCustomer;
+scheduleCustomer = function() {
+  shopPreviousArrival();
+  if (shopUpgrades[3]) nextArrival = millis() + random(1000, 3200);
+};
+
+let shopPreviousDrawBag = drawBag;
+drawBag = function() {
+  shopPreviousDrawBag();
+  // Original bag title uses bagLimit; cover only its title with a corrected one.
+  fill(221, 191, 143); noStroke(); rect(146, 116, 537, 31);
+  { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(20); text("YOUR BAG (" + inventory.length + "/" + shopCapacity() + ")", 151, 139); };
+};
+
+// Supplement customer_ui's trade screen, without changing its portrait layout.
+let shopPreviousTradeBoard = pawnTradeBoard;
+pawnTradeBoard = function() {
+  shopPreviousTradeBoard();
+  if (!pawnTradeActive()) return;
+
+  if (shopUpgrades[0]) {
+    // Show bundle's base value or buyer's requested category reference.
+    let value = 0;
+    if (currentTrade.type === "sell") {
+      for (let idx of currentTrade.items) value += products[idx].value;
+    } else value = products[currentTrade.product].value;
+    { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(14); text("CATALOG VALUE: $" + value.toFixed(2), 501, 230); };
+  }
+  if (pawnScore() >= 60 && !shopBargained) {
+    pawnButton("BARGAIN", 481, 489, 152, true, color(157, 113, 55));
+  }
+};
+
+function shopTryBargain() {
+  if (pawnScore() < 60 || shopBargained || !currentTrade) return;
+  shopBargained = true;
+  let chance = 0.5 + (pawnScore() - 60) * 0.005;
+  if (pawnVisitor.type === "Bargain") chance -= 0.12;
+  if (random() < chance) {
+    if (currentTrade.type === "sell") shopTradeMultiplier *= 0.9;
+    else currentTrade.markup *= 1.1;
+    pawnChangeScore(2);
+    pawnMessage = "COUNTEROFFER ACCEPTED!";
+  } else {
+    pawnChangeScore(-5);
+    pawnMessage = "COUNTEROFFER REJECTED!";
+  }
+}
+function shopBuyUpgrade(i) {
+  if (shopUpgrades[i] || money < shopUpgradePrices[i]) return;
+  money -= shopUpgradePrices[i];
+  shopUpgrades[i] = true;
+  shopMessage = shopUpgradeTitles[i] + " UNLOCKED";
+}
+
+let shopPreviousMouse = mousePressed;
+mousePressed = function() {
+  if (pawnIntroType) { shopPreviousMouse(); return; }
+  if (shopMenu !== "") {
+    if (shopMenu === "people") {
+      if (pawnHit(347, 462, 170, 32)) shopCloseMenu();
+    } else {
+      if (pawnHit(350, 501, 166, 32)) shopCloseMenu();
+      else if (shopUpgrades[4] && pawnHit(568, 474, 156, 32)) {
+        if (money >= 8 && inventory.length < shopCapacity()) {
+          money -= 8;
+          inventory.push({product:3, boughtFor:8});
+          dailyLog.push({type:"BUY", name:"Apple", amount:8});
+          shopMessage = "APPLE ORDER RECEIVED";
+        }
+      } else {
+        for (let i = 0; i < 5; i++) {
+          let y = 120 + i * 69 + 15;
+          if (pawnHit(609, y, 116, 32)) { shopBuyUpgrade(i); break; }
+        }
+      }
+    }
+    return;
+  }
+  if (!showIntro && !showReceipt && !gameOver && !closing && !showBudgetWarning) {
+    if (pawnHit(328, 12, 124, 32)) { shopOpenMenu("people"); return; }
+    if (pawnHit(462, 12, 140, 32)) { shopOpenMenu("upgrades"); return; }
+  }
+  if (pawnTradeActive() && !gamePaused && !showBag &&
+      pawnScore() >= 60 && !shopBargained &&
+      pawnHit(481, 489, 152, 36)) {
+    shopTryBargain(); return;
+  }
+  // Prevent purchase beyond upgraded storage size.
+  if (pawnTradeActive() && currentTrade.type === "sell" &&
+      !gamePaused && !showBag && pawnHit(312, 489, 152, 36)) {
+    let cost = bundleTotal();
+    if (inventory.length + currentTrade.items.length > shopCapacity()) {
+      pawnMessage = "NOT ENOUGH SPACE"; return;
+    }
+    if (cost > money) { pawnMessage = "NOT ENOUGH MONEY"; return; }
+    money -= cost;
+    for (let idx of currentTrade.items) {
+      let bought = cost / currentTrade.items.length;
+      inventory.push({product:idx, boughtFor:bought});
+      dailyLog.push({type:"BUY", name:products[idx].name, amount:bought});
+    }
+    pawnChangeScore(3);
+    finishTrade();
+    return;
+  }
+  shopPreviousMouse();
+};
+
+let shopPreviousRestart = restartGame;
+restartGame = function() {
+  shopPreviousRestart();
+  shopMenu = "";
+  shopMenuPaused = false;
+  shopUpgrades = [false, false, false, false, false];
+  shopMessage = "";
+  shopBargained = false;
+  shopTradeMultiplier = 1;
+};
+
+
+;
+
+// ============================================================
+// CUSTOMER DIALOGUE
+// ============================================================
+
+// Dialogue-only update for The Pawn Shop.
+// Load AFTER sketch.js, customer_ui.js and shop_systems.js.
+// Does not change trading layout, art, fonts, buttons or trade mechanics.
+
+
+const naturalCustomerLines = {
+  Regular: {
+    sell: [
+      "Hey! Mind taking a look?",
+      "I'm clearing out a few things.",
+      "What would you offer for these?",
+      "Hopefully we can make a deal!",
+      "Hey there! Got a minute?",
+      "Thought you might like these.",
+      "Let's agree on a price!",
+      "I could use some extra cash.",
+      "Think these are worth something?",
+      "Can you make me a good offer?",
+      "I don't need these anymore.",
+      "I brought a few things to sell.",
+      "How much could I get for these?",
+      "Hope these catch your interest!",
+      "I've got something to show you.",
+      "How's business going?",
+      "Hope you're having a good day!"
+    ],
+
+    category: [
+      "Hi! Mind if I look around?",
+      "I'm looking for something useful.",
+      "Let's see what you've got!",
+      "Just passing by!",
+      "This place looks interesting!",
+      "You never know what you'll find!",
+      "I've got some time to browse.",
+      "Anything new in stock?",
+      "I'm curious what's available.",
+      "Oh, you're open! Perfect!",
+      "I've heard good things about you!",
+      "Looking for a reasonable price.",
+      "Anything interesting for sale?",
+      "Let's see what catches my eye.",
+      "Hope I find something nice!",
+      "How's business going?",
+      "Hope you're having a good day!"
+    ],
+
+    accepted: [
+      "Thanks! That worked out nicely.",
+      "Great, see you next time!",
+      "Pleasure doing business with you.",
+      "That's perfect. Thank you!"
+    ],
+
+    rejected: [
+      "No worries. Maybe next time!",
+      "That's all right. Another day!",
+      "Oh well, thanks anyway.",
+      "Better luck next time!"
+    ],
+
+    bargainYes: [
+      "Sure, that sounds fair!",
+      "All right, I can work with that.",
+      "You've got yourself a deal!"
+    ],
+
+    bargainNo: [
+      "I'd rather keep my price.",
+      "Hmm, that doesn't work for me.",
+      "I'd prefer not to go any lower."
+    ]
+  },
+
+  Bargain: {
+    sell: [
+      "Let's agree on a good price.",
+      "Think you can beat my offer?",
+      "I've got a great deal for you!",
+      "Let's work something out.",
+      "I know what these are worth!",
+      "Don't try to lowball me!"
+    ],
+
+    category: [
+      "Got any good deals?",
+      "I'm on a tight budget today.",
+      "I love finding a bargain!",
+      "Let's see those prices!",
+      "Hope your prices are reasonable.",
+      "Got anything on sale?"
+    ],
+
+    accepted: [
+      "Not bad! I might come back.",
+      "All right, we have a deal.",
+      "Now that's more like it!",
+      "Fair enough, I suppose."
+    ],
+
+    rejected: [
+      "Too bad. I'll keep looking.",
+      "Guess we can't agree.",
+      "Maybe next time!",
+      "I'll try somewhere else."
+    ],
+
+    bargainYes: [
+      "Fine, you drive a hard bargain!",
+      "You got me. Deal!",
+      "All right, but only this once!"
+    ],
+
+    bargainNo: [
+      "No thanks. Too expensive!",
+      "That's more than I'd like to pay.",
+      "I'm not budging on this one.",
+      "Nice try! My price stands."
+    ]
+  },
+
+  Collector: {
+    sell: [
+      "This might interest your shop.",
+      "I'm parting with a few things.",
+      "Perhaps you'll appreciate these.",
+      "Shall we discuss a price?",
+      "I hope you value quality.",
+      "I've brought something special."
+    ],
+
+    category: [
+      "Anything new in your shop?",
+      "I do enjoy finding treasures.",
+      "Show me what you've got.",
+      "I'm here to browse.",
+      "I'm looking for something rare.",
+      "Anything worth collecting?"
+    ],
+
+    accepted: [
+      "Excellent. A pleasure!",
+      "Splendid! I'm quite pleased.",
+      "A satisfactory arrangement.",
+      "Very good. Until next time."
+    ],
+
+    rejected: [
+      "A pity. Perhaps another time.",
+      "Very well, I understand.",
+      "That's unfortunate.",
+      "Perhaps another day."
+    ],
+
+    bargainYes: [
+      "Very well. That seems reasonable.",
+      "I can agree to those terms.",
+      "An interesting offer. Accepted."
+    ],
+
+    bargainNo: [
+      "I'm afraid I must decline.",
+      "My original offer is fair.",
+      "I see no need to adjust it."
+    ]
+  },
+
+  Suspicious: {
+    sell: [
+      "Let's keep this quick.",
+      "Need to get these off my hands.",
+      "No need for too many questions.",
+      "Let's keep this between us.",
+      "I'm in a bit of a hurry.",
+      "Just give me your best offer."
+    ],
+
+    category: [
+      "Just looking. Don't mind me.",
+      "Got anything interesting?",
+      "Let's keep this quiet, okay?",
+      "I'm not staying long.",
+      "Show me what you've got.",
+      "Just passing through."
+    ],
+
+    accepted: [
+      "Good. We're done here.",
+      "Nice doing business. Keep quiet.",
+      "All right. I'll be going now.",
+      "That's settled, then."
+    ],
+
+    rejected: [
+      "Suit yourself.",
+      "Your loss, I guess.",
+      "Forget I was here.",
+      "Whatever. I'll find another shop."
+    ],
+
+    bargainYes: [
+      "Fine. Just make it quick.",
+      "All right, you win.",
+      "Deal. Now let's move on."
+    ],
+
+    bargainNo: [
+      "Not a chance.",
+      "That's not happening.",
+      "My price stays where it is.",
+      "You're asking too much."
+    ]
+  },
+
+  Inspector: {
+    sell: [
+      "I'd like to discuss an offer.",
+      "Let's handle this properly."
+    ],
+
+    category: [
+      "Mind if I look around?",
+      "Interesting shop you've got here."
+    ],
+
+    accepted: [
+      "Thank you for your cooperation."
+    ],
+
+    rejected: [
+      "Understood."
+    ],
+
+    bargainYes: [
+      "That seems reasonable."
+    ],
+
+    bargainNo: [
+      "I'll have to decline."
+    ]
+  }
+};
+
+
+let lastCustomerDialogue = '';
+let customerReaction = '';
+let customerReactionUntil = 0;
+let customerDialogueOutcome = 'rejected';
+
+function chooseCustomerLine(kind) {
+  let type = pawnVisitor ? pawnVisitor.type : 'Regular';
+  let group = naturalCustomerLines[type] || naturalCustomerLines.Regular;
+  let choices = group[kind] || group.category;
+  let alternatives = choices.filter(s => s !== lastCustomerDialogue);
+  let line = random(alternatives.length ? alternatives : choices);
+  lastCustomerDialogue = line;
+  return line;
+}
+
+// Replaces ONLY the words chosen for the existing speech line.
+pawnNewConversation = function() {
+  return chooseCustomerLine(currentTrade.type === 'sell' ? 'sell' : 'category');
+};
+
+// Handle bargaining outcomes after the original bargaining calculation.
+let originalShopBargain = shopTryBargain;
+shopTryBargain = function() {
+  let before = shopBargained;
+  let oldScore = pawnScore();
+  originalShopBargain();
+  if (!before && shopBargained) {
+    let succeeded = pawnScore() > oldScore;
+    pawnConversation = chooseCustomerLine(succeeded ? 'bargainYes' : 'bargainNo');
+    // Preserve the text panel layout; use its existing message line for status only.
+    pawnMessage = succeeded ? 'BARGAIN ACCEPTED' : 'BARGAIN REJECTED';
+  }
+};
+
+// Show one brief, customer-only parting remark over the *existing* shop scene.
+let originalFinishCustomerTrade = finishTrade;
+finishTrade = function() {
+  if (pawnVisitor) {
+    customerReaction = chooseCustomerLine(customerDialogueOutcome);
+    customerReactionUntil = millis() + 2200;
+  }
+  customerDialogueOutcome = 'rejected';
+  originalFinishCustomerTrade();
+};
+
+// Detect completed sales without replacing the existing money/inventory logic.
+let originalCompleteCustomerSale = completeBuyerSale;
+completeBuyerSale = function() {
+  customerDialogueOutcome = 'accepted';
+  originalCompleteCustomerSale();
+};
+
+// Observe the previous game actions so successful purchase has a parting line.
+let originalDialogueMouse = mousePressed;
+mousePressed = function() {
+  let active = pawnTradeActive() && !gamePaused && !showBag && !pawnIntroType && shopMenu === '';
+  let buyingFromCustomer = active && currentTrade.type === 'sell';
+  let payButton = buyingFromCustomer && pawnHit(312, 489, 152, 36);
+  let eligible = payButton && money >= bundleTotal() &&
+    inventory.length + currentTrade.items.length <= shopCapacity();
+  if (eligible) customerDialogueOutcome = 'accepted';
+  originalDialogueMouse();
+  // If transaction did not actually end, discard speculative outcome.
+  if (eligible && customerState === 'waiting') customerDialogueOutcome = 'rejected';
+};
+
+let originalDialogueDraw = draw;
+draw = function() {
+  originalDialogueDraw();
+  if (customerReaction && millis() < customerReactionUntil &&
+      !showIntro && !showReceipt && !gameOver && !pawnTradeActive() && !pawnIntroType) {
+    // Compact text only; does not replace or restyle any original game screen.
+    push();
+    textAlign(CENTER);
+    textSize(12);
+    stroke(30, 20, 15);
+    strokeWeight(3);
+    fill(255);
+    text(customerReaction, width / 2, height - 75);
+    pop();
+  }
+};
+
+let originalDialogueRestart = restartGame;
+restartGame = function() {
+  originalDialogueRestart();
+  lastCustomerDialogue = '';
+  customerReaction = '';
+  customerReactionUntil = 0;
+  customerDialogueOutcome = 'rejected';
+};
+
+
+;
+
+// ============================================================
+// LANDLORD, RENT, AND TEST TOOLS
+// ============================================================
+
+// The Pawn Shop: red telephone, Mr. Pennyworth, upgrades and weekly rent.
+// Load LAST in index.html, after customer_dialogue_only.js.
+// Uses p5.js, arrays, objects, conditions, loops, and mousePressed().
+
+let phoneSheet;
+let phonePending = '';  // 'hello', 'upgrades', 'rentReveal', 'rent'
+let phoneCall = '';     // active call panel
+let phoneSeen = {hello:false, upgrades:false, rentReveal:false};
+let phoneSelected = [];
+let phoneSavedPause = false;
+let phoneHint = '';
+let phoneHintUntil = 0;
+let phonePaidToday = false;
+const phoneX = 673, phoneY = 360, phoneW = 180, phoneH = 180;
+
+// Request the asset at startup. Existing setup() remains the only setup function.
+let phoneOriginalSetup = setup;
+setup = async function() {
+  await phoneOriginalSetup();
+  phoneSheet = await loadImage('images/phone.png');
+};
+
+function phoneRentAmount(day) {
+  // Rent is due at the end of Days 14, 21, 28...; no decimals.
+  return round(10 * pow(1.2, floor(day / 7) - 2));
+}
+
+function phoneStart(eventName) {
+  phonePending = eventName;
+  phoneSelected = [];
+  phoneSavedPause = !gamePaused;
+  if (phoneSavedPause) togglePause();
+}
+
+function phoneCheckEvents() {
+  if (showIntro || gameOver || phonePending || phoneCall || pawnIntroType || shopMenu) return;
+  if (dayNumber === 1 && !phoneSeen.hello) {
+    phoneSeen.hello = true;
+    phoneStart('hello');
+  } else if (dayNumber === 3 && !phoneSeen.upgrades) {
+    phoneSeen.upgrades = true;
+    phoneStart('upgrades');
+  } else if (showReceipt && dayNumber === 7 && !phoneSeen.rentReveal) {
+    phoneSeen.rentReveal = true;
+    phoneStart('rentReveal');
+  } else if (showReceipt && dayNumber >= 14 && dayNumber % 7 === 0 && !phonePaidToday) {
+    phoneStart('rent');
+  }
+}
+
+function phoneEndCall() {
+  phonePending = '';
+  phoneCall = '';
+  phoneSelected = [];
+  if (phoneSavedPause) togglePause();
+  phoneSavedPause = false;
+}
+
+// Replace the original daily closing logic, which deducted $10 every day.
+// Rent is collected only by the landlord's rent-day call.
+updateDay = function() {
+  if (dayStarted && !closing && millis() - startTime >= dayLength) {
+    closing = true;
+    showBag = false;
+    if (customerState === 'waiting') finishTrade();
+    else if (customerState === 'entering') customerState = 'leaving';
+    if (customerState === 'gone') {
+      shopkeeperState = 'leaving';
+      shopkeeperRouteIndex = shopkeeperRoute.length - 2;
+    }
+  }
+};
+
+// Day banner countdown only appears after the Day 7 surprise.
+let phoneOriginalDrawInfo = drawInfo;
+drawInfo = function() {
+  phoneOriginalDrawInfo();
+  if (dayNumber <= 7) return;
+  let remaining = 7 - (dayNumber % 7);
+  if (remaining === 7) remaining = 0;
+  // Small line beneath DAY X but within the existing day/money panel.
+  fill(74, 47, 30); textAlign(LEFT); textStyle(NORMAL);
+  textSize(12);
+  let label = remaining === 0 ? '(rent due today)' : '(' + remaining + ' days till rent)';
+  // Put countdown directly after the day number, not beside the money.
+  text(label, 88, 39);
+};
+
+// Hide upgrades until Day 3, without changing the PEOPLE button.
+let phoneOriginalTabs = shopDrawTabs;
+shopDrawTabs = function() {
+  if (showIntro || showReceipt || gameOver || closing) return;
+  drawButton('PEOPLE', 328, 12, 124, true, color(98, 67, 46));
+  if (dayNumber >= 3 && phoneSeen.upgrades && !phonePending && !phoneCall) {
+    drawButton('UPGRADES', 462, 12, 140, true, color(98, 67, 46));
+  }
+};
+
+
+function phoneBox() {
+  noStroke(); fill(0, 0, 0, 185); rect(0, 0, width, height);
+  pixelBoard(105, 65, 654, 455);
+  textAlign(CENTER); textStyle(BOLD); fill(97, 58, 36);
+  textSize(24); text('MR. PENNYWORTH', 432, 112);
+  textStyle(NORMAL);
+}
+function phoneDrawCall() {
+  phoneBox();
+  if (phoneCall === 'hello') {
+    fill(66, 43, 29);
+    textAlign(LEFT);
+    textStyle(NORMAL);
+    textSize(19);
+    text('Ah, you must be the new shopkeeper!', 190, 177);
+    text("Name's Mr. Pennyworth. I own this place,", 190, 212);
+    text("so I thought I'd give you a little welcome call.", 190, 247);
+    text('Take good care of the shop, will you?', 190, 301);
+    text("I'll be checking in from time to time!", 190, 336);
+    drawButton('CONTINUE', 330, 443, 204, true, color(70, 115, 65));
+
+  } else if (phoneCall === 'upgrades') {
+    fill(66, 43, 29);
+    textAlign(LEFT);
+    textStyle(NORMAL);
+    textSize(19);
+    text("How's business treating you?", 190, 170);
+    textSize(18);
+    text("I've got some improvements available for your shop.", 190, 214);
+    text("Take a look when you've got some spare cash!", 190, 254);
+
+    fill(65, 40, 28);
+    textAlign(CENTER);
+    textStyle(BOLD);
+    textSize(24);
+    text('NEW FEATURE UNLOCKED!', width / 2, 335);
+    textSize(21);
+    text('SHOP UPGRADES', width / 2, 374);
+    textStyle(NORMAL);
+    drawButton('CONTINUE', 330, 443, 204, true, color(70, 115, 65));
+
+  
+  } else if (phoneCall === 'rentReveal') {
+    fill(66, 43, 29);
+    textAlign(LEFT);
+    textStyle(NORMAL);
+    textSize(18);
+
+    text("Well, well! You've made it through your first week!", 170, 157);
+    text("I hope you've enjoyed my generosity.", 170, 193);
+    text("The first week was on the house!", 170, 229);
+    text("From now on, rent is due every seven days.", 170, 265);
+    text("$10 to start, with a 20% increase each week.", 170, 301);
+    text("Business is business!", 170, 337);
+
+    fill(65, 40, 28);
+    textAlign(CENTER);
+    textStyle(BOLD);
+    textSize(23);
+
+    text("NEW CHALLENGE UNLOCKED!", width / 2, 380);
+
+    textSize(20);
+    text("WEEKLY RENT", width / 2, 410);
+
+    textStyle(NORMAL);
+
+    drawButton("CONTINUE", 330, 443, 204,
+              true, color(70, 115, 65));
+  } else if (phoneCall === 'rent') {
+    let rent = phoneRentAmount(dayNumber);
+    fill(66, 43, 29); textAlign(LEFT); textStyle(NORMAL); textSize(19); text('Rent day! You owe me $' + rent + '.', 180, 145);
+    { fill(66, 43, 29); textAlign(LEFT); textStyle(NORMAL); textSize(16); text("I'll buy anything you choose at 80% of its usual value.", 135, 173, 590, 28); };
+    { fill(66, 43, 29); textAlign(LEFT); textStyle(NORMAL); textSize(16); text('Select items below, or sell nothing. Your call!', 135, 197, 590, 28); };
+    for (let i = 0; i < inventory.length && i < 8; i++) {
+      let x = 135 + (i % 2) * 297;
+      let y = 220 + floor(i / 2) * 44;
+      let entry = inventory[i];
+      let name = products[entry.product].name;
+      let price = products[entry.product].value * 0.8;
+      let chosen = phoneSelected.includes(i);
+      fill(chosen ? color(91, 137, 85) : color(180, 146, 104));
+      noStroke(); rect(x, y, 278, 36);
+      fill(chosen ? 255 : color(60, 38, 25));
+      textAlign(LEFT); textStyle(NORMAL); textSize(15);
+      text((chosen ? '[X] ' : '[ ] ') + name + '  $' + price.toFixed(2), x + 9, y + 23);
+    }
+    let total = phoneSaleTotal();
+    { fill(66, 43, 29); textAlign(LEFT); textStyle(NORMAL); textSize(17); text('Selected sale: $' + total.toFixed(2), 135, 420, 340, 28); };
+    drawButton('SELL SELECTED', 135, 460, 235, true, color(70, 115, 65));
+    drawButton('SELL NOTHING', 495, 460, 235, true, color(155, 83, 66));
+  } else if (phoneCall === 'hotline') {
+    { fill(66, 43, 29); textAlign(LEFT); textStyle(NORMAL); textSize(24); text('ORDERING HOTLINE', 143, 186, 570, 28); };
+    { fill(66, 43, 29); textAlign(LEFT); textStyle(NORMAL); textSize(20); text('Order one Apple for $8?', 143, 267, 570, 28); };
+    { fill(66, 43, 29); textAlign(LEFT); textStyle(NORMAL); textSize(17); text('Available bag space: ' + (shopCapacity() - inventory.length), 143, 310, 570, 28); };
+    drawButton('ORDER $8', 151, 420, 200, money >= 8 && inventory.length < shopCapacity(), color(70, 115, 65));
+    drawButton('CANCEL', 511, 420, 200, true, color(155, 83, 66));
+  }
+}
+function phoneSaleTotal() {
+  let total = 0;
+  for (let i of phoneSelected) total += products[inventory[i].product].value * 0.8;
+  return total;
+}
+function phonePayRent() {
+  let amount = phoneRentAmount(dayNumber);
+  money -= amount;
+  dailyLog.push({type:'RENT', amount:amount});
+  phonePaidToday = true;
+  if (money < 0) {
+    showReceipt = false;
+    gameOver = true;
+  }
+}
+function phoneSellSelection() {
+  let total = phoneSaleTotal();
+  phoneSelected.sort((a,b)=>b-a);
+  for (let i of phoneSelected) {
+    let product = products[inventory[i].product];
+    dailyLog.push({type:'SELL', name:product.name, amount:product.value * 0.8});
+    inventory.splice(i,1);
+  }
+  money += total;
+  phonePayRent();
+  phoneEndCall();
+}
+
+// Receipts no longer treat rent as a daily $10 charge.
+let phoneOriginalReceipt = drawReceipt;
+drawReceipt = function() {
+  phoneOriginalReceipt();
+  // Cover the original fixed-rent/net-profit rows, retaining the pixel board's cream color.
+  noStroke(); fill(221,191,143); rect(138, 414, 588, 64);
+  let rent = 0, income = 0, spending = 0;
+  for (let entry of dailyLog) {
+    if (entry.type === 'RENT') rent += entry.amount;
+    if (entry.type === 'SELL' || entry.type === 'DISCOUNT') income += entry.amount;
+    if (entry.type === 'BUY') spending += entry.amount;
+  }
+  fill(65,40,28); textStyle(NORMAL); textSize(14);
+  textAlign(LEFT); text('RENT',155,435);
+  textAlign(RIGHT); text(rent ? '-$'+rent.toFixed(2) : '$0',705,435);
+  textSize(16); textAlign(LEFT); text('NET PROFIT',155,468);
+  textAlign(RIGHT); let profit = income - spending - rent;
+  text((profit >= 0 ? '+' : '-') + '$' + abs(profit).toFixed(2),705,468);
+};
+
+let phoneOriginalDraw = draw;
+draw = function() {
+  phoneCheckEvents();
+  phoneOriginalDraw();
+  if (showIntro || gameOver) return;
+  // An easy-to-see 180px red telephone at the lower-right of the shop.
+  if (phoneSheet && ((!pawnTradeActive() && !shopMenu && !showReceipt && !pawnIntroType) || phonePending)) {
+    let frame = phonePending ? 1 + floor(frameCount / 9) % 3 : 0;
+    image(phoneSheet, phoneX, phoneY, phoneW, phoneH,
+          frame * 160, 0, 160, 160);
+  }
+  if (phonePending && !phoneCall) {
+    noStroke(); fill(0,0,0,130); rect(0,0,width,height);
+    if (phoneSheet) {
+      let frame = 1 + floor(frameCount / 9) % 3;
+      image(phoneSheet, phoneX,phoneY,phoneW,phoneH,frame*160,0,160,160);
+    }
+    pixelBoard(169,180,525,138);
+    fill(65,40,28); textAlign(CENTER); textStyle(BOLD); textSize(25);
+    text('RING! RING!',432,232);
+    textStyle(NORMAL); textSize(18);
+    text('Pick up the phone!',432,277);
+  }
+  if (phoneCall) phoneDrawCall();
+  if (phoneHint && millis() < phoneHintUntil && !phoneCall && !phonePending) {
+    fill(65,40,28); rect(540,351,310,34);
+    fill(255); textAlign(CENTER); textSize(14); text(phoneHint,695,373);
+  }
+};
+
+let phoneOriginalMouse = mousePressed;
+mousePressed = function() {
+  if (phonePending && !phoneCall) {
+    if (pawnHit(phoneX,phoneY,phoneW,phoneH)) {
+      phoneCall = phonePending;
+      phonePending = '';
+    }
+    return;
+  }
+  if (phoneCall) {
+    if (phoneCall === 'rent') {
+      for (let i = 0; i < inventory.length && i < 8; i++) {
+        let x = 135 + (i % 2) * 297;
+        let y = 220 + floor(i / 2) * 44;
+        if (pawnHit(x,y,278,36)) {
+          let pos = phoneSelected.indexOf(i);
+          if (pos === -1) phoneSelected.push(i);
+          else phoneSelected.splice(pos,1);
+          return;
+        }
+      }
+      if (pawnHit(135,460,235,32)) { phoneSellSelection(); return; }
+      if (pawnHit(495,460,235,32)) { phoneSelected=[]; phonePayRent();phoneEndCall();return; }
+    } else if (phoneCall === 'hotline') {
+      if (pawnHit(151,420,200,32)) {
+        if (money >= 8 && inventory.length < shopCapacity()) {
+          money -= 8; inventory.push({product:3,boughtFor:8});
+          dailyLog.push({type:'BUY',name:'Apple',amount:8});
+          phoneEndCall();
+        }
+        return;
+      }
+      if (pawnHit(511,420,200,32)) { phoneEndCall();return; }
+    } else if (pawnHit(330,443,204,32)) { phoneEndCall(); return; }
+    return;
+  }
+  if (showIntro || showReceipt || gameOver || closing || pawnIntroType) {
+    phoneOriginalMouse(); return;
+  }
+  // Block the hidden upgrade tab until the Day 3 call has finished.
+  if (dayNumber < 3 && pawnHit(462,12,140,32)) return;
+  if (pawnHit(phoneX,phoneY,phoneW,phoneH) && !pawnTradeActive() && !shopMenu) {
+    if (shopUpgrades[4]) {
+      phoneSavedPause = !gamePaused;
+      if (phoneSavedPause) togglePause();
+      phoneCall = 'hotline';
+    } else {
+      phoneHint='ORDERING HOTLINE LOCKED'; phoneHintUntil=millis()+2200;
+    }
+    return;
+  }
+  phoneOriginalMouse();
+};
+
+let phoneOriginalRestart = restartGame;
+restartGame = function() {
+  phoneOriginalRestart();
+  phonePending='';phoneCall='';phoneSelected=[];
+  phoneSeen={hello:false, upgrades:false, rentReveal:false};
+  phoneSavedPause=false;phonePaidToday=false;
+};
+
+// Ensure each rent day is handled only once even if the receipt stays open.
+let phoneOriginalNextDay = moveShopkeeper;
+moveShopkeeper = function() {
+  let before = dayNumber;
+  phoneOriginalNextDay();
+  if (dayNumber !== before) phonePaidToday = false;
+};
+
+// ------------------------------------------------------------
+// DEVELOPMENT TEST MODE (turn OFF before submitting the game)
+// Set to false when you no longer need the shortcuts.
+// ------------------------------------------------------------
+let DEV_TEST_MODE = true;
+let testPanelVisible = false;
+
+// Enter a chosen day with a clean shop. Current money and inventory stay intact.
+function testJumpToDay(day) {
+  if (phonePending || phoneCall) return; // Finish incoming calls first.
+  if (pawnIntroType) pawnCloseIntro();
+  if (shopMenu) shopCloseMenu();
+  // Clear a pause from a previous screen without changing the clock math.
+  gamePaused = false;
+  showIntro = false;
+  showReceipt = false;
+  showBag = false;
+  showBudgetWarning = false;
+  gameOver = false;
+  closing = false;
+  customerState = 'gone';
+  currentTrade = undefined;
+  selectedItems = [];
+  pawnVisitor = null;
+  dayNumber = day;
+  dayStarted = true;
+  startTime = millis();
+  nextArrival = millis() + 6000;
+  nextMorning = 0;
+  shopkeeperState = 'working';
+  shopkeeperX = 710;
+  shopkeeperY = 260;
+  phonePaidToday = false;
+  dailyLog = [];
+  // Prior announcements are logically unlocked when jumping beyond them.
+  if (day > 1) phoneSeen.hello = true;
+  if (day > 3) phoneSeen.upgrades = true;
+  if (day > 7) phoneSeen.rentReveal = true;
+  if (day === 3) phoneSeen.upgrades = false; // Test the unlock call.
+  if (day === 7) phoneSeen.rentReveal = false; // Test the reveal at closing.
+}
+
+// Close the day immediately and open its receipt. Phone events work normally.
+function testEndDay() {
+  if (showIntro || phonePending || phoneCall || pawnIntroType || gameOver) return;
+  if (shopMenu) shopCloseMenu();
+  gamePaused = false;
+  showBag = false;
+  showBudgetWarning = false;
+  customerState = 'gone';
+  currentTrade = undefined;
+  selectedItems = [];
+  closing = true;
+  dayStarted = false;
+  shopkeeperState = 'gone';
+  showReceipt = true;
+}
+
+// Small on-screen keyboard reference; no mouse controls to clash with trading.
+function drawTestPanel() {
+  if (!DEV_TEST_MODE || !testPanelVisible) return;
+  push();
+  noStroke(); fill(40, 29, 25, 235); rect(216, 100, 433, 170);
+  fill(255); textFont('Pixelify Sans'); textAlign(LEFT); textStyle(NORMAL);
+  textSize(20); text('DEV TEST MODE', 234, 130);
+  textSize(16);
+  text('N = next day     E = end today', 234, 160);
+  text('3 = Day 3       7 = Day 7', 234, 187);
+  text('8 = Day 8       0 = Day 14', 234, 214);
+  text('T = hide/show    (not for release)', 234, 244);
+  pop();
+}
+
+let testPreviousDraw = draw;
+draw = function() {
+  testPreviousDraw();
+  drawTestPanel();
+};
+
+let testPreviousKeyPressed = typeof keyPressed === 'function' ? keyPressed : null;
+keyPressed = function() {
+  if (DEV_TEST_MODE) {
+    let k = String(key).toLowerCase();
+    if (k === 't') { testPanelVisible = !testPanelVisible; return false; }
+    if (testPanelVisible) {
+      if (k === 'n') testJumpToDay(dayNumber + 1);
+      else if (k === 'e') testEndDay();
+      else if (k === '3') testJumpToDay(3);
+      else if (k === '7') testJumpToDay(7);
+      else if (k === '8') testJumpToDay(8);
+      else if (k === '0') testJumpToDay(14);
+      else if (testPreviousKeyPressed) return testPreviousKeyPressed();
+      return false;
+    }
+  }
+  if (testPreviousKeyPressed) return testPreviousKeyPressed();
+};
