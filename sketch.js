@@ -2470,6 +2470,9 @@ function phoneSellSelection() {
 // Receipts no longer treat rent as a daily $10 charge.
 let phoneOriginalReceipt = drawReceipt;
 drawReceipt = function() {
+  // The weekly receipt waits until Mr. Pennyworth's call is finished.
+  // Keep showReceipt true so it appears as soon as the phone closes.
+  if (phonePending || phoneCall) return;
   phoneOriginalReceipt();
   // Cover the original fixed-rent/net-profit rows, retaining the pixel board's cream color.
   noStroke(); fill(221,191,143); rect(138, 414, 588, 64);
