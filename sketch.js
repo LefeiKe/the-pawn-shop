@@ -222,55 +222,6 @@ async function setup() {
   pawnReady = true;
 }
 
-function drawBase() {
-    background(0);
-
-    if (!shopBg || !shopkeeper || !pawnReady || !phoneSheet) {
-        return;
-    }
-
-    image(shopBg, 0, 0, width, height);
-
-    if (!showIntro && !gamePaused && !showReceipt && !gameOver) {
-      updateDay();
-      moveShopkeeper();
-      moveCustomer();
-    }
-    
-    drawCharacters();
-    
-    drawInfo();
-    drawClock();
-    drawPauseButton();
-    drawBagIcon();
-
-    if (showBag) {
-        drawBag();
-    }
-
-    if (closing) {
-        fill(255);
-        textAlign(CENTER);
-        textSize(24);
-        text("SHOP CLOSED", width / 2, 200);
-    }
-
-    if (showBudgetWarning) {
-        drawBudgetWarning();
-    }
-
-    if (showReceipt) {
-        drawReceipt();
-    }
-
-    if (showIntro) {
-        drawIntro();
-    }
-
-    if (gameOver) {
-        drawGameOver();
-    }
-}
 
     
 
@@ -349,16 +300,6 @@ function drawIntro() {
   
 
 // Day and money
-function drawInfoBase() {
-    pixelBoard(10, 10, 208, 76);
-
-    fill(65, 40, 28);
-    textAlign(LEFT);
-    textSize(15);
-
-    text("DAY " + dayNumber, 24, 40);
-    text("MONEY $" + money.toFixed(2), 24, 63);
-}
 
 // Clock from 8 AM to midnight
 function drawClock() {
@@ -447,34 +388,6 @@ function drawBagIcon() {
 }
 
 // Inventory window
-function drawBagBase() {
-    pixelBoard(125, 100, 610, 370);
-
-    fill(65, 40, 28);
-    textAlign(LEFT);
-    textSize(18);
-
-    text("YOUR BAG (" + inventory.length + "/" + bagLimit + ")", 151, 139);
-
-    textSize(14);
-
-    if (inventory.length === 0) {
-        text("Your bag is empty.", 151, 182);
-    }
-
-    for (let i = 0; i < inventory.length; i++) {
-        let entry = inventory[i];
-        let item = products[entry.product];
-
-        text(
-            item.name + " / " + item.category +
-            " / $" + entry.boughtFor.toFixed(2),
-            151, 178 + i * 39
-        );
-    }
-
-    text("CLICK BAG TO CLOSE", 151, 439);
-}
 
 function drawGameOver() {
 
@@ -502,195 +415,7 @@ function drawGameOver() {
              color(70, 115, 65));
 }
 
-function restartGameBase() {
 
-  // Reset money and inventory
-  money = 150;
-  inventory = [];
-  dailyLog = [];
-
-  // Reset day and time
-  dayNumber = 1;
-  dayStarted = false;
-  closing = false;
-  startTime = 0;
-  nextArrival = 0;
-  nextMorning = 0;
-
-  // Reset shopkeeper
-  shopkeeperActor.reset();
-
-  // Reset customer
-  currentCustomer = new Customer("", "", null, null);
-  currentCustomer.state = "gone";
-  customerNumber = 0;
-
-  // Reset trading
-  currentTrade = undefined;
-  selectedItems = [];
-  message = "";
-
-  // Reset screens
-  showBag = false;
-  showReceipt = false;
-  showBudgetWarning = false;
-  gamePaused = false;
-  pauseStart = 0;
-  gameOver = false;
-
-  // Return to introduction screen
-  showIntro = true;
-}
-
-function drawReceiptBase() {
-
-  // Darken background
-  noStroke();
-  fill(0, 0, 0, 170);
-  rect(0, 0, width, height);
-
-  pixelBoard(125, 35, 614, 495);
-
-  fill(65, 40, 28);
-  textAlign(CENTER);
-  textSize(18);
-  text("DAY " + dayNumber + " RECEIPT", 432, 72);
-
-  let boughtItems = {};
-  let soldItems = {};
-
-  let totalBought = 0;
-  let totalSold = 0;
-  let budgetAdjustment = 0;
-
-  // Group records by product
-  for (let entry of dailyLog) {
-
-      if (entry.type === "BUY") {
-
-          let name = entry.name;
-
-          if (!boughtItems[name]) {
-              boughtItems[name] = { count: 0, total: 0 };
-          }
-
-          boughtItems[name].count++;
-          boughtItems[name].total += entry.amount;
-          totalBought += entry.amount;
-      }
-
-      else if (entry.type === "SELL") {
-
-          let name = entry.name;
-
-          if (!soldItems[name]) {
-              soldItems[name] = { count: 0, total: 0 };
-          }
-
-          soldItems[name].count++;
-          soldItems[name].total += entry.amount;
-          totalSold += entry.amount;
-      }
-
-      else if (entry.type === "DISCOUNT") {
-          budgetAdjustment += entry.amount;
-          totalSold += entry.amount;
-      }
-  }
-
-  textAlign(LEFT);
-  textSize(14);
-
-  // BOUGHT
-  text("BOUGHT", 155, 112);
-
-  textAlign(RIGHT);
-  text("-$" + totalBought.toFixed(2), 705, 112);
-
-  let y = 137;
-  textSize(12);
-
-  for (let name in boughtItems) {
-
-      let item = boughtItems[name];
-
-      textAlign(LEFT);
-      text(name + " x" + item.count, 165, y);
-
-      textAlign(RIGHT);
-      text("-$" + abs(item.total).toFixed(2), 705, y);
-
-      y += 19;
-  }
-
-  if (Object.keys(boughtItems).length === 0) {
-      textAlign(LEFT);
-      text("None", 165, y);
-  }
-
-  // SOLD
-  y = 265;
-
-  fill(65, 40, 28);
-  textAlign(LEFT);
-  textSize(14);
-  text("SOLD", 155, y);
-
-  textAlign(RIGHT);
-  text("+$" + totalSold.toFixed(2), 705, y);
-
-  y += 25;
-  textSize(12);
-
-  for (let name in soldItems) {
-
-      let item = soldItems[name];
-
-      textAlign(LEFT);
-      text(name + " x" + item.count, 165, y);
-
-      textAlign(RIGHT);
-      text("+$" + item.total.toFixed(2), 705, y);
-
-      y += 19;
-  }
-
-  if (Object.keys(soldItems).length === 0) {
-      textAlign(LEFT);
-      text("None", 165, y);
-  }
-
-  // Budget adjustments for discounted sales
-  if (budgetAdjustment < 0) {
-      textAlign(LEFT);
-      text("Budget adjustment", 165, y);
-
-      textAlign(RIGHT);
-      text("-$" + abs(budgetAdjustment).toFixed(2), 705, y);
-  }
-
-  // Daily operating fee
-  textAlign(LEFT);
-  textSize(14);
-  text("SHOP OPERATION / RENT", 155, 433);
-
-  textAlign(RIGHT);
-  text("-$10.00", 705, 433);
-
-  // Net cash profit
-  let profit = totalSold - totalBought - 10;
-
-  textSize(15);
-  textAlign(LEFT);
-  text("NET PROFIT", 155, 466);
-
-  textAlign(RIGHT);
-  text((profit >= 0 ? "+" : "-") +
-       "$" + abs(profit).toFixed(2), 705, 466);
-
-  drawButton("CLOSE", 340, 483, 184, true,
-             color(70, 115, 65));
-}
 
 
 // Check whether the shop should close
@@ -698,73 +423,12 @@ function drawReceiptBase() {
 
 // Shopkeeper enters in the morning and leaves at night
 
-function moveShopkeeperBase() {
-  let previousState = shopkeeperActor.state;
-  shopkeeperActor.move();
-
-  if (previousState === "entering" && shopkeeperActor.state === "working") {
-    dayStarted = true;
-    startTime = millis();
-    scheduleCustomer();
-  }
-  if (previousState === "leaving" && shopkeeperActor.state === "gone") {
-    if (money < 0) gameOver = true;
-    else showReceipt = true;
-  }
-
-  if (shopkeeperActor.state === "gone" && closing && millis() >= nextMorning) {
-    dayNumber++;
-    dayStarted = false;
-    closing = false;
-    dailyLog = [];
-    shopkeeperActor.reset();
-  }
-}
 
 
 // Random delay between customers
-function scheduleCustomerBase() {
-    nextArrival = millis() + random(1500, 5000);
-}
 
 // Random customer and transaction
 
-function generateCustomerBase() {
-
-
-  let itemIndex = floor(random(products.length));
-  let type = random(["sell", "category"]);
-
-  // Buyer offers 5% to 20% above original value
-  let markup = random(1.05, 1.20);
-
-  currentTrade = {
-      type: type,
-      product: itemIndex,
-      category: products[itemIndex].category,
-      markup: markup,
-      budget: floor(random(25, 101)),
-      items: []
-  };
-
-  if (type === "sell") {
-
-      // Seller brings 1 to 3 items
-      let quantity = floor(random(1, 4));
-
-      for (let i = 0; i < quantity; i++) {
-          let productIndex = floor(random(products.length));
-          currentTrade.items.push(productIndex);
-      }
-  }
-
-  selectedItems = [];
-
-  customerNumber++;
-
-
-  message = "";
-}
 
 
 // Customer enters, stops, and exits
@@ -866,53 +530,11 @@ function drawBudgetWarning() {
 
 
 
-function completeBuyerSaleBase() {
-
-  let expected = selectedTotal();
-  let actual = min(expected, currentTrade.budget);
-
-  // Record each sold item
-  for (let index of selectedItems) {
-
-      let productIndex = inventory[index].product;
-
-      dailyLog.push({
-          type: "SELL",
-          name: products[productIndex].name,
-          amount: buyerPrice(productIndex)
-      });
-  }
-
-  // Record any discount caused by buyer's budget
-  if (actual < expected) {
-      dailyLog.push({
-          type: "DISCOUNT",
-          amount: Number((actual - expected).toFixed(2))
-      });
-  }
-
-  // Receive money
-  money += actual;
-
-  // Remove sold items from inventory
-  selectedItems.sort((a, b) => b - a);
-
-  for (let index of selectedItems) {
-      inventory.splice(index, 1);
-  }
-
-  showBudgetWarning = false;
-  finishTrade();
-}
 
 
 
 
 // Price a buyer offers for one item
-function buyerPriceBase(productIndex) {
-  let original = products[productIndex].value;
-  return Number((original * currentTrade.markup).toFixed(2));
-}
 
 // Inventory items available to this buyer
 
@@ -948,16 +570,6 @@ function selectedTotal() {
 }
 
 // Total cost of a seller's bundle
-function bundleTotalBase() {
-
-  let total = 0;
-
-  for (let index of currentTrade.items) {
-      total += products[index].value;
-  }
-
-  return total;
-}
 
 // Customer dialogue board
 
@@ -1044,15 +656,10 @@ function drawBoard() {
 
 
 // Complete a transaction
-function finishTradeBase() {
-  currentCustomer.leave();
-  selectedItems = [];
-  message = "";
-}
 
 // Handle mouse clicks
 
-function mousePressedBase() {
+function handleBasicClick() {
   // Game over restart button
   if (gameOver) {
 
@@ -1364,27 +971,7 @@ function pawnTradeActive() {
 
 
 // Preserve customer route + original trade generation; replace random sprite.
-function generateProfileCustomer() {
-  generateCustomerBase();
-  if (!pawnReady) return;
-  pawnVisitor = pawnPickVisitor();
-  currentCustomer = new Customer(
-    pawnVisitor.name, pawnVisitor.type,
-    pawnSprites[pawnVisitor.name], pawnPortraits[pawnVisitor.name]
-  );
-  pawnMessage = '';
-  pawnConversation = pawnNewConversation();
-  // Collector has more to spend; bargain hunters have less.
-  if (pawnVisitor.type === 'Collector') {
-    currentTrade.budget = floor(currentTrade.budget * 1.5);
-    currentTrade.markup *= 1.1;
-  }
-  if (pawnVisitor.type === 'Bargain') {
-    currentTrade.budget = floor(currentTrade.budget * 0.85);
-    currentTrade.markup *= 0.93;
-  }
-  selectedItems = [];
-};
+;
 
 // Panel with safe padding, fixed positions and no text running off the canvas.
 function pawnPanel(x,y,w,h) {
@@ -1425,61 +1012,16 @@ function pawnPortrait() {
   fill(199,139,60);rect(43,449,205*pawnScore()/100,14);
   { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(16); text(pawnScore() + ' / 100', 43, 488); };
 }
-function pawnTradeBoardBase() {
-  pawnRows = [];
-  fill(0,0,0,158); noStroke(); rect(0,0,width,height);
-  pawnPortrait();
-  pawnPanel(280,95,562,458);
-  pawnPanel(300,112,520,66);
-  let greeting = pawnConversation || 'WELCOME TO THE PAWN SHOP.';
-  { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(20); text(greeting, 319, 135, 477, 28); };
-  if (currentTrade.type === 'sell') {
-    { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(16); text('SELLER OFFERS ' + currentTrade.items.length + ' ITEMS', 310, 207); };
-    { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(16); text('TOTAL: $' + bundleTotal().toFixed(2), 310, 229); };
-    let items = currentTrade.items;
-    for (let i=0; i<items.length && i<4; i++) {
-      let product = products[items[i]];
-      pawnPanel(306,242+i*47,504,44);
-      { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(16); text(product.name.toUpperCase(), 324, 268+i*47); };
-      { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(15); textAlign(RIGHT); text('$' + product.value.toFixed(2), 790, 268 + i * 47); };
-    }
-    let canBuy = inventory.length + items.length <= bagLimit && money >= bundleTotal();
-    pawnButton('BUY ALL',312,489,152,canBuy,color(60,112,67));
-  } else {
-    { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(16); text('WANTS: ' + currentTrade.category.toUpperCase(), 310, 207); };
-    { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(15); text('BUDGET $'+currentTrade.budget+' | SELECTED $'+selectedTotal().toFixed(2), 310, 229, 480, 28); };
-    let entries = availableItems();
-    for(let i=0; i<entries.length && i<4; i++) {
-      let idx=entries[i];let item=products[inventory[idx].product];
-      let y=242+i*47;
-      pawnPanel(306,y,504,44);
-      let checked=selectedItems.includes(idx);
-      { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(14); text((checked?'[X] ':'[ ] ')+item.name.toUpperCase(), 324, y+26); };
-      { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(15); textAlign(RIGHT); text('$' + buyerPrice(inventory[idx].product).toFixed(2), 790, y + 26); };
-      pawnRows.push({index:idx,x:306,y:y,w:504,h:44});
-    }
-    if(entries.length===0) { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(14); text('NO MATCHING ITEMS IN BAG', 324, 275); };
-    if(entries.length>4) { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(12); text('SHOWING FIRST 4 MATCHING ITEMS', 324, 455); };
-    pawnButton('SELL',312,489,152,selectedItems.length>0,color(60,112,67));
-  }
-  pawnButton('REJECT',651,489,152,true,color(156,63,52));
-  { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(12); text(pawnMessage.substring(0,50), 310, 468); };
-}
-function drawCustomerLayer() {
-  drawBase();
-  if(pawnTradeActive()) pawnTradeBoard();
-  pawnStartIntroIfNeeded();
-  if (pawnIntroType) pawnDrawIntro();
-};
+;
 
 // New trade board interactions; all unrelated input still uses existing handler.
-function mouseCustomerLayer() {
+function handleCustomerClick() {
   if (pawnIntroType) {
     if (pawnHit(333,381,198,36)) pawnCloseIntro();
     return;
   }
-  if(!pawnTradeActive()) {mousePressedBase();return;}
-  if(gamePaused || showBag) {mousePressedBase();return;}
+  if(!pawnTradeActive()) {handleBasicClick();return;}
+  if(gamePaused || showBag) {handleBasicClick();return;}
   // Reject current customer.
   if(pawnHit(651,489,152,36)) {
     pawnChangeScore(-1);
@@ -1514,18 +1056,8 @@ function mouseCustomerLayer() {
     }
   }
 };
-function completeRelationshipSale() {
-  completeBuyerSaleBase();pawnChangeScore(3);
-};
-function restartCustomerLayer() {
-  restartGameBase();
-  pawnRelationship = {Regular:50,Bargain:50,Collector:50,Suspicious:50};
-  pawnVisitor=null;pawnMessage='';pawnRows=[];
-  pawnIntroSeen={Regular:false,Bargain:false,Collector:false,Suspicious:false};
-  pawnIntroType='';pawnIntroPausedGame=false;pawnConversation='';
-  pawnUnlockedTypes={Regular:true,Bargain:false,Collector:false,Suspicious:false};
-  pawnNewTypeDay=-1;
-};
+;
+;
 
 
 ;
@@ -1557,7 +1089,7 @@ let shopTradeMultiplier = 1;
 
 // One centralized capacity check. Used by the trading UI and bag.
 // Fix a score of 0 displaying as 50 in the earlier customer UI.
-function pawnScoreUpdated() {
+function pawnScore() {
   if (!pawnVisitor) return 50;
   return pawnRelationship[pawnVisitor.type];
 };
@@ -1589,12 +1121,6 @@ function shopMenuCard(x, y, w, h) {
 // Same simple text helper used by the menu screens.
 
 
-function shopDrawTabsBase() {
-  // Draw HUD tabs only during normal play, not in intro/receipt etc.
-  if (showIntro || showReceipt || gameOver || closing) return;
-  drawButton("PEOPLE", 328, 12, 124, true, color(98, 67, 46));
-  drawButton("UPGRADES", 462, 12, 140, true, color(98, 67, 46));
-}
 
 function shopDrawPeople() {
   noStroke(); fill(0, 0, 0, 175); rect(0, 0, width, height);
@@ -1641,79 +1167,19 @@ function shopDrawUpgrades() {
 }
 
 // Save prior wrappers, so customer movement and trade logic continue to run.
-function drawShopLayer() {
-  drawCustomerLayer();
-  if (showIntro || showReceipt || gameOver) return;
-  if (pawnIntroType) return;
-  shopDrawTabs();
-  if (shopMenu === "people") shopDrawPeople();
-  if (shopMenu === "upgrades") shopDrawUpgrades();
-};
+;
 
-function generateShopCustomer() {
-  generateProfileCustomer();
-  shopBargained = false;
-  shopTradeMultiplier = 1;
-  if (pawnVisitor && pawnVisitor.type !== "Inspector") {
-    let score = pawnRelationship[pawnVisitor.type];
-    // Small, predictable relationship discount/bonus for sales.
-    currentTrade.markup *= 1 + (score - 50) * 0.002;
-  }
-};
+;
 
-function buyerPriceWithUpgrade(index) {
-  let price = buyerPriceBase(index);
-  if (shopUpgrades[2]) price *= 1.05;
-  return Number(price.toFixed(2));
-};
-function bundleTotalWithUpgrade() {
-  return Number((bundleTotalBase() * shopTradeMultiplier).toFixed(2));
-};
-function scheduleCustomerWithAdvertising() {
-  scheduleCustomerBase();
-  if (shopUpgrades[3]) nextArrival = millis() + random(1000, 3200);
-};
+;
+;
+;
 
-function drawExpandedBag() {
-  drawBagBase();
-  // Original bag title uses bagLimit; cover only its title with a corrected one.
-  fill(221, 191, 143); noStroke(); rect(146, 116, 537, 31);
-  { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(20); text("YOUR BAG (" + inventory.length + "/" + shopCapacity() + ")", 151, 139); };
-};
+;
 
 // Supplement customer_ui's trade screen, without changing its portrait layout.
-function pawnTradeBoardWithBargain() {
-  pawnTradeBoardBase();
-  if (!pawnTradeActive()) return;
+;
 
-  if (shopUpgrades[0]) {
-    // Show bundle's base value or buyer's requested category reference.
-    let value = 0;
-    if (currentTrade.type === "sell") {
-      for (let idx of currentTrade.items) value += products[idx].value;
-    } else value = products[currentTrade.product].value;
-    { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(14); text("CATALOG VALUE: $" + value.toFixed(2), 501, 230); };
-  }
-  if (pawnScore() >= 60 && !shopBargained) {
-    pawnButton("BARGAIN", 481, 489, 152, true, color(157, 113, 55));
-  }
-};
-
-function shopTryBargainBase() {
-  if (pawnScore() < 60 || shopBargained || !currentTrade) return;
-  shopBargained = true;
-  let chance = 0.5 + (pawnScore() - 60) * 0.005;
-  if (pawnVisitor.type === "Bargain") chance -= 0.12;
-  if (random() < chance) {
-    if (currentTrade.type === "sell") shopTradeMultiplier *= 0.9;
-    else currentTrade.markup *= 1.1;
-    pawnChangeScore(2);
-    pawnMessage = "COUNTEROFFER ACCEPTED!";
-  } else {
-    pawnChangeScore(-5);
-    pawnMessage = "COUNTEROFFER REJECTED!";
-  }
-}
 function shopBuyUpgrade(i) {
   if (shopUpgrades[i] || money < shopUpgradePrices[i]) return;
   money -= shopUpgradePrices[i];
@@ -1721,8 +1187,8 @@ function shopBuyUpgrade(i) {
   shopMessage = shopUpgradeTitles[i] + " UNLOCKED";
 }
 
-function mouseShopLayer() {
-  if (pawnIntroType) { mouseCustomerLayer(); return; }
+function handleShopClick() {
+  if (pawnIntroType) { handleCustomerClick(); return; }
   if (shopMenu !== "") {
     if (shopMenu === "people") {
       if (pawnHit(347, 462, 170, 32)) shopCloseMenu();
@@ -1771,18 +1237,10 @@ function mouseShopLayer() {
     finishTrade();
     return;
   }
-  mouseCustomerLayer();
+  handleCustomerClick();
 };
 
-function restartShopLayer() {
-  restartCustomerLayer();
-  shopMenu = "";
-  shopMenuPaused = false;
-  shopUpgrades = [false, false, false, false, false];
-  shopMessage = "";
-  shopBargained = false;
-  shopTradeMultiplier = 1;
-};
+;
 
 
 ;
@@ -2051,75 +1509,35 @@ function chooseCustomerLine(kind) {
 }
 
 // Replaces ONLY the words chosen for the existing speech line.
-function pawnNewConversationUpdated() {
+function pawnNewConversation() {
   return chooseCustomerLine(currentTrade.type === 'sell' ? 'sell' : 'category');
 };
 
 // Handle bargaining outcomes after the original bargaining calculation.
-function shopTryBargainWithDialogue() {
-  let before = shopBargained;
-  let oldScore = pawnScore();
-  shopTryBargainBase();
-  if (!before && shopBargained) {
-    let succeeded = pawnScore() > oldScore;
-    pawnConversation = chooseCustomerLine(succeeded ? 'bargainYes' : 'bargainNo');
-    // Preserve the text panel layout; use its existing message line for status only.
-    pawnMessage = succeeded ? 'BARGAIN ACCEPTED' : 'BARGAIN REJECTED';
-  }
-};
+;
 
 // Show one brief, customer-only parting remark over the *existing* shop scene.
-function finishTradeWithDialogue() {
-  if (pawnVisitor) {
-    customerReaction = chooseCustomerLine(customerDialogueOutcome);
-    customerReactionUntil = millis() + 2200;
-  }
-  customerDialogueOutcome = 'rejected';
-  finishTradeBase();
-};
+;
 
 // Detect completed sales without replacing the existing money/inventory logic.
-function completeDialogueSale() {
-  customerDialogueOutcome = 'accepted';
-  completeRelationshipSale();
-};
+;
 
 // Observe the previous game actions so successful purchase has a parting line.
-function mouseDialogueLayer() {
+function handleTradeClick() {
   let active = pawnTradeActive() && !gamePaused && !showBag && !pawnIntroType && shopMenu === '';
   let buyingFromCustomer = active && currentTrade.type === 'sell';
   let payButton = buyingFromCustomer && pawnHit(312, 489, 152, 36);
   let eligible = payButton && money >= bundleTotal() &&
     inventory.length + currentTrade.items.length <= shopCapacity();
   if (eligible) customerDialogueOutcome = 'accepted';
-  mouseShopLayer();
+  handleShopClick();
   // If transaction did not actually end, discard speculative outcome.
   if (eligible && currentCustomer.state === 'waiting') customerDialogueOutcome = 'rejected';
 };
 
-function drawDialogueLayer() {
-  drawShopLayer();
-  if (customerReaction && millis() < customerReactionUntil &&
-      !showIntro && !showReceipt && !gameOver && !pawnTradeActive() && !pawnIntroType) {
-    // Compact text only; does not replace or restyle any original game screen.
-    push();
-    textAlign(CENTER);
-    textSize(12);
-    stroke(30, 20, 15);
-    strokeWeight(3);
-    fill(255);
-    text(customerReaction, width / 2, height - 75);
-    pop();
-  }
-};
+;
 
-function restartDialogueLayer() {
-  restartShopLayer();
-  lastCustomerDialogue = '';
-  customerReaction = '';
-  customerReactionUntil = 0;
-  customerDialogueOutcome = 'rejected';
-};
+;
 
 
 ;
@@ -2184,7 +1602,7 @@ function phoneEndCall() {
 
 // Replace the original daily closing logic, which deducted $10 every day.
 // Rent is collected only by the landlord's rent-day call.
-function updateDayUpdated() {
+function updateDay() {
   if (dayStarted && !closing && millis() - startTime >= dayLength) {
     closing = true;
     showBag = false;
@@ -2198,27 +1616,10 @@ function updateDayUpdated() {
 };
 
 // Day banner countdown only appears after the Day 7 surprise.
-function drawInfoWithRent() {
-  drawInfoBase();
-  if (dayNumber <= 7) return;
-  let remaining = 7 - (dayNumber % 7);
-  if (remaining === 7) remaining = 0;
-  // Small line beneath DAY X but within the existing day/money panel.
-  fill(74, 47, 30); textAlign(LEFT); textStyle(NORMAL);
-  textSize(12);
-  let label = remaining === 0 ? '(rent due today)' : '(' + remaining + ' days till rent)';
-  // Put countdown directly after the day number, not beside the money.
-  text(label, 88, 39);
-};
+;
 
 // Hide upgrades until Day 3, without changing the PEOPLE button.
-function shopDrawTabsUnlocked() {
-  if (showIntro || showReceipt || gameOver || closing) return;
-  drawButton('PEOPLE', 328, 12, 124, true, color(98, 67, 46));
-  if (dayNumber >= 3 && phoneSeen.upgrades && !phonePending && !phoneCall) {
-    drawButton('UPGRADES', 462, 12, 140, true, color(98, 67, 46));
-  }
-};
+;
 
 
 function phoneBox() {
@@ -2349,57 +1750,11 @@ function phoneSellSelection() {
 }
 
 // Receipts no longer treat rent as a daily $10 charge.
-function drawReceiptWithRent() {
-  // The weekly receipt waits until Mr. Pennyworth's call is finished.
-  // Keep showReceipt true so it appears as soon as the phone closes.
-  if (phonePending || phoneCall) return;
-  drawReceiptBase();
-  // Cover the original fixed-rent/net-profit rows, retaining the pixel board's cream color.
-  noStroke(); fill(221,191,143); rect(138, 414, 588, 64);
-  let rent = 0, income = 0, spending = 0;
-  for (let entry of dailyLog) {
-    if (entry.type === 'RENT') rent += entry.amount;
-    if (entry.type === 'SELL' || entry.type === 'DISCOUNT') income += entry.amount;
-    if (entry.type === 'BUY') spending += entry.amount;
-  }
-  fill(65,40,28); textStyle(NORMAL); textSize(14);
-  textAlign(LEFT); text('RENT',155,435);
-  textAlign(RIGHT); text(rent ? '-$'+rent.toFixed(2) : '$0',705,435);
-  textSize(16); textAlign(LEFT); text('NET PROFIT',155,468);
-  textAlign(RIGHT); let profit = income - spending - rent;
-  text((profit >= 0 ? '+' : '-') + '$' + abs(profit).toFixed(2),705,468);
-};
+;
 
-function drawPhoneLayer() {
-  phoneCheckEvents();
-  drawDialogueLayer();
-  if (showIntro || gameOver) return;
-  // An easy-to-see 180px red telephone at the lower-right of the shop.
-  if (phoneSheet && ((!pawnTradeActive() && !shopMenu && !showReceipt && !pawnIntroType) || phonePending)) {
-    let frame = phonePending ? 1 + floor(frameCount / 9) % 3 : 0;
-    image(phoneSheet, phoneX, phoneY, phoneW, phoneH,
-          frame * 160, 0, 160, 160);
-  }
-  if (phonePending && !phoneCall) {
-    noStroke(); fill(0,0,0,130); rect(0,0,width,height);
-    if (phoneSheet) {
-      let frame = 1 + floor(frameCount / 9) % 3;
-      image(phoneSheet, phoneX,phoneY,phoneW,phoneH,frame*160,0,160,160);
-    }
-    pixelBoard(169,180,525,138);
-    fill(65,40,28); textAlign(CENTER); textStyle(BOLD); textSize(25);
-    text('RING! RING!',432,232);
-    textStyle(NORMAL); textSize(18);
-    text('Pick up the phone!',432,277);
-  }
-  if (phoneCall) phoneDrawCall();
-  if (phoneHint && millis() < phoneHintUntil && !phoneCall && !phonePending) {
-    fill(65,40,28); rect(540,351,310,34);
-    fill(255); textAlign(CENTER); textSize(14); text(phoneHint,695,373);
-  }
-};
+;
 
-function mousePhoneLayer() {
+function mousePressed() {
   if (phonePending && !phoneCall) {
     if (pawnHit(phoneX,phoneY,phoneW,phoneH)) {
       phoneCall = phonePending;
@@ -2435,7 +1790,7 @@ function mousePhoneLayer() {
     return;
   }
   if (showIntro || showReceipt || gameOver || closing || pawnIntroType) {
-    mouseDialogueLayer(); return;
+    handleTradeClick(); return;
   }
   // Block the hidden upgrade tab until the Day 3 call has finished.
   if (dayNumber < 3 && pawnHit(462,12,140,32)) return;
@@ -2449,22 +1804,13 @@ function mousePhoneLayer() {
     }
     return;
   }
-  mouseDialogueLayer();
+  handleTradeClick();
 };
 
-function restartPhoneLayer() {
-  restartDialogueLayer();
-  phonePending='';phoneCall='';phoneSelected=[];
-  phoneSeen={hello:false, upgrades:false, rentReveal:false};
-  phoneSavedPause=false;phonePaidToday=false;
-};
+;
 
 // Ensure each rent day is handled only once even if the receipt stays open.
-function moveShopkeeperWithRent() {
-  let before = dayNumber;
-  moveShopkeeperBase();
-  if (dayNumber !== before) phonePaidToday = false;
-};
+;
 
 // ------------------------------------------------------------
 // DEVELOPMENT TEST MODE (turn OFF before submitting the game)
@@ -2539,10 +1885,7 @@ function drawTestPanel() {
   pop();
 }
 
-function drawTestLayer() {
-  drawPhoneLayer();
-  drawTestPanel();
-};
+;
 
 function keyPressed() {
   if (DEV_TEST_MODE) {
@@ -2565,89 +1908,679 @@ function keyPressed() {
 
 
 
-// p5.js entry point for draw.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 function draw() {
-  drawTestLayer();
+
+    phoneCheckEvents();
+    background(0);
+
+    if (!shopBg || !shopkeeper || !pawnReady || !phoneSheet) {
+        return;
+    }
+
+    image(shopBg, 0, 0, width, height);
+
+    if (!showIntro && !gamePaused && !showReceipt && !gameOver) {
+      updateDay();
+      moveShopkeeper();
+      moveCustomer();
+    }
+    
+    drawCharacters();
+    
+    drawInfo();
+    drawClock();
+    drawPauseButton();
+    drawBagIcon();
+
+    if (showBag) {
+        drawBag();
+    }
+
+    if (closing) {
+        fill(255);
+        textAlign(CENTER);
+        textSize(24);
+        text("SHOP CLOSED", width / 2, 200);
+    }
+
+    if (showBudgetWarning) {
+        drawBudgetWarning();
+    }
+
+    if (showReceipt) {
+        drawReceipt();
+    }
+
+    if (showIntro) {
+        drawIntro();
+    }
+
+    if (gameOver) {
+        drawGameOver();
+    }
+  if(pawnTradeActive()) pawnTradeBoard();
+    pawnStartIntroIfNeeded();
+    if (pawnIntroType) pawnDrawIntro();
+
+  if (!showIntro && !showReceipt && !gameOver && !pawnIntroType) {
+    shopDrawTabs();
+      if (shopMenu === "people") shopDrawPeople();
+      if (shopMenu === "upgrades") shopDrawUpgrades();
+  }
+
+  if (customerReaction && millis() < customerReactionUntil &&
+        !showIntro && !showReceipt && !gameOver && !pawnTradeActive() && !pawnIntroType) {
+      // Compact text only; does not replace or restyle any original game screen.
+      push();
+      textAlign(CENTER);
+      textSize(12);
+      stroke(30, 20, 15);
+      strokeWeight(3);
+      fill(255);
+      text(customerReaction, width / 2, height - 75);
+      pop();
+    }
+
+  if (!showIntro && !gameOver) {
+    // An easy-to-see 180px red telephone at the lower-right of the shop.
+      if (phoneSheet && ((!pawnTradeActive() && !shopMenu && !showReceipt && !pawnIntroType) || phonePending)) {
+        let frame = phonePending ? 1 + floor(frameCount / 9) % 3 : 0;
+        image(phoneSheet, phoneX, phoneY, phoneW, phoneH,
+              frame * 160, 0, 160, 160);
+      }
+      if (phonePending && !phoneCall) {
+        noStroke(); fill(0,0,0,130); rect(0,0,width,height);
+        if (phoneSheet) {
+          let frame = 1 + floor(frameCount / 9) % 3;
+          image(phoneSheet, phoneX,phoneY,phoneW,phoneH,frame*160,0,160,160);
+        }
+        pixelBoard(169,180,525,138);
+        fill(65,40,28); textAlign(CENTER); textStyle(BOLD); textSize(25);
+        text('RING! RING!',432,232);
+        textStyle(NORMAL); textSize(18);
+        text('Pick up the phone!',432,277);
+      }
+      if (phoneCall) phoneDrawCall();
+      if (phoneHint && millis() < phoneHintUntil && !phoneCall && !phonePending) {
+        fill(65,40,28); rect(540,351,310,34);
+        fill(255); textAlign(CENTER); textSize(14); text(phoneHint,695,373);
+      }
+  }
+
+  drawTestPanel();
 }
 
 
-// p5.js entry point for mousePressed.
-function mousePressed() {
-  mousePhoneLayer();
-}
-
-
-// p5.js entry point for restartGame.
 function restartGame() {
-  restartPhoneLayer();
+
+
+  // Reset money and inventory
+  money = 150;
+  inventory = [];
+  dailyLog = [];
+
+  // Reset day and time
+  dayNumber = 1;
+  dayStarted = false;
+  closing = false;
+  startTime = 0;
+  nextArrival = 0;
+  nextMorning = 0;
+
+  // Reset shopkeeper
+  shopkeeperActor.reset();
+
+  // Reset customer
+  currentCustomer = new Customer("", "", null, null);
+  currentCustomer.state = "gone";
+  customerNumber = 0;
+
+  // Reset trading
+  currentTrade = undefined;
+  selectedItems = [];
+  message = "";
+
+  // Reset screens
+  showBag = false;
+  showReceipt = false;
+  showBudgetWarning = false;
+  gamePaused = false;
+  pauseStart = 0;
+  gameOver = false;
+
+  // Return to introduction screen
+  showIntro = true;
+
+  
+  pawnRelationship = {Regular:50,Bargain:50,Collector:50,Suspicious:50};
+  pawnVisitor=null;pawnMessage='';pawnRows=[];
+  pawnIntroSeen={Regular:false,Bargain:false,Collector:false,Suspicious:false};
+  pawnIntroType='';pawnIntroPausedGame=false;pawnConversation='';
+  pawnUnlockedTypes={Regular:true,Bargain:false,Collector:false,Suspicious:false};
+  pawnNewTypeDay=-1;
+
+  
+  shopMenu = "";
+  shopMenuPaused = false;
+  shopUpgrades = [false, false, false, false, false];
+  shopMessage = "";
+  shopBargained = false;
+  shopTradeMultiplier = 1;
+
+  
+  lastCustomerDialogue = '';
+  customerReaction = '';
+  customerReactionUntil = 0;
+  customerDialogueOutcome = 'rejected';
+
+  
+  phonePending='';phoneCall='';phoneSelected=[];
+  phoneSeen={hello:false, upgrades:false, rentReveal:false};
+  phoneSavedPause=false;phonePaidToday=false;
 }
 
 
-// p5.js entry point for generateCustomer.
 function generateCustomer() {
-  generateShopCustomer();
+
+
+
+  let itemIndex = floor(random(products.length));
+  let type = random(["sell", "category"]);
+
+  // Buyer offers 5% to 20% above original value
+  let markup = random(1.05, 1.20);
+
+  currentTrade = {
+      type: type,
+      product: itemIndex,
+      category: products[itemIndex].category,
+      markup: markup,
+      budget: floor(random(25, 101)),
+      items: []
+  };
+
+  if (type === "sell") {
+
+      // Seller brings 1 to 3 items
+      let quantity = floor(random(1, 4));
+
+      for (let i = 0; i < quantity; i++) {
+          let productIndex = floor(random(products.length));
+          currentTrade.items.push(productIndex);
+      }
+  }
+
+  selectedItems = [];
+
+  customerNumber++;
+
+
+  message = "";
+
+
+  if (!pawnReady) return;
+  pawnVisitor = pawnPickVisitor();
+  currentCustomer = new Customer(
+    pawnVisitor.name, pawnVisitor.type,
+    pawnSprites[pawnVisitor.name], pawnPortraits[pawnVisitor.name]
+  );
+  pawnMessage = '';
+  pawnConversation = pawnNewConversation();
+  // Collector has more to spend; bargain hunters have less.
+  if (pawnVisitor.type === 'Collector') {
+    currentTrade.budget = floor(currentTrade.budget * 1.5);
+    currentTrade.markup *= 1.1;
+  }
+  if (pawnVisitor.type === 'Bargain') {
+    currentTrade.budget = floor(currentTrade.budget * 0.85);
+    currentTrade.markup *= 0.93;
+  }
+  selectedItems = [];
+
+
+  shopBargained = false;
+  shopTradeMultiplier = 1;
+  if (pawnVisitor && pawnVisitor.type !== "Inspector") {
+    let score = pawnRelationship[pawnVisitor.type];
+    // Small, predictable relationship discount/bonus for sales.
+    currentTrade.markup *= 1 + (score - 50) * 0.002;
+  }
 }
 
 
-// p5.js entry point for completeBuyerSale.
 function completeBuyerSale() {
-  completeDialogueSale();
+  customerDialogueOutcome = 'accepted';
+
+
+  let expected = selectedTotal();
+  let actual = min(expected, currentTrade.budget);
+
+  // Record each sold item
+  for (let index of selectedItems) {
+
+      let productIndex = inventory[index].product;
+
+      dailyLog.push({
+          type: "SELL",
+          name: products[productIndex].name,
+          amount: buyerPrice(productIndex)
+      });
+  }
+
+  // Record any discount caused by buyer's budget
+  if (actual < expected) {
+      dailyLog.push({
+          type: "DISCOUNT",
+          amount: Number((actual - expected).toFixed(2))
+      });
+  }
+
+  // Receive money
+  money += actual;
+
+  // Remove sold items from inventory
+  selectedItems.sort((a, b) => b - a);
+
+  for (let index of selectedItems) {
+      inventory.splice(index, 1);
+  }
+
+  showBudgetWarning = false;
+  finishTrade();
+  pawnChangeScore(3);
 }
 
 
-// p5.js entry point for drawBag.
 function drawBag() {
-  drawExpandedBag();
+
+    pixelBoard(125, 100, 610, 370);
+
+    fill(65, 40, 28);
+    textAlign(LEFT);
+    textSize(18);
+
+    text("YOUR BAG (" + inventory.length + "/" + shopCapacity() + ")", 151, 139);
+
+    textSize(14);
+
+    if (inventory.length === 0) {
+        text("Your bag is empty.", 151, 182);
+    }
+
+    for (let i = 0; i < inventory.length; i++) {
+        let entry = inventory[i];
+        let item = products[entry.product];
+
+        text(
+            item.name + " / " + item.category +
+            " / $" + entry.boughtFor.toFixed(2),
+            151, 178 + i * 39
+        );
+    }
+
+    text("CLICK BAG TO CLOSE", 151, 439);
 }
 
 
-// p5.js entry point for drawInfo.
 function drawInfo() {
-  drawInfoWithRent();
+
+    pixelBoard(10, 10, 208, 76);
+
+    fill(65, 40, 28);
+    textAlign(LEFT);
+    textSize(15);
+
+    text("DAY " + dayNumber, 24, 40);
+    text("MONEY $" + money.toFixed(2), 24, 63);
+  if (dayNumber > 7) {
+    let remaining = 7 - (dayNumber % 7);
+    if (remaining === 7) remaining = 0;
+    fill(74, 47, 30); textAlign(LEFT); textStyle(NORMAL); textSize(12);
+    let label = remaining === 0 ? '(rent due today)' : '(' + remaining + ' days till rent)';
+    text(label, 88, 39);
+  }
 }
 
 
-// p5.js entry point for drawReceipt.
 function drawReceipt() {
-  drawReceiptWithRent();
+  if (phonePending || phoneCall) return;
+
+
+  // Darken background
+  noStroke();
+  fill(0, 0, 0, 170);
+  rect(0, 0, width, height);
+
+  pixelBoard(125, 35, 614, 495);
+
+  fill(65, 40, 28);
+  textAlign(CENTER);
+  textSize(18);
+  text("DAY " + dayNumber + " RECEIPT", 432, 72);
+
+  let boughtItems = {};
+  let soldItems = {};
+
+  let totalBought = 0;
+  let totalSold = 0;
+  let budgetAdjustment = 0;
+
+  // Group records by product
+  for (let entry of dailyLog) {
+
+      if (entry.type === "BUY") {
+
+          let name = entry.name;
+
+          if (!boughtItems[name]) {
+              boughtItems[name] = { count: 0, total: 0 };
+          }
+
+          boughtItems[name].count++;
+          boughtItems[name].total += entry.amount;
+          totalBought += entry.amount;
+      }
+
+      else if (entry.type === "SELL") {
+
+          let name = entry.name;
+
+          if (!soldItems[name]) {
+              soldItems[name] = { count: 0, total: 0 };
+          }
+
+          soldItems[name].count++;
+          soldItems[name].total += entry.amount;
+          totalSold += entry.amount;
+      }
+
+      else if (entry.type === "DISCOUNT") {
+          budgetAdjustment += entry.amount;
+          totalSold += entry.amount;
+      }
+  }
+
+  textAlign(LEFT);
+  textSize(14);
+
+  // BOUGHT
+  text("BOUGHT", 155, 112);
+
+  textAlign(RIGHT);
+  text("-$" + totalBought.toFixed(2), 705, 112);
+
+  let y = 137;
+  textSize(12);
+
+  for (let name in boughtItems) {
+
+      let item = boughtItems[name];
+
+      textAlign(LEFT);
+      text(name + " x" + item.count, 165, y);
+
+      textAlign(RIGHT);
+      text("-$" + abs(item.total).toFixed(2), 705, y);
+
+      y += 19;
+  }
+
+  if (Object.keys(boughtItems).length === 0) {
+      textAlign(LEFT);
+      text("None", 165, y);
+  }
+
+  // SOLD
+  y = 265;
+
+  fill(65, 40, 28);
+  textAlign(LEFT);
+  textSize(14);
+  text("SOLD", 155, y);
+
+  textAlign(RIGHT);
+  text("+$" + totalSold.toFixed(2), 705, y);
+
+  y += 25;
+  textSize(12);
+
+  for (let name in soldItems) {
+
+      let item = soldItems[name];
+
+      textAlign(LEFT);
+      text(name + " x" + item.count, 165, y);
+
+      textAlign(RIGHT);
+      text("+$" + item.total.toFixed(2), 705, y);
+
+      y += 19;
+  }
+
+  if (Object.keys(soldItems).length === 0) {
+      textAlign(LEFT);
+      text("None", 165, y);
+  }
+
+  // Budget adjustments for discounted sales
+  if (budgetAdjustment < 0) {
+      textAlign(LEFT);
+      text("Budget adjustment", 165, y);
+
+      textAlign(RIGHT);
+      text("-$" + abs(budgetAdjustment).toFixed(2), 705, y);
+  }
+
+  // Rent appears only after Mr. Pennyworth's weekly call.
+  let rent = 0;
+  for (let entry of dailyLog) {
+    if (entry.type === "RENT") rent += entry.amount;
+  }
+  fill(65, 40, 28);
+  textAlign(LEFT); textSize(14);
+  text("RENT", 155, 433);
+  textAlign(RIGHT);
+  text(rent ? "-$" + rent.toFixed(2) : "$0", 705, 433);
+
+  let profit = totalSold + budgetAdjustment - totalBought - rent;
+  textSize(15); textAlign(LEFT);
+  text("NET PROFIT", 155, 466);
+  textAlign(RIGHT);
+  text((profit >= 0 ? "+" : "-") + "$" + abs(profit).toFixed(2), 705, 466);
+
+  drawButton("CLOSE", 340, 483, 184, true,
+             color(70, 115, 65));
 }
 
 
-// p5.js entry point for moveShopkeeper.
 function moveShopkeeper() {
-  moveShopkeeperWithRent();
+  let before = dayNumber;
+
+  let previousState = shopkeeperActor.state;
+  shopkeeperActor.move();
+
+  if (previousState === "entering" && shopkeeperActor.state === "working") {
+    dayStarted = true;
+    startTime = millis();
+    scheduleCustomer();
+  }
+  if (previousState === "leaving" && shopkeeperActor.state === "gone") {
+    if (money < 0) gameOver = true;
+    else showReceipt = true;
+  }
+
+  if (shopkeeperActor.state === "gone" && closing && millis() >= nextMorning) {
+    dayNumber++;
+    dayStarted = false;
+    closing = false;
+    dailyLog = [];
+    shopkeeperActor.reset();
+  }
+  if (dayNumber !== before) phonePaidToday = false;
 }
 
-function buyerPrice(...args) {
-  return buyerPriceWithUpgrade(...args);
+
+function buyerPrice(index) {
+  let price = products[index].value * currentTrade.markup;
+  if (shopUpgrades[2]) price *= 1.05;
+  return Number(price.toFixed(2));
 }
 
-function bundleTotal(...args) {
-  return bundleTotalWithUpgrade(...args);
+
+function bundleTotal() {
+
+
+  let total = 0;
+
+  for (let index of currentTrade.items) {
+      total += products[index].value;
+  }
+
+  return Number((total * shopTradeMultiplier).toFixed(2));
 }
 
-function scheduleCustomer(...args) {
-  return scheduleCustomerWithAdvertising(...args);
+
+function scheduleCustomer() {
+  if (shopUpgrades[3]) nextArrival = millis() + random(1000, 3200);
+  else nextArrival = millis() + random(1500, 5000);
 }
 
-function pawnTradeBoard(...args) {
-  return pawnTradeBoardWithBargain(...args);
+
+function pawnTradeBoard() {
+
+  pawnRows = [];
+  fill(0,0,0,158); noStroke(); rect(0,0,width,height);
+  pawnPortrait();
+  pawnPanel(280,95,562,458);
+  pawnPanel(300,112,520,66);
+  let greeting = pawnConversation || 'WELCOME TO THE PAWN SHOP.';
+  { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(20); text(greeting, 319, 135, 477, 28); };
+  if (currentTrade.type === 'sell') {
+    { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(16); text('SELLER OFFERS ' + currentTrade.items.length + ' ITEMS', 310, 207); };
+    { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(16); text('TOTAL: $' + bundleTotal().toFixed(2), 310, 229); };
+    let items = currentTrade.items;
+    for (let i=0; i<items.length && i<4; i++) {
+      let product = products[items[i]];
+      pawnPanel(306,242+i*47,504,44);
+      { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(16); text(product.name.toUpperCase(), 324, 268+i*47); };
+      { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(15); textAlign(RIGHT); text('$' + product.value.toFixed(2), 790, 268 + i * 47); };
+    }
+    let canBuy = inventory.length + items.length <= bagLimit && money >= bundleTotal();
+    pawnButton('BUY ALL',312,489,152,canBuy,color(60,112,67));
+  } else {
+    { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(16); text('WANTS: ' + currentTrade.category.toUpperCase(), 310, 207); };
+    { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(15); text('BUDGET $'+currentTrade.budget+' | SELECTED $'+selectedTotal().toFixed(2), 310, 229, 480, 28); };
+    let entries = availableItems();
+    for(let i=0; i<entries.length && i<4; i++) {
+      let idx=entries[i];let item=products[inventory[idx].product];
+      let y=242+i*47;
+      pawnPanel(306,y,504,44);
+      let checked=selectedItems.includes(idx);
+      { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(14); text((checked?'[X] ':'[ ] ')+item.name.toUpperCase(), 324, y+26); };
+      { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(15); textAlign(RIGHT); text('$' + buyerPrice(inventory[idx].product).toFixed(2), 790, y + 26); };
+      pawnRows.push({index:idx,x:306,y:y,w:504,h:44});
+    }
+    if(entries.length===0) { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(14); text('NO MATCHING ITEMS IN BAG', 324, 275); };
+    if(entries.length>4) { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(12); text('SHOWING FIRST 4 MATCHING ITEMS', 324, 455); };
+    pawnButton('SELL',312,489,152,selectedItems.length>0,color(60,112,67));
+  }
+  pawnButton('REJECT',651,489,152,true,color(156,63,52));
+  { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(12); text(pawnMessage.substring(0,50), 310, 468); };
+
+
+  if (!pawnTradeActive()) return;
+
+  if (shopUpgrades[0]) {
+    // Show bundle's base value or buyer's requested category reference.
+    let value = 0;
+    if (currentTrade.type === "sell") {
+      for (let idx of currentTrade.items) value += products[idx].value;
+    } else value = products[currentTrade.product].value;
+    { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(14); text("CATALOG VALUE: $" + value.toFixed(2), 501, 230); };
+  }
+  if (pawnScore() >= 60 && !shopBargained) {
+    pawnButton("BARGAIN", 481, 489, 152, true, color(157, 113, 55));
+  }
 }
 
-function shopTryBargain(...args) {
-  return shopTryBargainWithDialogue(...args);
+
+function shopTryBargain() {
+
+  let before = shopBargained;
+  let oldScore = pawnScore();
+
+  if (pawnScore() < 60 || shopBargained || !currentTrade) return;
+  shopBargained = true;
+  let chance = 0.5 + (pawnScore() - 60) * 0.005;
+  if (pawnVisitor.type === "Bargain") chance -= 0.12;
+  if (random() < chance) {
+    if (currentTrade.type === "sell") shopTradeMultiplier *= 0.9;
+    else currentTrade.markup *= 1.1;
+    pawnChangeScore(2);
+    pawnMessage = "COUNTEROFFER ACCEPTED!";
+  } else {
+    pawnChangeScore(-5);
+    pawnMessage = "COUNTEROFFER REJECTED!";
+  }
+  if (!before && shopBargained) {
+    let succeeded = pawnScore() > oldScore;
+    pawnConversation = chooseCustomerLine(succeeded ? 'bargainYes' : 'bargainNo');
+    // Preserve the text panel layout; use its existing message line for status only.
+    pawnMessage = succeeded ? 'BARGAIN ACCEPTED' : 'BARGAIN REJECTED';
+  }
 }
 
-function finishTrade(...args) {
-  return finishTradeWithDialogue(...args);
+
+function finishTrade() {
+
+  if (pawnVisitor) {
+    customerReaction = chooseCustomerLine(customerDialogueOutcome);
+    customerReactionUntil = millis() + 2200;
+  }
+  customerDialogueOutcome = 'rejected';
+
+  currentCustomer.leave();
+  selectedItems = [];
+  message = "";
 }
 
-function shopDrawTabs(...args) {
-  return shopDrawTabsUnlocked(...args);
+
+function shopDrawTabs() {
+
+  if (showIntro || showReceipt || gameOver || closing) return;
+  drawButton('PEOPLE', 328, 12, 124, true, color(98, 67, 46));
+  if (dayNumber >= 3 && phoneSeen.upgrades && !phonePending && !phoneCall) {
+    drawButton('UPGRADES', 462, 12, 140, true, color(98, 67, 46));
+  }
 }
-
-function updateDay(...args) { return updateDayUpdated(...args); }
-
-function pawnScore(...args) { return pawnScoreUpdated(...args); }
-
-function pawnNewConversation(...args) { return pawnNewConversationUpdated(...args); }
