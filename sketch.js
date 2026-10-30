@@ -19,13 +19,138 @@ let shopkeeperRoute = [
   { x: 710, y: 260 },  // 2: Walk left
 ];
 
-let shopkeeperRouteIndex = 1;
-
-let routeIndex = 0;
-let customerDirection = 7;
-let customerSpeed = 2;
 let shopBg, shopkeeper;
+let shopkeeperActor;
 let currentCustomer;
+
+class Customer {
+  constructor(name, type, sprite, portrait) {
+    this.name = name;
+    this.type = type;
+    this.sprite = sprite;
+    this.portrait = portrait;
+    this.x = 170;
+    this.y = 510;
+    this.speed = 2;
+    this.size = 144;
+    this.routeIndex = 1;
+    this.direction = 7;
+    this.state = "entering";
+  }
+
+  move() {
+    if (this.state !== "entering" && this.state !== "leaving") return;
+    let target = customerRoute[this.routeIndex];
+
+    if (this.x < target.x) {
+      this.x = min(this.x + this.speed, target.x);
+      this.direction = 6;
+    } else if (this.x > target.x) {
+      this.x = max(this.x - this.speed, target.x);
+      this.direction = 5;
+    } else if (this.y < target.y) {
+      this.y = min(this.y + this.speed, target.y);
+      this.direction = 4;
+    } else if (this.y > target.y) {
+      this.y = max(this.y - this.speed, target.y);
+      this.direction = 7;
+    }
+
+    if (this.x === target.x && this.y === target.y) {
+      if (this.routeIndex === 4 && this.state === "entering") {
+        this.state = "waiting";
+      } else if (this.routeIndex === 7) {
+        this.state = "gone";
+      } else {
+        this.routeIndex++;
+      }
+    }
+  }
+
+  display() {
+    if (this.state === "gone" || !this.sprite) return;
+    let walkFrame = floor(frameCount / 12) % 4;
+    let idleFrame = floor(frameCount / 30) % 2;
+    let col, row;
+    if (this.state === "waiting") {
+      col = idleFrame + 4; row = 0;
+    } else if (this.direction === 4) {
+      col = walkFrame; row = 2;
+    } else if (this.direction === 5) {
+      col = walkFrame + 4; row = 2;
+    } else if (this.direction === 6) {
+      col = walkFrame; row = 3;
+    } else {
+      col = walkFrame + 4; row = 3;
+    }
+    drawSprite(this.sprite, this.x, this.y, this.size, col, row);
+  }
+
+  leave() {
+    this.state = "leaving";
+    this.routeIndex = 5;
+  }
+}
+
+class Shopkeeper {
+  constructor(sprite) {
+    this.sprite = sprite;
+    this.x = 770;
+    this.y = 170;
+    this.speed = 1;
+    this.size = 144;
+    this.routeIndex = 1;
+    this.state = "entering";
+  }
+
+  move() {
+    if (this.state !== "entering" && this.state !== "leaving") return;
+    let target = shopkeeperRoute[this.routeIndex];
+    if (this.x < target.x) this.x = min(this.x + this.speed, target.x);
+    else if (this.x > target.x) this.x = max(this.x - this.speed, target.x);
+    if (this.y < target.y) this.y = min(this.y + this.speed, target.y);
+    else if (this.y > target.y) this.y = max(this.y - this.speed, target.y);
+
+    if (this.x === target.x && this.y === target.y) {
+      if (this.state === "entering") {
+        if (this.routeIndex < shopkeeperRoute.length - 1) this.routeIndex++;
+        else this.state = "working";
+      } else if (this.state === "leaving") {
+        if (this.routeIndex === 1) this.routeIndex = 0;
+        else this.state = "gone";
+      }
+    }
+  }
+
+  display() {
+    if (this.state === "gone") return;
+    let walkFrame = floor(frameCount / 12) % 4;
+    let idleFrame = floor(frameCount / 30) % 2;
+    let col, row;
+    if (this.state === "working") {
+      col = idleFrame + 2; row = 0;
+    } else if (this.state === "entering") {
+      col = this.routeIndex === 1 ? walkFrame : walkFrame + 4;
+      row = 2;
+    } else {
+      col = this.routeIndex === 1 ? walkFrame : walkFrame + 4;
+      row = 3;
+    }
+    drawSprite(this.sprite, this.x, this.y, this.size, col, row);
+  }
+
+  leave() {
+    this.state = "leaving";
+    this.routeIndex = shopkeeperRoute.length - 2;
+  }
+
+  reset() {
+    this.x = 770;
+    this.y = 170;
+    this.routeIndex = 1;
+    this.state = "entering";
+  }
+}
 
 // A Product object stores the information for one shop item.
 class Product {
@@ -65,16 +190,7 @@ let nextMorning = 0;
 const dayLength = 180000;
 const bagLimit = 6;
 
-let shopkeeperX = shopkeeperRoute[0].x;
-let shopkeeperY = shopkeeperRoute[0].y;
-let shopkeeperState = "entering";
 
-let customerX = customerRoute[0].x;
-let customerY = customerRoute[0].y;
-let customerState = "gone";
-
-let shopkeeperSize = 144;
-let customerSize = 144;
 
 let currentTrade;
 let showBag = false;
@@ -92,6 +208,9 @@ async function setup() {
 
   shopBg = await loadImage("images/shop.png");
   shopkeeper = await loadImage("images/shopkeeper.png");
+  shopkeeperActor = new Shopkeeper(shopkeeper);
+  currentCustomer = new Customer("", "", null, null);
+  currentCustomer.state = "gone";
   phoneSheet = await loadImage("images/phone.png");
 
   // Each customer has a walking sprite sheet and a trading portrait.
@@ -399,18 +518,11 @@ function restartGameBase() {
   nextMorning = 0;
 
   // Reset shopkeeper
-  shopkeeperX = shopkeeperRoute[0].x;
-  shopkeeperY = shopkeeperRoute[0].y;
-  shopkeeperRouteIndex = 1;
-  shopkeeperState = "entering";
+  shopkeeperActor.reset();
 
   // Reset customer
-  customerX = customerRoute[0].x;
-  customerY = customerRoute[0].y;
-  customerState = "gone";
-  routeIndex = 0;
-  customerDirection = 7;
-  currentCustomer = undefined;
+  currentCustomer = new Customer("", "", null, null);
+  currentCustomer.state = "gone";
   customerNumber = 0;
 
   // Reset trading
@@ -587,74 +699,25 @@ function drawReceiptBase() {
 // Shopkeeper enters in the morning and leaves at night
 
 function moveShopkeeperBase() {
+  let previousState = shopkeeperActor.state;
+  shopkeeperActor.move();
 
-  if (shopkeeperState === "entering" ||
-      shopkeeperState === "leaving") {
-
-      let target = shopkeeperRoute[shopkeeperRouteIndex];
-
-      // Move toward target X
-      if (shopkeeperX < target.x) {
-          shopkeeperX = min(shopkeeperX + 1, target.x);
-      }
-      else if (shopkeeperX > target.x) {
-          shopkeeperX = max(shopkeeperX - 1, target.x);
-      }
-
-      // Move toward target Y
-      if (shopkeeperY < target.y) {
-          shopkeeperY = min(shopkeeperY + 1, target.y);
-      }
-      else if (shopkeeperY > target.y) {
-          shopkeeperY = max(shopkeeperY - 1, target.y);
-      }
-
-      // Reached this waypoint
-      if (shopkeeperX === target.x &&
-          shopkeeperY === target.y) {
-
-          if (shopkeeperState === "entering") {
-
-            if (shopkeeperRouteIndex < shopkeeperRoute.length - 1) {
-              shopkeeperRouteIndex++;
-            }
-            else {
-                shopkeeperState = "working";
-                dayStarted = true;
-                startTime = millis();
-                scheduleCustomer();
-            }
-          }
-
-          else if (shopkeeperState === "leaving") {
-
-              if (shopkeeperRouteIndex === 1) {
-                  shopkeeperRouteIndex = 0;
-              }
-              else {
-                shopkeeperState = "gone";
-            
-                if (money < 0) {
-                  gameOver = true;
-                }
-                else {
-                    showReceipt = true;
-                }
-              }
-          }
-      }
+  if (previousState === "entering" && shopkeeperActor.state === "working") {
+    dayStarted = true;
+    startTime = millis();
+    scheduleCustomer();
+  }
+  if (previousState === "leaving" && shopkeeperActor.state === "gone") {
+    if (money < 0) gameOver = true;
+    else showReceipt = true;
   }
 
-  else if (shopkeeperState === "gone" &&
-           closing && millis() >= nextMorning) {
-
-      dayNumber++;
-      dayStarted = false;
-      closing = false;
-      dailyLog = [];
-
-      shopkeeperRouteIndex = 1;
-      shopkeeperState = "entering";
+  if (shopkeeperActor.state === "gone" && closing && millis() >= nextMorning) {
+    dayNumber++;
+    dayStarted = false;
+    closing = false;
+    dailyLog = [];
+    shopkeeperActor.reset();
   }
 }
 
@@ -668,7 +731,6 @@ function scheduleCustomerBase() {
 
 function generateCustomerBase() {
 
-  currentCustomer = undefined; // The named visitor's sprite is selected next.
 
   let itemIndex = floor(random(products.length));
   let type = random(["sell", "category"]);
@@ -700,12 +762,6 @@ function generateCustomerBase() {
 
   customerNumber++;
 
-  customerX = customerRoute[0].x;
-  customerY = customerRoute[0].y;
-
-  routeIndex = 1;
-  customerDirection = 7;
-  customerState = "entering";
 
   message = "";
 }
@@ -714,62 +770,16 @@ function generateCustomerBase() {
 // Customer enters, stops, and exits
 
 function moveCustomer() {
-
-  if (customerState === "gone") {
-      if (dayStarted && !closing && millis() >= nextArrival) {
-          generateCustomer();
-      }
+  if (currentCustomer.state === "gone") {
+    if (dayStarted && !closing && millis() >= nextArrival) generateCustomer();
+    return;
   }
 
-  else if (customerState === "entering" ||
-           customerState === "leaving") {
-
-      let target = customerRoute[routeIndex];
-
-      // Move horizontally first if X is different
-      if (customerX < target.x) {
-          customerX = min(customerX + customerSpeed, target.x);
-          customerDirection = 6; // Walk right
-      }
-
-      else if (customerX > target.x) {
-          customerX = max(customerX - customerSpeed, target.x);
-          customerDirection = 5; // Walk left
-      }
-
-      // Otherwise move vertically
-      else if (customerY < target.y) {
-          customerY = min(customerY + customerSpeed, target.y);
-          customerDirection = 4; // Walk down
-      }
-
-      else if (customerY > target.y) {
-          customerY = max(customerY - customerSpeed, target.y);
-          customerDirection = 7; // Walk up
-      }
-
-      // Reached the current waypoint
-      if (customerX === target.x && customerY === target.y) {
-
-          if (routeIndex === 4 && customerState === "entering") {
-              customerState = "waiting";
-          }
-
-          else if (routeIndex === 7) {
-              customerState = "gone";
-
-              if (closing) {
-                  shopkeeperState = "leaving";
-                  shopkeeperRouteIndex = shopkeeperRoute.length - 2;
-              } else {
-                  scheduleCustomer();
-              }
-          }
-
-          else {
-              routeIndex++;
-          }
-      }
+  let previousState = currentCustomer.state;
+  currentCustomer.move();
+  if (previousState === "leaving" && currentCustomer.state === "gone") {
+    if (closing) shopkeeperActor.leave();
+    else scheduleCustomer();
   }
 }
 
@@ -778,85 +788,13 @@ function moveCustomer() {
 
 
 function drawCharacters() {
-
-  let walkFrame = floor(frameCount / 12) % 4;
-  let idleFrame = floor(frameCount / 30) % 2;
   drawingContext.save();
   drawingContext.beginPath();
   drawingContext.rect(0, 0, width, 250);
   drawingContext.clip();
-
-  // Shopkeeper
-  if (shopkeeperState === "entering") {
-
-    if (shopkeeperRouteIndex === 1) {
-        // Walk down
-        drawSprite(shopkeeper, shopkeeperX, shopkeeperY,
-                  shopkeeperSize, walkFrame, 2);
-    }
-    else {
-        // Walk left
-        drawSprite(shopkeeper, shopkeeperX, shopkeeperY,
-                  shopkeeperSize, walkFrame + 4, 2);
-    }
-  }
-
-  else if (shopkeeperState === "working") {
-    // Stand facing left
-    drawSprite(shopkeeper, shopkeeperX, shopkeeperY,
-              shopkeeperSize, idleFrame + 2, 0);
-  }
-
-  else if (shopkeeperState === "leaving") {
-
-    if (shopkeeperRouteIndex === 1) {
-        // Walk right
-        drawSprite(shopkeeper, shopkeeperX, shopkeeperY,
-                  shopkeeperSize, walkFrame, 3);
-    }
-    else {
-        // Walk up
-        drawSprite(shopkeeper, shopkeeperX, shopkeeperY,
-                  shopkeeperSize, walkFrame + 4, 3);
-    }
-  }
-
+  shopkeeperActor.display();
   drawingContext.restore();
-
-  // Customer
-  if (customerState === "entering" ||
-      customerState === "leaving") {
-
-      if (customerDirection === 4) {
-          // Walk down
-          drawSprite(currentCustomer, customerX, customerY,
-                     customerSize, walkFrame, 2);
-      }
-
-      else if (customerDirection === 5) {
-          // Walk left
-          drawSprite(currentCustomer, customerX, customerY,
-                     customerSize, walkFrame + 4, 2);
-      }
-
-      else if (customerDirection === 6) {
-          // Walk right
-          drawSprite(currentCustomer, customerX, customerY,
-                     customerSize, walkFrame, 3);
-      }
-
-      else if (customerDirection === 7) {
-          // Walk up
-          drawSprite(currentCustomer, customerX, customerY,
-                     customerSize, walkFrame + 4, 3);
-      }
-  }
-
-  else if (customerState === "waiting") {
-      // Idle facing right
-      drawSprite(currentCustomer, customerX, customerY,
-                 customerSize, idleFrame + 4, 0);
-  }
+  currentCustomer.display();
 }
 
 // Draw a frame from a sprite sheet
@@ -1107,8 +1045,7 @@ function drawBoard() {
 
 // Complete a transaction
 function finishTradeBase() {
-  customerState = "leaving";
-  routeIndex = 5;
+  currentCustomer.leave();
   selectedItems = [];
   message = "";
 }
@@ -1193,7 +1130,7 @@ function mousePressedBase() {
       return;
   }
 
-  if (showBag || closing || customerState !== "waiting") {
+  if (showBag || closing || currentCustomer.state !== "waiting") {
       return;
   }
 
@@ -1420,7 +1357,7 @@ function pawnChangeScore(amount) {
 }
 function pawnTradeActive() {
   return pawnReady && !showIntro && !showReceipt && !showBudgetWarning &&
-         !gameOver && !closing && customerState === 'waiting' && currentTrade;
+         !gameOver && !closing && currentCustomer.state === 'waiting' && currentTrade;
 }
 
 // Keep all the original setup work (shopkeeper, background, original assets).
@@ -1431,7 +1368,10 @@ function generateProfileCustomer() {
   generateCustomerBase();
   if (!pawnReady) return;
   pawnVisitor = pawnPickVisitor();
-  currentCustomer = pawnSprites[pawnVisitor.name];
+  currentCustomer = new Customer(
+    pawnVisitor.name, pawnVisitor.type,
+    pawnSprites[pawnVisitor.name], pawnPortraits[pawnVisitor.name]
+  );
   pawnMessage = '';
   pawnConversation = pawnNewConversation();
   // Collector has more to spend; bargain hunters have less.
@@ -2154,7 +2094,7 @@ function mouseDialogueLayer() {
   if (eligible) customerDialogueOutcome = 'accepted';
   mouseShopLayer();
   // If transaction did not actually end, discard speculative outcome.
-  if (eligible && customerState === 'waiting') customerDialogueOutcome = 'rejected';
+  if (eligible && currentCustomer.state === 'waiting') customerDialogueOutcome = 'rejected';
 };
 
 function drawDialogueLayer() {
@@ -2248,11 +2188,11 @@ function updateDayUpdated() {
   if (dayStarted && !closing && millis() - startTime >= dayLength) {
     closing = true;
     showBag = false;
-    if (customerState === 'waiting') finishTrade();
-    else if (customerState === 'entering') customerState = 'leaving';
-    if (customerState === 'gone') {
-      shopkeeperState = 'leaving';
-      shopkeeperRouteIndex = shopkeeperRoute.length - 2;
+    if (currentCustomer.state === 'waiting') finishTrade();
+    else if (currentCustomer.state === 'entering') currentCustomer.state = 'leaving';
+    if (currentCustomer.state === 'gone') {
+      shopkeeperActor.state = 'leaving';
+      shopkeeperActor.routeIndex = shopkeeperRoute.length - 2;
     }
   }
 };
@@ -2546,7 +2486,7 @@ function testJumpToDay(day) {
   showBudgetWarning = false;
   gameOver = false;
   closing = false;
-  customerState = 'gone';
+  currentCustomer.state = 'gone';
   currentTrade = undefined;
   selectedItems = [];
   pawnVisitor = null;
@@ -2555,9 +2495,9 @@ function testJumpToDay(day) {
   startTime = millis();
   nextArrival = millis() + 6000;
   nextMorning = 0;
-  shopkeeperState = 'working';
-  shopkeeperX = 710;
-  shopkeeperY = 260;
+  shopkeeperActor.state = 'working';
+  shopkeeperActor.x = 710;
+  shopkeeperActor.y = 260;
   phonePaidToday = false;
   dailyLog = [];
   // Prior announcements are logically unlocked when jumping beyond them.
@@ -2575,12 +2515,12 @@ function testEndDay() {
   gamePaused = false;
   showBag = false;
   showBudgetWarning = false;
-  customerState = 'gone';
+  currentCustomer.state = 'gone';
   currentTrade = undefined;
   selectedItems = [];
   closing = true;
   dayStarted = false;
-  shopkeeperState = 'gone';
+  shopkeeperActor.state = 'gone';
   showReceipt = true;
 }
 
