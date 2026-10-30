@@ -267,7 +267,7 @@ function drawIntro() {
   
     textStyle(NORMAL);
     textSize(17);
-    text("Buy items offered by customers.", 142, 213);
+    text("Start with $150 and buy items from customers.", 142, 213);
     text("Sell items that match the buyer's category.", 142, 242);
     text("Use your earnings to unlock shop upgrades.", 142, 271);
     text("Explore new mechanisms as the game moves on!", 142, 300);
@@ -2222,35 +2222,62 @@ function completeBuyerSale() {
 }
 
 
+
 function drawBag() {
+  pixelBoard(125, 100, 610, 370);
 
-    pixelBoard(125, 100, 610, 370);
+  fill(65, 40, 28);
+  textAlign(LEFT);
+  textSize(18);
 
+  text("YOUR BAG (" + inventory.length + "/" + shopCapacity() + ")", 151, 139);
+
+  // Column headers
+  textSize(14);
+  textStyle(BOLD);
+  text("ITEM", 155, 178);
+  text("CATEGORY", 345, 178);
+  text("BOUGHT FOR", 560, 178);
+  textStyle(NORMAL);
+
+  // Header separator
+  stroke(165, 130, 95);
+  line(150, 190, 710, 190);
+
+  if (inventory.length === 0) {
+    noStroke();
+    text("Your bag is empty.", 155, 225);
+  }
+
+  // Display inventory
+  for (let i = 0; i < inventory.length; i++) {
+    let entry = inventory[i];
+    let item = products[entry.product];
+    let y = 220 + i * 34;
+
+    noStroke();
     fill(65, 40, 28);
-    textAlign(LEFT);
-    textSize(18);
-
-    text("YOUR BAG (" + inventory.length + "/" + shopCapacity() + ")", 151, 139);
-
     textSize(14);
 
-    if (inventory.length === 0) {
-        text("Your bag is empty.", 151, 182);
-    }
+    textAlign(LEFT);
+    text(item.name, 155, y);
+    text(item.category, 345, y);
 
-    for (let i = 0; i < inventory.length; i++) {
-        let entry = inventory[i];
-        let item = products[entry.product];
+    textAlign(RIGHT);
+    text("$" + entry.boughtFor.toFixed(2), 690, y);
 
-        text(
-            item.name + " / " + item.category +
-            " / $" + entry.boughtFor.toFixed(2),
-            151, 178 + i * 39
-        );
-    }
+    // Separate each item
+    stroke(190, 160, 120);
+    line(150, y + 10, 710, y + 10);
+  }
 
-    text("CLICK BAG TO CLOSE", 151, 439);
+  noStroke();
+  fill(65, 40, 28);
+  textAlign(CENTER);
+  textSize(13);
+  text("CLICK BAG TO CLOSE", 430, 449);
 }
+
 
 
 function drawInfo() {
