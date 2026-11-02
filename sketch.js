@@ -578,7 +578,7 @@ function drawBoard() {
       }
 
       let canBuy =
-          inventory.length + currentTrade.items.length <= bagLimit &&
+          inventory.length + reservedStorage() + currentTrade.items.length <= shopCapacity() &&
           money >= total;
 
       drawButton("BUY ALL", 150, 520, 185,
@@ -1592,7 +1592,7 @@ function handleTradeClick() {
   let buyingFromCustomer = active && currentTrade.type === 'sell';
   let payButton = buyingFromCustomer && pawnHit(312, 489, 152, 36);
   let eligible = payButton && money >= bundleTotal() &&
-    inventory.length + currentTrade.items.length <= shopCapacity();
+    inventory.length + reservedStorage() + currentTrade.items.length <= shopCapacity();
   if (eligible) customerDialogueOutcome = 'accepted';
   handleShopClick();
   // If transaction did not actually end, discard speculative outcome.
@@ -2085,11 +2085,6 @@ function mousePressed() {
         if (pawnHit(429, 315 + i * 40, 227, 32)) {
           buySupplierItems([1, 3, 6][i]);
           return;
-        } else if (phoneCall === "orderConfirmed") {
-          if (pawnHit(429, 450, 227, 32)) {
-            phoneEndCall();
-            return;
-          }
         }
       }
       if (pawnHit(429, 435, 227, 32)) {
@@ -2905,7 +2900,8 @@ function pawnTradeBoard() {
       textAlign(RIGHT);
       text("$" + (product.value * shopTradeMultiplier).toFixed(2),790, 268 + i * 47);
     }
-    let canBuy = inventory.length + items.length <= bagLimit && money >= bundleTotal();
+    let canBuy = inventory.length + reservedStorage() + items.length <= shopCapacity()
+                 && money >= bundleTotal();
     pawnButton('BUY ALL',312,489,152,canBuy,color(60,112,67));
   } else {
     { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(16); text('WANTS: ' + currentTrade.category.toUpperCase(), 310, 207); };
