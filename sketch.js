@@ -205,6 +205,7 @@ const bagLimit = 6;
 
 let currentTrade;
 let showBag = false;
+let bagPage = 0;
 let message = "";
 let selectedItems = [];
 let dailyLog = [];
@@ -712,6 +713,7 @@ function handleBasicClick() {
       mouseY >= 10 && mouseY <= 86) {
 
       showBag = true;
+      bagPage = 0;
       return;
   }
 
@@ -2023,6 +2025,17 @@ function phoneSellSelection() {
 function mousePressed() {
 
   if (showBag) {
+    let totalPages = max(1, ceil(inventory.length / 6));
+
+    if (bagPage > 0 && pawnHit(285, 411, 58, 32)) {
+      bagPage--;
+      return;
+    }
+    if (bagPage < totalPages - 1 && pawnHit(521, 411, 58, 32)) {
+      bagPage++;
+      return;
+    }
+
     showBag = false;
     return;
   }
@@ -2384,6 +2397,7 @@ function restartGame() {
 
   // Reset screens
   showBag = false;
+  bagPage = 0;
   showReceipt = false;
   showBudgetWarning = false;
   gamePaused = false;
@@ -2547,11 +2561,9 @@ function completeBuyerSale() {
 
 function drawBag() {
   pixelBoard(125, 100, 610, 370);
-
   fill(65, 40, 28);
   textAlign(LEFT);
   textSize(18);
-
   text("YOUR BAG (" + inventory.length + "/" + shopCapacity() + ")", 151, 139);
 
   // Column headers
@@ -2559,55 +2571,65 @@ function drawBag() {
   textStyle(BOLD);
   text("ITEM", 155, 178);
   text("CATEGORY", 305, 178);
-  if (priceCatalogOwned) {
-    text("ORIGINAL", 465, 178);
-  }
+  if (priceCatalogOwned) text("ORIGINAL", 465, 178);
   text("BOUGHT FOR", 590, 178);
   textStyle(NORMAL);
 
-  // Header separator
   stroke(165, 130, 95);
   line(150, 190, 710, 190);
+
+  // Show up to six items on each page.
+  let itemsPerPage = 6;
+  let totalPages = max(1, ceil(inventory.length / itemsPerPage));
+  bagPage = constrain(bagPage, 0, totalPages - 1);
 
   if (inventory.length === 0) {
     noStroke();
     text("Your bag is empty.", 155, 225);
   }
 
-  // Display inventory
-  for (let i = 0; i < inventory.length; i++) {
+  let start = bagPage * itemsPerPage;
+
+  for (let row = 0; row < itemsPerPage; row++) {
+    let i = start + row;
+    if (i >= inventory.length) break;
+
     let entry = inventory[i];
     let item = products[entry.product];
-    let y = 220 + i * 34;
+    let y = 220 + row * 34;
 
     noStroke();
     fill(65, 40, 28);
     textSize(14);
-
     textAlign(LEFT);
     text(item.name, 155, y);
     text(item.category, 305, y);
 
-    // Original price appears after unlocking Price Catalog
     if (priceCatalogOwned) {
       textAlign(RIGHT);
       text("$" + item.value.toFixed(2), 545, y);
     }
 
-    // Actual purchase price
     textAlign(RIGHT);
     text("$" + entry.boughtFor.toFixed(2), 690, y);
 
-    // Separate each item
     stroke(190, 160, 120);
     line(150, y + 10, 710, y + 10);
+  }
+
+  if (bagPage > 0) {
+    drawButton("<", 285, 411, 58, true, color(98, 67, 46));
+  }
+  if (bagPage < totalPages - 1) {
+    drawButton(">", 521, 411, 58, true, color(98, 67, 46));
   }
 
   noStroke();
   fill(65, 40, 28);
   textAlign(CENTER);
   textSize(13);
-  text("CLICK ANYWHERE TO CLOSE", 430, 449);
+  text("PAGE " + (bagPage + 1) + " / " + totalPages, 432, 433);
+  text("CLICK ANYWHERE ELSE TO CLOSE", 430, 457);
 }
 
 
