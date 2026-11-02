@@ -278,7 +278,7 @@ function drawIntro() {
   
     textStyle(NORMAL);
     textSize(17);
-    text("Start with $150 and buy items from customers.", 142, 213);
+    text("Buy items from customers.", 142, 213);
     text("Sell items that match the buyer's category.", 142, 242);
     text("Use your earnings to unlock shop upgrades.", 142, 271);
     text("Explore new mechanisms as the game moves on!", 142, 300);
@@ -319,24 +319,6 @@ function drawClock() {
   textAlign(CENTER);
   textSize(15);
   text(customersLeft + " CUSTOMERS LEFT", 763, 44);
-}
-
-function drawPauseButton() {
-
-  pixelBoard(610, 10, 52, 55);
-
-  noStroke();
-  fill(65, 40, 28);
-
-  if (gamePaused) {
-      // Play icon ▶
-      triangle(628, 24, 628, 50, 649, 37);
-  }
-  else {
-      // Pause icon Ⅱ
-      rect(626, 25, 7, 24);
-      rect(640, 25, 7, 24);
-  }
 }
 
 function togglePause() {
@@ -729,7 +711,7 @@ function handleBasicClick() {
   if (mouseX >= 230 && mouseX <= 318 &&
       mouseY >= 10 && mouseY <= 86) {
 
-      showBag = !showBag;
+      showBag = true;
       return;
   }
 
@@ -1026,7 +1008,7 @@ function handleCustomerClick() {
   if(currentTrade.type==='sell') {
     if(pawnHit(312,489,152,36)) {
       let total=bundleTotal();
-      if(inventory.length+currentTrade.items.length>bagLimit){pawnMessage='NOT ENOUGH SPACE';return;}
+      if (inventory.length + reservedStorage() + currentTrade.items.length > shopCapacity()){pawnMessage='NOT ENOUGH SPACE';return;}
       if(total>money){pawnMessage='NOT ENOUGH MONEY';return;}
       money-=total;
       for(let idx of currentTrade.items) {
@@ -1096,6 +1078,16 @@ function shopCapacity() {
   if (storageLevel === 2) return bagLimit + 10;
   if (storageLevel === 3) return bagLimit + 20;
   return bagLimit;
+}
+
+function reservedStorage() {
+  let total = 0;
+
+  for (let order of pendingDeliveries) {
+    total += order.quantity;
+  }
+
+  return total;
 }
 
 function shopCloseMenu() {
@@ -1185,9 +1177,9 @@ function getUpgradeList() {
   });
 
   let partnerships = [
-    ["TIPSY BARREL PARTNERSHIP", "Unlock Tipsy Barrel Brewing Co. on your telephone to purchase wine at wholesale prices."],
-    ["FLASHBACK PARTNERSHIP", "Unlock Flashback Electronics on your telephone to purchase cameras at wholesale prices."],
-    ["RUSTY WRENCH PARTNERSHIP", "Unlock Rusty Wrench Hardware on your telephone to purchase drills at wholesale prices."]
+    ["TIPSY BARREL PARTNERSHIP", "Call Tipsy Barrel Brewing Co. to buy wine at wholesale prices."],
+    ["FLASHBACK PARTNERSHIP", "Call Flashback Electronics to buy cameras at wholesale prices."],
+    ["RUSTY WRENCH PARTNERSHIP", "Call Rusty Wrench Hardware to buy drills at wholesale prices."]
   ];
   for (let i = 0; i < partnerships.length; i++) {
     if (supplierOwned[i]) owned.push({name:partnerships[i][0]});
@@ -1293,7 +1285,7 @@ function handleShopClick() {
   if (pawnTradeActive() && currentTrade.type === "sell" &&
       !gamePaused && !showBag && pawnHit(312, 489, 152, 36)) {
     let cost = bundleTotal();
-    if (inventory.length + currentTrade.items.length > shopCapacity()) {
+    if (inventory.length + reservedStorage() + currentTrade.items.length > shopCapacity()) {
       pawnMessage = "NOT ENOUGH SPACE"; return;
     }
     if (cost > money) { pawnMessage = "NOT ENOUGH MONEY"; return; }
@@ -1631,6 +1623,8 @@ let phoneHintUntil = 0;
 let phonePaidToday = false;
 let selectedSupplier = -1;
 let supplierMessage = "";
+let pendingDeliveries = [];
+let orderConfirmation = "";
 const phoneX = 673, phoneY = 360, phoneW = 180, phoneH = 180;
 
 // Request the asset at startup. Existing setup() remains the only setup function.
@@ -1701,67 +1695,197 @@ function buySupplierItems(quantity) {
   let productIndex = 12 + selectedSupplier;
   let unitPrices = [20, 35, 30];
   let unitPrice = unitPrices[selectedSupplier];
-  let discount = quantity === 3 ? 0.15 : quantity === 6 ? 0.25 : 0;
+
+  let discount = 0;
+
+  if (quantity === 3) discount = 0.15;
+  if (quantity === 6) discount = 0.25;
+
   let total = round(quantity * unitPrice * (1 - discount));
-  if (money < total) { supplierMessage = "NOT ENOUGH MONEY"; return; }
-  if (inventory.length + quantity > shopCapacity()) {
-    supplierMessage = "NOT ENOUGH SPACE"; return;
+
+  // Count storage space reserved for deliveries
+  let reservedSpace = reservedStorage();
+
+  if (money < total) {
+    supplierMessage = "NOT ENOUGH MONEY";
+    return;
   }
+
+  if (inventory.length + reservedSpace + quantity > shopCapacity()) {
+    supplierMessage = "NOT ENOUGH SPACE";
+    return;
+  }
+
+  // Pay now
   money -= total;
+
+  // Deliver tomorrow
+  pendingDeliveries.push({
+    product: productIndex,
+    quantity: quantity,
+    boughtFor: total / quantity,
+    deliveryDay: dayNumber + 1
+  });
+
+  // Record the payment in today's receipt
   for (let i = 0; i < quantity; i++) {
-    inventory.push({product:productIndex, boughtFor:total / quantity});
-    dailyLog.push({type:"BUY", name:products[productIndex].name,
-                   amount:total / quantity});
+    dailyLog.push({
+      type: "BUY",
+      name: products[productIndex].name,
+      amount: total / quantity
+    });
   }
+
+  let productName = products[productIndex].name.toLowerCase();
+
+  if (selectedSupplier === 0) {
+    productName = quantity === 1 ? "bottle of wine" : "bottles of wine";
+  } else if (quantity > 1) {
+    productName += "s";
+  }
+
+  orderConfirmation = quantity + " " + productName;
   supplierMessage = "";
-  phoneEndCall();
+  phoneCall = "orderConfirmed";
+}
+
+function deliverOrders() {
+  for (let i = pendingDeliveries.length - 1; i >= 0; i--) {
+    let order = pendingDeliveries[i];
+
+    if (order.deliveryDay <= dayNumber) {
+      for (let j = 0; j < order.quantity; j++) {
+        inventory.push({
+          product: order.product,
+          boughtFor: order.boughtFor
+        });
+      }
+
+      // Remove the completed delivery
+      pendingDeliveries.splice(i, 1);
+    }
+  }
 }
 
 function drawSupplierPhone() {
   let x = 420;
   let y = 240;
-  pixelBoard(x, y, 245, 270);
-  fill(65, 40, 28); textAlign(CENTER); textStyle(NORMAL);
 
+  pixelBoard(x, y, 245, 270);
+
+  fill(65, 40, 28);
+  textAlign(CENTER);
+  textStyle(NORMAL);
+
+  // SCREEN 1: Choose a supplier
   if (phoneCall === "suppliers") {
-    textSize(17); text("Who do you want to call?", x + 122, y + 35);
+    textSize(17);
+    text("Who do you want to call?", x + 122, y + 35);
+
     let row = 0;
+
     for (let i = 0; i < supplierOwned.length; i++) {
       if (supplierOwned[i]) {
-        drawButton(supplierNames[i], x + 9, y + 55 + row * 40, 227,
-                   true, color(73, 120, 72));
+        drawButton(
+          supplierNames[i],
+          x + 9,
+          y + 55 + row * 40,
+          227,
+          true,
+          color(73, 120, 72)
+        );
+
         row++;
       }
     }
-    drawButton("CANCEL", x + 9, y + 225, 227, true, color(155, 83, 66));
 
-  } else if (phoneCall === "supplierOrder") {
+    drawButton(
+      "CANCEL",
+      x + 9, y + 225, 227,
+      true, color(155, 83, 66)
+    );
+  }
+
+  // SCREEN 2: Choose how many items to buy
+  else if (phoneCall === "supplierOrder") {
     let product = supplierProducts[selectedSupplier];
     let price = [20, 35, 30][selectedSupplier];
-    textSize(17); text(supplierNames[selectedSupplier], x + 122, y + 29);
-    textSize(14); text("How many would you like?", x + 122, y + 56);
+
+    textSize(17);
+    text(supplierNames[selectedSupplier], x + 122, y + 29);
+
+    textSize(14);
+    text("How many would you like?", x + 122, y + 56);
+
     let quantities = [1, 3, 6];
     let discounts = [0, 0.15, 0.25];
+
     for (let i = 0; i < 3; i++) {
       let quantity = quantities[i];
       let total = round(quantity * price * (1 - discounts[i]));
+
       let label;
+
       if (selectedSupplier === 0) {
-        label = quantity + (quantity === 1 ? " bottle of wine" : " bottles of wine");
+        label = quantity + (quantity === 1
+          ? " bottle of wine"
+          : " bottles of wine");
       } else {
         label = quantity + " " + product.toLowerCase();
-        if (quantity > 1) label += "s";
+
+        if (quantity > 1) {
+          label += "s";
+        }
       }
+
       if (i === 1) label += " -15%";
       if (i === 2) label += " -25%";
+
       label += " ($" + total + ")";
-      drawButton(label, x + 9, y + 75 + i * 40, 227,
-                 true, color(73, 120, 72));
+
+      drawButton(
+        label,
+        x + 9,
+        y + 75 + i * 40,
+        227,
+        true,
+        color(73, 120, 72)
+      );
     }
-    drawButton("DON'T PURCHASE", x + 9, y + 195, 227,
-               true, color(155, 83, 66));
-    fill(140, 55, 45); textAlign(CENTER); textSize(12);
+
+    drawButton(
+      "DON'T PURCHASE",
+      x + 9, y + 195, 227,
+      true, color(155, 83, 66)
+    );
+
+    fill(140, 55, 45);
+    textAlign(CENTER);
+    textSize(12);
     text(supplierMessage, x + 122, y + 255);
+  }
+
+  // SCREEN 3: Order confirmation
+  else if (phoneCall === "orderConfirmed") {
+    fill(65, 40, 28);
+    textAlign(CENTER);
+
+    textStyle(BOLD);
+    textSize(19);
+    text("PAYMENT RECEIVED", x + 122, y + 55);
+
+    textStyle(NORMAL);
+    textSize(15);
+
+    text(orderConfirmation, x + 122, y + 110);
+    text("will be delivered", x + 122, y + 140);
+    text("tomorrow!", x + 122, y + 165);
+
+    drawButton(
+      "CONTINUE",
+      x + 9, y + 210, 227,
+      true, color(73, 120, 72)
+    );
   }
 }
 
@@ -1773,10 +1897,10 @@ function phoneBox() {
   textStyle(NORMAL);
 }
 function phoneDrawCall() {
-  if (phoneCall === "suppliers" || phoneCall === "supplierOrder") {
+  if (phoneCall === "suppliers" || phoneCall === "supplierOrder" || phoneCall === "orderConfirmed") {
     drawSupplierPhone();
     return;
-  }
+  } 
   phoneBox();
   if (phoneCall === 'hello') {
     fill(66, 43, 29);
@@ -1897,6 +2021,12 @@ function phoneSellSelection() {
 ;
 
 function mousePressed() {
+
+  if (showBag) {
+    showBag = false;
+    return;
+  }
+
   if (phonePending && !phoneCall) {
     if (pawnHit(phoneX,phoneY,phoneW,phoneH)) {
       phoneCall = phonePending;
@@ -1942,11 +2072,21 @@ function mousePressed() {
         if (pawnHit(429, 315 + i * 40, 227, 32)) {
           buySupplierItems([1, 3, 6][i]);
           return;
+        } else if (phoneCall === "orderConfirmed") {
+          if (pawnHit(429, 450, 227, 32)) {
+            phoneEndCall();
+            return;
+          }
         }
       }
       if (pawnHit(429, 435, 227, 32)) {
         supplierMessage = "";
         phoneCall = "suppliers";
+        return;
+      }
+    } else if (phoneCall === "orderConfirmed") {
+      if (pawnHit(429, 450, 227, 32)) {
+        phoneEndCall();
         return;
       }
     } else if (pawnHit(330, 443, 204, 32)) {
@@ -2052,7 +2192,7 @@ function drawTestPanel() {
   text('N = next day     E = end today', 234, 160);
   text('3 = Day 3       7 = Day 7', 234, 187);
   text('8 = Day 8       0 = Day 14', 234, 214);
-  text('T = hide/show    (not for release)', 234, 244);
+  text('M = +$100      T = hide/show', 234, 244);
   pop();
 }
 
@@ -2065,6 +2205,7 @@ function keyPressed() {
     if (testPanelVisible) {
       if (k === 'n') testJumpToDay(dayNumber + 1);
       else if (k === 'e') testEndDay();
+      else if (k === 'm') money += 100;
       else if (k === '3') testJumpToDay(3);
       else if (k === '7') testJumpToDay(7);
       else if (k === '8') testJumpToDay(8);
@@ -2131,7 +2272,6 @@ function draw() {
     
     drawInfo();
     drawClock();
-    drawPauseButton();
     drawBagIcon();
 
     if (showBag) {
@@ -2277,6 +2417,8 @@ function restartGame() {
   shopMessage = "";
   shopBargained = false;
   shopTradeMultiplier = 1;
+  pendingDeliveries = [];
+  orderConfirmation = "";
 
   
   lastCustomerDialogue = '';
@@ -2416,8 +2558,11 @@ function drawBag() {
   textSize(14);
   textStyle(BOLD);
   text("ITEM", 155, 178);
-  text("CATEGORY", 345, 178);
-  text("BOUGHT FOR", 560, 178);
+  text("CATEGORY", 305, 178);
+  if (priceCatalogOwned) {
+    text("ORIGINAL", 465, 178);
+  }
+  text("BOUGHT FOR", 590, 178);
   textStyle(NORMAL);
 
   // Header separator
@@ -2441,8 +2586,15 @@ function drawBag() {
 
     textAlign(LEFT);
     text(item.name, 155, y);
-    text(item.category, 345, y);
+    text(item.category, 305, y);
 
+    // Original price appears after unlocking Price Catalog
+    if (priceCatalogOwned) {
+      textAlign(RIGHT);
+      text("$" + item.value.toFixed(2), 545, y);
+    }
+
+    // Actual purchase price
     textAlign(RIGHT);
     text("$" + entry.boughtFor.toFixed(2), 690, y);
 
@@ -2455,7 +2607,7 @@ function drawBag() {
   fill(65, 40, 28);
   textAlign(CENTER);
   textSize(13);
-  text("CLICK BAG TO CLOSE", 430, 449);
+  text("CLICK ANYWHERE TO CLOSE", 430, 449);
 }
 
 
@@ -2640,8 +2792,13 @@ function moveShopkeeper() {
   if (previousState === "entering" && shopkeeperActor.state === "working") {
     dayStarted = true;
     startTime = millis();
+  
+    // Receive yesterday's supplier orders
+    deliverOrders();
+  
     dailyCustomerLimit = getDailyCustomers();
     customersLeft = dailyCustomerLimit;
+  
     scheduleCustomer();
   }
   if (previousState === "leaving" && shopkeeperActor.state === "gone") {
@@ -2649,11 +2806,16 @@ function moveShopkeeper() {
     else showReceipt = true;
   }
 
-  if (shopkeeperActor.state === "gone" && closing && millis() >= nextMorning) {
+  if (shopkeeperActor.state === "gone" &&
+    closing &&
+    !showReceipt &&
+    nextMorning > 0 &&
+    millis() >= nextMorning) {
     dayNumber++;
     dayStarted = false;
     closing = false;
     dailyLog = [];
+    nextMorning = 0;
     shopkeeperActor.reset();
   }
   if (dayNumber !== before) phonePaidToday = false;
@@ -2701,22 +2863,57 @@ function pawnTradeBoard() {
     for (let i=0; i<items.length && i<4; i++) {
       let product = products[items[i]];
       pawnPanel(306,242+i*47,504,44);
-      { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(16); text(product.name.toUpperCase(), 324, 268+i*47); };
-      { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(15); textAlign(RIGHT); text('$' + product.value.toFixed(2), 790, 268 + i * 47); };
+      fill(63, 40, 30);
+      textStyle(NORMAL);
+      textSize(15);
+
+      // Item name
+      textAlign(LEFT);
+      text(product.name.toUpperCase(), 324, 268 + i * 47);
+
+      // Original value (only after unlocking Price Catalog)
+      if (priceCatalogOwned) {
+        textSize(13);
+        textAlign(RIGHT);
+        text("ORIGINAL $" + product.value.toFixed(2), 690, 268 + i * 47);
+      }
+
+      // Customer's asking price
+      textSize(15);
+      textAlign(RIGHT);
+      text("$" + (product.value * shopTradeMultiplier).toFixed(2),790, 268 + i * 47);
     }
     let canBuy = inventory.length + items.length <= bagLimit && money >= bundleTotal();
     pawnButton('BUY ALL',312,489,152,canBuy,color(60,112,67));
   } else {
     { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(16); text('WANTS: ' + currentTrade.category.toUpperCase(), 310, 207); };
-    { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(15); text('BUDGET $'+currentTrade.budget+' | SELECTED $'+selectedTotal().toFixed(2), 310, 229, 480, 28); };
+    { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(15); text('BUDGET $'+currentTrade.budget+' | SELECTED $'+selectedTotal().toFixed(2), 310, 220, 480, 28); };
     let entries = availableItems();
     for(let i=0; i<entries.length && i<4; i++) {
       let idx=entries[i];let item=products[inventory[idx].product];
       let y=242+i*47;
       pawnPanel(306,y,504,44);
       let checked=selectedItems.includes(idx);
-      { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(14); text((checked?'[X] ':'[ ] ')+item.name.toUpperCase(), 324, y+26); };
-      { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(15); textAlign(RIGHT); text('$' + buyerPrice(inventory[idx].product).toFixed(2), 790, y + 26); };
+      fill(63, 40, 30);
+      textStyle(NORMAL);
+
+      // Item name and selection checkbox
+      textSize(14);
+      textAlign(LEFT);
+      text((checked ? "[X] " : "[ ] ") + item.name.toUpperCase(),
+          324, y + 26);
+
+      // Original value (only after unlocking Price Catalog)
+      if (priceCatalogOwned) {
+        textSize(13);
+        textAlign(RIGHT);
+        text("ORIGINAL $" + item.value.toFixed(2), 690, y + 26);
+      }
+
+      // Selling price
+      textSize(15);
+      textAlign(RIGHT);
+      text("$" + buyerPrice(inventory[idx].product).toFixed(2), 790, y + 26);
       pawnRows.push({index:idx,x:306,y:y,w:504,h:44});
     }
     if(entries.length===0) { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(14); text('NO MATCHING ITEMS IN BAG', 324, 275); };
@@ -2728,18 +2925,6 @@ function pawnTradeBoard() {
 
 
   if (!pawnTradeActive()) return;
-
-  if (priceCatalogOwned) {
-    // Show bundle's base value or buyer's requested category reference.
-    let value = 0;
-    if (currentTrade.type === "sell") {
-      for (let idx of currentTrade.items) value += products[idx].value;
-    } else value = products[currentTrade.product].value;
-    { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(14); text("CATALOG VALUE: $" + value.toFixed(2), 501, 230); };
-  }
-  if (pawnScore() >= 60 && !shopBargained) {
-    pawnButton("BARGAIN", 481, 489, 152, true, color(157, 113, 55));
-  }
 }
 
 
