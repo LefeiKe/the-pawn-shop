@@ -167,7 +167,17 @@ const products = [
     new Product("Bread", "Food", 15),
     new Product("Apple", "Food", 10),
     new Product("Hammer", "Tools", 40),
-    new Product("Shovel", "Tools", 30)
+    new Product("Shovel", "Tools", 30),
+    new Product("Clock", "Daily", 25),
+    new Product("Backpack", "Daily", 30),
+    new Product("Cheese", "Food", 18),
+    new Product("Chocolate", "Food", 12),
+    new Product("Screwdriver", "Tools", 20),
+    new Product("Wrench", "Tools", 28),
+    // Supplier-only stock (not sold to the player by walk-in customers).
+    new Product("Wine", "Food", 40),
+    new Product("Camera", "Daily", 70),
+    new Product("Drill", "Tools", 60)
 ];
 
 let gamePaused = false;
@@ -177,6 +187,8 @@ let gameOver = false;
 let inventory = [];
 let money = 150;
 let customerNumber = 0;
+let dailyCustomerLimit = 5;
+let customersLeft = 5;
 let dayNumber = 1;
 
 let showIntro = true;
@@ -186,8 +198,7 @@ let startTime = 0;
 let nextArrival = 0;
 let nextMorning = 0;
 
-// 3 real minutes = 16 game hours
-const dayLength = 180000;
+// Each day ends after its customer quota is served.
 const bagLimit = 6;
 
 
@@ -303,31 +314,11 @@ function drawIntro() {
 
 // Clock from 8 AM to midnight
 function drawClock() {
-  let currentTime = gamePaused ? pauseStart : millis();
-  let elapsed = dayStarted ? currentTime - startTime : 0;
-
-    elapsed = constrain(elapsed, 0, dayLength);
-
-    let minutes = floor((480 + elapsed / dayLength * 960) / 10) * 10;
-
-    let hour24 = floor(minutes / 60);
-    let minute = minutes % 60;
-
-    let period = hour24 >= 12 && hour24 < 24 ? "PM" : "AM";
-
-    let hour12 = hour24 % 12;
-
-    if (hour12 === 0) {
-        hour12 = 12;
-    }
-
-    pixelBoard(672, 10, 182, 55);
-
-    fill(65, 40, 28);
-    textAlign(CENTER);
-    textSize(15);
-
-    text(hour12 + ":" + nf(minute, 2) + " " + period, 763, 44);
+  pixelBoard(672, 10, 182, 55);
+  fill(65, 40, 28);
+  textAlign(CENTER);
+  textSize(15);
+  text(customersLeft + " CUSTOMERS LEFT", 763, 44);
 }
 
 function drawPauseButton() {
@@ -435,15 +426,20 @@ function drawGameOver() {
 
 function moveCustomer() {
   if (currentCustomer.state === "gone") {
-    if (dayStarted && !closing && millis() >= nextArrival) generateCustomer();
+    if (dayStarted && !closing && customersLeft > 0 && millis() >= nextArrival) generateCustomer();
     return;
   }
-
   let previousState = currentCustomer.state;
   currentCustomer.move();
   if (previousState === "leaving" && currentCustomer.state === "gone") {
-    if (closing) shopkeeperActor.leave();
-    else scheduleCustomer();
+    if (!closing) {
+      customersLeft--;
+      if (customersLeft <= 0) {
+        customersLeft = 0;
+        closing = true;
+        shopkeeperActor.leave();
+      } else scheduleCustomer();
+    } else shopkeeperActor.leave();
   }
 }
 
@@ -1072,17 +1068,18 @@ function handleCustomerClick() {
 
 let shopMenu = "";             // "people", "upgrades", or ""
 let shopMenuPaused = false;
-let shopUpgrades = [false, false, false, false, false];
-let shopUpgradeTitles = ["PRICE CATALOG", "STORAGE +2", "DISPLAY SHELVES",
-                         "ADVERTISING", "ORDERING HOTLINE"];
-let shopUpgradePrices = [90, 130, 120, 100, 160];
-let shopUpgradeDescriptions = [
-  "Show original item values during trading.",
-  "Increase bag space by two items.",
-  "Earn 5% more on sales.",
-  "Attract customers more frequently.",
-  "Order an Apple for $8 whenever you have space."
-];
+let storageLevel = 0;
+let shelvesLevel = 0;
+let advertisingLevel = 0;
+let priceCatalogOwned = false;
+let supplierOwned = [false, false, false];
+let upgradePage = 0;
+let storagePrices = [120, 250, 500];
+let shelvesPrices = [100, 220, 450];
+let advertisingPrices = [100, 200, 400];
+let supplierNames = ["TIPSY BARREL", "FLASHBACK", "RUSTY WRENCH"];
+let supplierProducts = ["Wine", "Camera", "Drill"];
+let supplierPrices = [150, 220, 180];
 let shopMessage = "";
 let shopBargained = false;
 let shopTradeMultiplier = 1;
@@ -1095,7 +1092,10 @@ function pawnScore() {
 };
 
 function shopCapacity() {
-  return bagLimit + (shopUpgrades[1] ? 2 : 0);
+  if (storageLevel === 1) return bagLimit + 5;
+  if (storageLevel === 2) return bagLimit + 10;
+  if (storageLevel === 3) return bagLimit + 20;
+  return bagLimit;
 }
 
 function shopCloseMenu() {
@@ -1143,26 +1143,91 @@ function shopDrawPeople() {
   drawButton("CLOSE", 347, 462, 170, true, color(98, 67, 46));
 }
 
+function getUpgradeList() {
+  let available = [];
+  let owned = [];
+  let roman = ["I", "II", "III"];
+
+  if (!priceCatalogOwned) {
+    available.push({name:"PRICE CATALOG", description:"Reveals the original value of items to help you make better deals.", price:90, type:"catalog"});
+  } else owned.push({name:"PRICE CATALOG"});
+
+  let storageDescriptions = [
+    "Expand your storage with 5 additional slots.",
+    "Organize your growing inventory and gain 5 more storage slots.",
+    "Expand your shop's storage by another 10 slots."
+  ];
+  let shelvesDescriptions = [
+    "Better displays attract buyers willing to pay 5% more for your items.",
+    "Improved displays increase your selling prices by another 5%.",
+    "Premium displays increase your selling prices by another 5%."
+  ];
+  let advertisingDescriptions = [
+    "A small boost of customers is attracted to your shop each day.",
+    "A moderate boost of customers is attracted to your shop each day.",
+    "A large boost of customers is attracted to your shop each day."
+  ];
+
+  if (storageLevel < 3) available.push({
+    name:"STORAGE " + roman[storageLevel],
+    description:storageDescriptions[storageLevel],
+    price:storagePrices[storageLevel], type:"storage"
+  });
+  if (shelvesLevel < 3) available.push({
+    name:"DISPLAY SHELVES " + roman[shelvesLevel],
+    description:shelvesDescriptions[shelvesLevel],
+    price:shelvesPrices[shelvesLevel], type:"shelves"
+  });
+  if (advertisingLevel < 3) available.push({
+    name:"ADVERTISING " + roman[advertisingLevel],
+    description:advertisingDescriptions[advertisingLevel],
+    price:advertisingPrices[advertisingLevel], type:"advertising"
+  });
+
+  let partnerships = [
+    ["TIPSY BARREL PARTNERSHIP", "Unlock Tipsy Barrel Brewing Co. on your telephone to purchase wine at wholesale prices."],
+    ["FLASHBACK PARTNERSHIP", "Unlock Flashback Electronics on your telephone to purchase cameras at wholesale prices."],
+    ["RUSTY WRENCH PARTNERSHIP", "Unlock Rusty Wrench Hardware on your telephone to purchase drills at wholesale prices."]
+  ];
+  for (let i = 0; i < partnerships.length; i++) {
+    if (supplierOwned[i]) owned.push({name:partnerships[i][0]});
+    else available.push({name:partnerships[i][0], description:partnerships[i][1],
+                         price:supplierPrices[i], type:"supplier", supplier:i});
+  }
+  for (let i = 0; i < storageLevel; i++) owned.push({name:"STORAGE " + roman[i]});
+  for (let i = 0; i < shelvesLevel; i++) owned.push({name:"DISPLAY SHELVES " + roman[i]});
+  for (let i = 0; i < advertisingLevel; i++) owned.push({name:"ADVERTISING " + roman[i]});
+  return available.concat(owned);
+}
+
 function shopDrawUpgrades() {
   noStroke(); fill(0, 0, 0, 175); rect(0, 0, width, height);
   pixelBoard(94, 33, 676, 508);
-  { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(22); text("SHOP UPGRADES", 125, 74); };
-  { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(16); text("BALANCE: $" + money.toFixed(2), 125, 103); };
-  for (let i = 0; i < 5; i++) {
-    let y = 120 + i * 69;
+  fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(22);
+  text("SHOP UPGRADES", 125, 74);
+  textSize(16); text("BALANCE: $" + money.toFixed(2), 125, 103);
+
+  let upgrades = getUpgradeList();
+  let totalPages = ceil(upgrades.length / 5);
+  upgradePage = constrain(upgradePage, 0, totalPages - 1);
+
+  for (let row = 0; row < 5; row++) {
+    let i = upgradePage * 5 + row;
+    if (i >= upgrades.length) break;
+    let upgrade = upgrades[i];
+    let y = 120 + row * 69;
     shopMenuCard(119, y, 626, 62);
-    { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(17); text(shopUpgradeTitles[i], 134, y + 22, 450, 28); };
-    { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(14); text(shopUpgradeDescriptions[i], 134, y + 43, 455, 28); };
-    let owned = shopUpgrades[i];
-    drawButton(owned ? "OWNED" : "$" + shopUpgradePrices[i],
-               609, y + 15, 116, !owned && money >= shopUpgradePrices[i],
-               color(73, 120, 72));
+    fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(17);
+    text(upgrade.name, 134, y + 22);
+    textSize(13); text(upgrade.description || "", 134, y + 43, 465);
+    let owned = upgrade.price === undefined;
+    drawButton(owned ? "OWNED" : "$" + upgrade.price, 609, y + 15, 116,
+               !owned && money >= upgrade.price, color(73, 120, 72));
   }
-  if (shopUpgrades[4]) {
-    drawButton("ORDER $8", 568, 474, 156,
-               money >= 8 && inventory.length < shopCapacity(), color(73, 120, 72));
-  }
-  { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(12); text(shopMessage.substring(0, 34), 125, 504); };
+  if (upgradePage > 0) drawButton("<", 245, 467, 58, true, color(98, 67, 46));
+  if (upgradePage < totalPages - 1) drawButton(">", 561, 467, 58, true, color(98, 67, 46));
+  fill(63, 40, 30); textAlign(CENTER); textSize(14);
+  text((upgradePage + 1) + " / " + totalPages, 432, 490);
   drawButton("CLOSE", 350, 501, 166, true, color(98, 67, 46));
 }
 
@@ -1181,10 +1246,16 @@ function shopDrawUpgrades() {
 ;
 
 function shopBuyUpgrade(i) {
-  if (shopUpgrades[i] || money < shopUpgradePrices[i]) return;
-  money -= shopUpgradePrices[i];
-  shopUpgrades[i] = true;
-  shopMessage = shopUpgradeTitles[i] + " UNLOCKED";
+  let upgrade = getUpgradeList()[i];
+  if (!upgrade || upgrade.price === undefined || money < upgrade.price) return;
+  money -= upgrade.price;
+  if (upgrade.type === "catalog") priceCatalogOwned = true;
+  else if (upgrade.type === "storage") storageLevel++;
+  else if (upgrade.type === "shelves") shelvesLevel++;
+  else if (upgrade.type === "advertising") advertisingLevel++;
+  else if (upgrade.type === "supplier") supplierOwned[upgrade.supplier] = true;
+  shopMessage = upgrade.name + " UNLOCKED";
+  upgradePage = 0;
 }
 
 function handleShopClick() {
@@ -1193,18 +1264,17 @@ function handleShopClick() {
     if (shopMenu === "people") {
       if (pawnHit(347, 462, 170, 32)) shopCloseMenu();
     } else {
-      if (pawnHit(350, 501, 166, 32)) shopCloseMenu();
-      else if (shopUpgrades[4] && pawnHit(568, 474, 156, 32)) {
-        if (money >= 8 && inventory.length < shopCapacity()) {
-          money -= 8;
-          inventory.push({product:3, boughtFor:8});
-          dailyLog.push({type:"BUY", name:"Apple", amount:8});
-          shopMessage = "APPLE ORDER RECEIVED";
-        }
-      } else {
-        for (let i = 0; i < 5; i++) {
-          let y = 120 + i * 69 + 15;
-          if (pawnHit(609, y, 116, 32)) { shopBuyUpgrade(i); break; }
+      if (pawnHit(350, 501, 166, 32)) { shopCloseMenu(); return; }
+      let upgrades = getUpgradeList();
+      let totalPages = ceil(upgrades.length / 5);
+      if (pawnHit(245, 467, 58, 32) && upgradePage > 0) { upgradePage--; return; }
+      if (pawnHit(561, 467, 58, 32) && upgradePage < totalPages - 1) { upgradePage++; return; }
+      for (let row = 0; row < 5; row++) {
+        let i = upgradePage * 5 + row;
+        if (i >= upgrades.length) break;
+        if (pawnHit(609, 135 + row * 69, 116, 32)) {
+          shopBuyUpgrade(i);
+          return;
         }
       }
     }
@@ -1559,6 +1629,8 @@ let phoneSavedPause = false;
 let phoneHint = '';
 let phoneHintUntil = 0;
 let phonePaidToday = false;
+let selectedSupplier = -1;
+let supplierMessage = "";
 const phoneX = 673, phoneY = 360, phoneW = 180, phoneH = 180;
 
 // Request the asset at startup. Existing setup() remains the only setup function.
@@ -1596,6 +1668,8 @@ function phoneEndCall() {
   phonePending = '';
   phoneCall = '';
   phoneSelected = [];
+  selectedSupplier = -1;
+  supplierMessage = "";
   if (phoneSavedPause) togglePause();
   phoneSavedPause = false;
 }
@@ -1603,16 +1677,17 @@ function phoneEndCall() {
 // Replace the original daily closing logic, which deducted $10 every day.
 // Rent is collected only by the landlord's rent-day call.
 function updateDay() {
-  if (dayStarted && !closing && millis() - startTime >= dayLength) {
+  if (dayStarted && !closing && customersLeft <= 0) {
     closing = true;
     showBag = false;
-    if (currentCustomer.state === 'waiting') finishTrade();
-    else if (currentCustomer.state === 'entering') currentCustomer.state = 'leaving';
-    if (currentCustomer.state === 'gone') {
-      shopkeeperActor.state = 'leaving';
-      shopkeeperActor.routeIndex = shopkeeperRoute.length - 2;
-    }
+    shopkeeperActor.leave();
   }
+}
+function getDailyCustomers() {
+  if (advertisingLevel === 1) return 7;
+  if (advertisingLevel === 2) return 10;
+  if (advertisingLevel === 3) return 13;
+  return 5;
 };
 
 // Day banner countdown only appears after the Day 7 surprise.
@@ -1622,6 +1697,74 @@ function updateDay() {
 ;
 
 
+function buySupplierItems(quantity) {
+  let productIndex = 12 + selectedSupplier;
+  let unitPrices = [20, 35, 30];
+  let unitPrice = unitPrices[selectedSupplier];
+  let discount = quantity === 3 ? 0.15 : quantity === 6 ? 0.25 : 0;
+  let total = round(quantity * unitPrice * (1 - discount));
+  if (money < total) { supplierMessage = "NOT ENOUGH MONEY"; return; }
+  if (inventory.length + quantity > shopCapacity()) {
+    supplierMessage = "NOT ENOUGH SPACE"; return;
+  }
+  money -= total;
+  for (let i = 0; i < quantity; i++) {
+    inventory.push({product:productIndex, boughtFor:total / quantity});
+    dailyLog.push({type:"BUY", name:products[productIndex].name,
+                   amount:total / quantity});
+  }
+  supplierMessage = "";
+  phoneEndCall();
+}
+
+function drawSupplierPhone() {
+  let x = 420;
+  let y = 240;
+  pixelBoard(x, y, 245, 270);
+  fill(65, 40, 28); textAlign(CENTER); textStyle(NORMAL);
+
+  if (phoneCall === "suppliers") {
+    textSize(17); text("Who do you want to call?", x + 122, y + 35);
+    let row = 0;
+    for (let i = 0; i < supplierOwned.length; i++) {
+      if (supplierOwned[i]) {
+        drawButton(supplierNames[i], x + 9, y + 55 + row * 40, 227,
+                   true, color(73, 120, 72));
+        row++;
+      }
+    }
+    drawButton("CANCEL", x + 9, y + 225, 227, true, color(155, 83, 66));
+
+  } else if (phoneCall === "supplierOrder") {
+    let product = supplierProducts[selectedSupplier];
+    let price = [20, 35, 30][selectedSupplier];
+    textSize(17); text(supplierNames[selectedSupplier], x + 122, y + 29);
+    textSize(14); text("How many would you like?", x + 122, y + 56);
+    let quantities = [1, 3, 6];
+    let discounts = [0, 0.15, 0.25];
+    for (let i = 0; i < 3; i++) {
+      let quantity = quantities[i];
+      let total = round(quantity * price * (1 - discounts[i]));
+      let label;
+      if (selectedSupplier === 0) {
+        label = quantity + (quantity === 1 ? " bottle of wine" : " bottles of wine");
+      } else {
+        label = quantity + " " + product.toLowerCase();
+        if (quantity > 1) label += "s";
+      }
+      if (i === 1) label += " -15%";
+      if (i === 2) label += " -25%";
+      label += " ($" + total + ")";
+      drawButton(label, x + 9, y + 75 + i * 40, 227,
+                 true, color(73, 120, 72));
+    }
+    drawButton("DON'T PURCHASE", x + 9, y + 195, 227,
+               true, color(155, 83, 66));
+    fill(140, 55, 45); textAlign(CENTER); textSize(12);
+    text(supplierMessage, x + 122, y + 255);
+  }
+}
+
 function phoneBox() {
   noStroke(); fill(0, 0, 0, 185); rect(0, 0, width, height);
   pixelBoard(105, 65, 654, 455);
@@ -1630,6 +1773,10 @@ function phoneBox() {
   textStyle(NORMAL);
 }
 function phoneDrawCall() {
+  if (phoneCall === "suppliers" || phoneCall === "supplierOrder") {
+    drawSupplierPhone();
+    return;
+  }
   phoneBox();
   if (phoneCall === 'hello') {
     fill(66, 43, 29);
@@ -1713,12 +1860,7 @@ function phoneDrawCall() {
     { fill(66, 43, 29); textAlign(LEFT); textStyle(NORMAL); textSize(17); text('Selected sale: $' + total.toFixed(2), 135, 420, 340, 28); };
     drawButton('SELL SELECTED', 135, 460, 235, true, color(70, 115, 65));
     drawButton('SELL NOTHING', 495, 460, 235, true, color(155, 83, 66));
-  } else if (phoneCall === 'hotline') {
-    { fill(66, 43, 29); textAlign(LEFT); textStyle(NORMAL); textSize(24); text('ORDERING HOTLINE', 143, 186, 570, 28); };
-    { fill(66, 43, 29); textAlign(LEFT); textStyle(NORMAL); textSize(20); text('Order one Apple for $8?', 143, 267, 570, 28); };
-    { fill(66, 43, 29); textAlign(LEFT); textStyle(NORMAL); textSize(17); text('Available bag space: ' + (shopCapacity() - inventory.length), 143, 310, 570, 28); };
-    drawButton('ORDER $8', 151, 420, 200, money >= 8 && inventory.length < shopCapacity(), color(70, 115, 65));
-    drawButton('CANCEL', 511, 420, 200, true, color(155, 83, 66));
+
   }
 }
 function phoneSaleTotal() {
@@ -1763,30 +1905,54 @@ function mousePressed() {
     return;
   }
   if (phoneCall) {
-    if (phoneCall === 'rent') {
+    if (phoneCall === "rent") {
       for (let i = 0; i < inventory.length && i < 8; i++) {
         let x = 135 + (i % 2) * 297;
         let y = 220 + floor(i / 2) * 44;
-        if (pawnHit(x,y,278,36)) {
+        if (pawnHit(x, y, 278, 36)) {
           let pos = phoneSelected.indexOf(i);
           if (pos === -1) phoneSelected.push(i);
-          else phoneSelected.splice(pos,1);
+          else phoneSelected.splice(pos, 1);
           return;
         }
       }
-      if (pawnHit(135,460,235,32)) { phoneSellSelection(); return; }
-      if (pawnHit(495,460,235,32)) { phoneSelected=[]; phonePayRent();phoneEndCall();return; }
-    } else if (phoneCall === 'hotline') {
-      if (pawnHit(151,420,200,32)) {
-        if (money >= 8 && inventory.length < shopCapacity()) {
-          money -= 8; inventory.push({product:3,boughtFor:8});
-          dailyLog.push({type:'BUY',name:'Apple',amount:8});
-          phoneEndCall();
-        }
+      if (pawnHit(135, 460, 235, 32)) { phoneSellSelection(); return; }
+      if (pawnHit(495, 460, 235, 32)) {
+        phoneSelected = [];
+        phonePayRent();
+        phoneEndCall();
         return;
       }
-      if (pawnHit(511,420,200,32)) { phoneEndCall();return; }
-    } else if (pawnHit(330,443,204,32)) { phoneEndCall(); return; }
+    } else if (phoneCall === "suppliers") {
+      let row = 0;
+      for (let i = 0; i < supplierOwned.length; i++) {
+        if (supplierOwned[i]) {
+          if (pawnHit(429, 295 + row * 40, 227, 32)) {
+            selectedSupplier = i;
+            supplierMessage = "";
+            phoneCall = "supplierOrder";
+            return;
+          }
+          row++;
+        }
+      }
+      if (pawnHit(429, 465, 227, 32)) { phoneEndCall(); return; }
+    } else if (phoneCall === "supplierOrder") {
+      for (let i = 0; i < 3; i++) {
+        if (pawnHit(429, 315 + i * 40, 227, 32)) {
+          buySupplierItems([1, 3, 6][i]);
+          return;
+        }
+      }
+      if (pawnHit(429, 435, 227, 32)) {
+        supplierMessage = "";
+        phoneCall = "suppliers";
+        return;
+      }
+    } else if (pawnHit(330, 443, 204, 32)) {
+      phoneEndCall();
+      return;
+    }
     return;
   }
   if (showIntro || showReceipt || gameOver || closing || pawnIntroType) {
@@ -1794,13 +1960,15 @@ function mousePressed() {
   }
   // Block the hidden upgrade tab until the Day 3 call has finished.
   if (dayNumber < 3 && pawnHit(462,12,140,32)) return;
-  if (pawnHit(phoneX,phoneY,phoneW,phoneH) && !pawnTradeActive() && !shopMenu) {
-    if (shopUpgrades[4]) {
+  if (pawnHit(phoneX, phoneY, phoneW, phoneH) && !pawnTradeActive() && !shopMenu) {
+    if (supplierOwned.includes(true)) {
       phoneSavedPause = !gamePaused;
       if (phoneSavedPause) togglePause();
-      phoneCall = 'hotline';
+      phoneCall = "suppliers";
+      supplierMessage = "";
     } else {
-      phoneHint='ORDERING HOTLINE LOCKED'; phoneHintUntil=millis()+2200;
+      phoneHint = "NO SUPPLIER CONTACTS";
+      phoneHintUntil = millis() + 2200;
     }
     return;
   }
@@ -1839,6 +2007,8 @@ function testJumpToDay(day) {
   dayNumber = day;
   dayStarted = true;
   startTime = millis();
+  dailyCustomerLimit = getDailyCustomers();
+  customersLeft = dailyCustomerLimit;
   nextArrival = millis() + 6000;
   nextMorning = 0;
   shopkeeperActor.state = 'working';
@@ -1856,6 +2026,7 @@ function testJumpToDay(day) {
 
 // Close the day immediately and open its receipt. Phone events work normally.
 function testEndDay() {
+  customersLeft = 0;
   if (showIntro || phonePending || phoneCall || pawnIntroType || gameOver) return;
   if (shopMenu) shopCloseMenu();
   gamePaused = false;
@@ -2093,7 +2264,16 @@ function restartGame() {
   
   shopMenu = "";
   shopMenuPaused = false;
-  shopUpgrades = [false, false, false, false, false];
+  storageLevel = 0;
+  shelvesLevel = 0;
+  advertisingLevel = 0;
+  priceCatalogOwned = false;
+  supplierOwned = [false, false, false];
+  upgradePage = 0;
+  selectedSupplier = -1;
+  supplierMessage = "";
+  dailyCustomerLimit = 5;
+  customersLeft = 5;
   shopMessage = "";
   shopBargained = false;
   shopTradeMultiplier = 1;
@@ -2115,7 +2295,7 @@ function generateCustomer() {
 
 
 
-  let itemIndex = floor(random(products.length));
+  let itemIndex = floor(random(products.length - 3));
   let type = random(["sell", "category"]);
 
   // Buyer offers 5% to 20% above original value
@@ -2136,7 +2316,7 @@ function generateCustomer() {
       let quantity = floor(random(1, 4));
 
       for (let i = 0; i < quantity; i++) {
-          let productIndex = floor(random(products.length));
+          let productIndex = floor(random(products.length - 3));
           currentTrade.items.push(productIndex);
       }
   }
@@ -2460,6 +2640,8 @@ function moveShopkeeper() {
   if (previousState === "entering" && shopkeeperActor.state === "working") {
     dayStarted = true;
     startTime = millis();
+    dailyCustomerLimit = getDailyCustomers();
+    customersLeft = dailyCustomerLimit;
     scheduleCustomer();
   }
   if (previousState === "leaving" && shopkeeperActor.state === "gone") {
@@ -2480,7 +2662,7 @@ function moveShopkeeper() {
 
 function buyerPrice(index) {
   let price = products[index].value * currentTrade.markup;
-  if (shopUpgrades[2]) price *= 1.05;
+  price *= 1 + shelvesLevel * 0.05;
   return Number(price.toFixed(2));
 }
 
@@ -2499,8 +2681,7 @@ function bundleTotal() {
 
 
 function scheduleCustomer() {
-  if (shopUpgrades[3]) nextArrival = millis() + random(1000, 3200);
-  else nextArrival = millis() + random(1500, 5000);
+  nextArrival = millis() + random(1500, 5000);
 }
 
 
@@ -2548,7 +2729,7 @@ function pawnTradeBoard() {
 
   if (!pawnTradeActive()) return;
 
-  if (shopUpgrades[0]) {
+  if (priceCatalogOwned) {
     // Show bundle's base value or buyer's requested category reference.
     let value = 0;
     if (currentTrade.type === "sell") {
