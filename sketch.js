@@ -552,86 +552,7 @@ function selectedTotal() {
 
 // Customer dialogue board
 
-function drawBoard() {
 
-  pixelBoard(110, 344, 645, 222);
-
-  fill(65, 40, 28);
-  textAlign(LEFT);
-  textSize(14);
-
-  if (currentTrade.type === "sell") {
-
-      let total = bundleTotal();
-
-      text("SELLER OFFERS " + currentTrade.items.length + " ITEMS",
-           135, 375);
-
-      text("Total: $" + total.toFixed(2), 135, 399);
-
-      for (let i = 0; i < currentTrade.items.length; i++) {
-
-          let item = products[currentTrade.items[i]];
-
-          text(item.name + " - $" + item.value.toFixed(2),
-               150, 426 + i * 27);
-      }
-
-      let canBuy =
-          inventory.length + reservedStorage() + currentTrade.items.length <= shopCapacity() &&
-          money >= total;
-
-      drawButton("BUY ALL", 150, 520, 185,
-                 canBuy, color(70, 115, 65));
-
-      drawButton("REJECT", 505, 520, 185,
-                 true, color(160, 70, 60));
-  }
-
-  else {
-
-      let entries = availableItems();
-      text("BUYER WANTS: " + currentTrade.category, 135, 375);
-
-      textSize(12);
-      text("BUDGET $" + currentTrade.budget +
-        " | SELECTED $" + selectedTotal().toFixed(2),
-        135, 397);
-
-      // Display available inventory
-      for (let j = 0; j < entries.length; j++) {
-
-          let index = entries[j];
-          let entry = inventory[index];
-          let item = products[entry.product];
-
-          let x = 135 + (j % 2) * 305;
-          let y = 414 + floor(j / 2) * 33;
-
-          let selected = selectedItems.includes(index);
-
-          let label = (selected ? "[X] " : "[ ] ") +
-                      item.name + " $" +
-                      buyerPrice(entry.product).toFixed(2);
-
-          drawButton(label, x, y, 280, true,
-              selected ? color(70, 115, 65) :
-                         color(120, 85, 55));
-      }
-
-      if (entries.length === 0) {
-          fill(65, 40, 28);
-          text("No matching items available.", 135, 451);
-      }
-
-      drawButton("CONFIRM", 150, 520, 185,
-        selectedItems.length > 0,
-        color(70, 115, 65));
-
-      drawButton("REJECT", 505, 520, 185,
-                 true, color(160, 70, 60));
-  }
-}
 
 
 // Complete a transaction
@@ -694,14 +615,6 @@ function handleBasicClick() {
 
     return;
   }
-
-  // Pause / Resume button
-  if (mouseX >= 610 && mouseX <= 662 &&
-    mouseY >= 10 && mouseY <= 65) {
-
-    togglePause();
-    return;
-}
 
   // Disable other interactions while paused
   if (gamePaused) {
@@ -815,7 +728,6 @@ function handleBasicClick() {
 
 }
 
-;
 
 // ============================================================
 // CUSTOMER PORTRAITS AND TRADING
@@ -950,8 +862,7 @@ function pawnTradeActive() {
 // Keep all the original setup work (shopkeeper, background, original assets).
 
 
-// Preserve customer route + original trade generation; replace random sprite.
-;
+
 
 // Panel with safe padding, fixed positions and no text running off the canvas.
 function pawnPanel(x,y,w,h) {
@@ -992,7 +903,6 @@ function pawnPortrait() {
   fill(199,139,60);rect(43,449,205*pawnScore()/100,14);
   { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(16); text(pawnScore() + ' / 100', 43, 488); };
 }
-;
 
 // New trade board interactions; all unrelated input still uses existing handler.
 function handleCustomerClick() {
@@ -1036,18 +946,15 @@ function handleCustomerClick() {
     }
   }
 };
-;
-;
 
 
-;
 
 // ============================================================
 // SHOP UPGRADES AND RELATIONSHIPS
 // ============================================================
 
 // THE PAWN SHOP - relationships, upgrades, bargaining
-// Add AFTER sketch.js and customer_ui.js in index.html.
+
 // Only p5.js + beginner JavaScript (arrays, objects, functions and mousePressed).
 
 let shopMenu = "";             // "people", "upgrades", or ""
@@ -1225,19 +1132,12 @@ function shopDrawUpgrades() {
   drawButton("CLOSE", 350, 501, 166, true, color(98, 67, 46));
 }
 
-// Save prior wrappers, so customer movement and trade logic continue to run.
-;
 
-;
 
-;
-;
-;
 
-;
 
-// Supplement customer_ui's trade screen, without changing its portrait layout.
-;
+
+
 
 function shopBuyUpgrade(i) {
   let upgrade = getUpgradeList()[i];
@@ -1304,17 +1204,15 @@ function handleShopClick() {
   handleCustomerClick();
 };
 
-;
 
 
-;
 
 // ============================================================
 // CUSTOMER DIALOGUE
 // ============================================================
 
 // Dialogue-only update for The Pawn Shop.
-// Load AFTER sketch.js, customer_ui.js and shop_systems.js.
+
 // Does not change trading layout, art, fonts, buttons or trade mechanics.
 
 
@@ -1578,13 +1476,10 @@ function pawnNewConversation() {
 };
 
 // Handle bargaining outcomes after the original bargaining calculation.
-;
 
 // Show one brief, customer-only parting remark over the *existing* shop scene.
-;
 
 // Detect completed sales without replacing the existing money/inventory logic.
-;
 
 // Observe the previous game actions so successful purchase has a parting line.
 function handleTradeClick() {
@@ -1599,19 +1494,16 @@ function handleTradeClick() {
   if (eligible && currentCustomer.state === 'waiting') customerDialogueOutcome = 'rejected';
 };
 
-;
-
-;
 
 
-;
+
 
 // ============================================================
 // LANDLORD, RENT, AND TEST TOOLS
 // ============================================================
 
 // The Pawn Shop: red telephone, Mr. Pennyworth, upgrades and weekly rent.
-// Load LAST in index.html, after customer_dialogue_only.js.
+
 // Uses p5.js, arrays, objects, conditions, loops, and mousePressed().
 
 let phoneSheet;
@@ -1628,6 +1520,7 @@ let supplierMessage = "";
 let pendingDeliveries = [];
 let deliveryNoticeUntil = 0;
 let orderConfirmation = "";
+let orderConfirmationUntil = 0;
 let pendingQuantity = 0;
 const phoneX = 673, phoneY = 360, phoneW = 180, phoneH = 180;
 
@@ -1690,10 +1583,8 @@ function getDailyCustomers() {
 };
 
 // Day banner countdown only appears after the Day 7 surprise.
-;
 
 // Hide upgrades until Day 3, without changing the PEOPLE button.
-;
 
 
 function buySupplierItems(quantity, confirmed = false) {
@@ -1759,6 +1650,7 @@ function buySupplierItems(quantity, confirmed = false) {
   }
 
   orderConfirmation = quantity + " " + productName;
+  orderConfirmationUntil = millis() + 3000;
   pendingQuantity = 0;
   supplierMessage = "";
   phoneCall = "orderConfirmed";
@@ -1920,11 +1812,6 @@ function drawSupplierPhone() {
     text("will be delivered", x + 122, y + 140);
     text("tomorrow!", x + 122, y + 165);
 
-    drawButton(
-      "CONTINUE",
-      x + 9, y + 210, 227,
-      true, color(73, 120, 72)
-    );
   }
 }
 
@@ -2055,9 +1942,7 @@ function phoneSellSelection() {
 }
 
 // Receipts no longer treat rent as a daily $10 charge.
-;
 
-;
 
 function mousePressed() {
 
@@ -2139,12 +2024,7 @@ function mousePressed() {
         phoneCall = "supplierOrder";
         return;
       }
-    } else if (phoneCall === "orderConfirmed") {
-      if (pawnHit(429, 450, 227, 32)) {
-        phoneEndCall();
-        return;
-      }
-    } else if (pawnHit(330, 443, 204, 32)) {
+    } else if (pawnHit(330, 443, 204, 32) && phoneCall !== "orderConfirmed") {
       phoneEndCall();
       return;
     }
@@ -2177,10 +2057,8 @@ function mousePressed() {
   handleTradeClick();
 };
 
-;
 
 // Ensure each rent day is handled only once even if the receipt stays open.
-;
 
 // ------------------------------------------------------------
 // DEVELOPMENT TEST MODE (turn OFF before submitting the game)
@@ -2258,7 +2136,6 @@ function drawTestPanel() {
   pop();
 }
 
-;
 
 function keyPressed() {
   if (DEV_TEST_MODE) {
@@ -2314,6 +2191,10 @@ function keyPressed() {
 
 
 function draw() {
+    // Supplier order confirmations close automatically after three seconds.
+    if (phoneCall === "orderConfirmed" && millis() >= orderConfirmationUntil) {
+      phoneEndCall();
+    }
 
     phoneCheckEvents();
     background(0);
@@ -2494,6 +2375,7 @@ function restartGame() {
   pendingDeliveries = [];
   deliveryNoticeUntil = 0;
   orderConfirmation = "";
+  orderConfirmationUntil = 0;
   pendingQuantity = 0;
 
   
