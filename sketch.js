@@ -167,7 +167,17 @@ const products = [
     new Product("Bread", "Food", 15),
     new Product("Apple", "Food", 10),
     new Product("Hammer", "Tools", 40),
-    new Product("Shovel", "Tools", 30)
+    new Product("Shovel", "Tools", 30),
+    new Product("Clock", "Daily", 25),
+    new Product("Backpack", "Daily", 30),
+    new Product("Cheese", "Food", 18),
+    new Product("Chocolate", "Food", 12),
+    new Product("Screwdriver", "Tools", 20),
+    new Product("Wrench", "Tools", 28),
+    // Supplier-only stock (not sold to the player by walk-in customers).
+    new Product("Wine", "Food", 40),
+    new Product("Camera", "Daily", 70),
+    new Product("Drill", "Tools", 60)
 ];
 
 let gamePaused = false;
@@ -177,6 +187,8 @@ let gameOver = false;
 let inventory = [];
 let money = 150;
 let customerNumber = 0;
+let dailyCustomerLimit = 5;
+let customersLeft = 5;
 let dayNumber = 1;
 
 let showIntro = true;
@@ -186,14 +198,14 @@ let startTime = 0;
 let nextArrival = 0;
 let nextMorning = 0;
 
-// 3 real minutes = 16 game hours
-const dayLength = 180000;
+// Each day ends after its customer quota is served.
 const bagLimit = 6;
 
 
 
 let currentTrade;
 let showBag = false;
+let bagPage = 0;
 let message = "";
 let selectedItems = [];
 let dailyLog = [];
@@ -267,7 +279,7 @@ function drawIntro() {
   
     textStyle(NORMAL);
     textSize(17);
-    text("Start with $150 and buy items from customers.", 142, 213);
+    text("Buy items from customers.", 142, 213);
     text("Sell items that match the buyer's category.", 142, 242);
     text("Use your earnings to unlock shop upgrades.", 142, 271);
     text("Explore new mechanisms as the game moves on!", 142, 300);
@@ -293,7 +305,6 @@ function drawIntro() {
     fill(86, 61, 42);
     textAlign(CENTER);
     textSize(15);
-    text("OPEN 8 AM - MIDNIGHT", 432, 457);
   
     drawButton("START GAME", 317, 474, 220, true, color(70, 115, 65));
   }
@@ -303,49 +314,11 @@ function drawIntro() {
 
 // Clock from 8 AM to midnight
 function drawClock() {
-  let currentTime = gamePaused ? pauseStart : millis();
-  let elapsed = dayStarted ? currentTime - startTime : 0;
-
-    elapsed = constrain(elapsed, 0, dayLength);
-
-    let minutes = floor((480 + elapsed / dayLength * 960) / 10) * 10;
-
-    let hour24 = floor(minutes / 60);
-    let minute = minutes % 60;
-
-    let period = hour24 >= 12 && hour24 < 24 ? "PM" : "AM";
-
-    let hour12 = hour24 % 12;
-
-    if (hour12 === 0) {
-        hour12 = 12;
-    }
-
-    pixelBoard(672, 10, 182, 55);
-
-    fill(65, 40, 28);
-    textAlign(CENTER);
-    textSize(15);
-
-    text(hour12 + ":" + nf(minute, 2) + " " + period, 763, 44);
-}
-
-function drawPauseButton() {
-
-  pixelBoard(610, 10, 52, 55);
-
-  noStroke();
+  pixelBoard(672, 10, 182, 55);
   fill(65, 40, 28);
-
-  if (gamePaused) {
-      // Play icon ▶
-      triangle(628, 24, 628, 50, 649, 37);
-  }
-  else {
-      // Pause icon Ⅱ
-      rect(626, 25, 7, 24);
-      rect(640, 25, 7, 24);
-  }
+  textAlign(CENTER);
+  textSize(15);
+  text(customersLeft + " CUSTOMERS LEFT", 763, 44);
 }
 
 function togglePause() {
@@ -435,15 +408,20 @@ function drawGameOver() {
 
 function moveCustomer() {
   if (currentCustomer.state === "gone") {
-    if (dayStarted && !closing && millis() >= nextArrival) generateCustomer();
+    if (dayStarted && !closing && customersLeft > 0 && millis() >= nextArrival) generateCustomer();
     return;
   }
-
   let previousState = currentCustomer.state;
   currentCustomer.move();
   if (previousState === "leaving" && currentCustomer.state === "gone") {
-    if (closing) shopkeeperActor.leave();
-    else scheduleCustomer();
+    if (!closing) {
+      customersLeft--;
+      if (customersLeft <= 0) {
+        customersLeft = 0;
+        closing = true;
+        shopkeeperActor.leave();
+      } else scheduleCustomer();
+    } else shopkeeperActor.leave();
   }
 }
 
@@ -573,86 +551,7 @@ function selectedTotal() {
 
 // Customer dialogue board
 
-function drawBoard() {
 
-  pixelBoard(110, 344, 645, 222);
-
-  fill(65, 40, 28);
-  textAlign(LEFT);
-  textSize(14);
-
-  if (currentTrade.type === "sell") {
-
-      let total = bundleTotal();
-
-      text("SELLER OFFERS " + currentTrade.items.length + " ITEMS",
-           135, 375);
-
-      text("Total: $" + total.toFixed(2), 135, 399);
-
-      for (let i = 0; i < currentTrade.items.length; i++) {
-
-          let item = products[currentTrade.items[i]];
-
-          text(item.name + " - $" + item.value.toFixed(2),
-               150, 426 + i * 27);
-      }
-
-      let canBuy =
-          inventory.length + currentTrade.items.length <= bagLimit &&
-          money >= total;
-
-      drawButton("BUY ALL", 150, 520, 185,
-                 canBuy, color(70, 115, 65));
-
-      drawButton("REJECT", 505, 520, 185,
-                 true, color(160, 70, 60));
-  }
-
-  else {
-
-      let entries = availableItems();
-      text("BUYER WANTS: " + currentTrade.category, 135, 375);
-
-      textSize(12);
-      text("BUDGET $" + currentTrade.budget +
-        " | SELECTED $" + selectedTotal().toFixed(2),
-        135, 397);
-
-      // Display available inventory
-      for (let j = 0; j < entries.length; j++) {
-
-          let index = entries[j];
-          let entry = inventory[index];
-          let item = products[entry.product];
-
-          let x = 135 + (j % 2) * 305;
-          let y = 414 + floor(j / 2) * 33;
-
-          let selected = selectedItems.includes(index);
-
-          let label = (selected ? "[X] " : "[ ] ") +
-                      item.name + " $" +
-                      buyerPrice(entry.product).toFixed(2);
-
-          drawButton(label, x, y, 280, true,
-              selected ? color(70, 115, 65) :
-                         color(120, 85, 55));
-      }
-
-      if (entries.length === 0) {
-          fill(65, 40, 28);
-          text("No matching items available.", 135, 451);
-      }
-
-      drawButton("CONFIRM", 150, 520, 185,
-        selectedItems.length > 0,
-        color(70, 115, 65));
-
-      drawButton("REJECT", 505, 520, 185,
-                 true, color(160, 70, 60));
-  }
-}
 
 
 // Complete a transaction
@@ -716,14 +615,6 @@ function handleBasicClick() {
     return;
   }
 
-  // Pause / Resume button
-  if (mouseX >= 610 && mouseX <= 662 &&
-    mouseY >= 10 && mouseY <= 65) {
-
-    togglePause();
-    return;
-}
-
   // Disable other interactions while paused
   if (gamePaused) {
     return;
@@ -733,7 +624,8 @@ function handleBasicClick() {
   if (mouseX >= 230 && mouseX <= 318 &&
       mouseY >= 10 && mouseY <= 86) {
 
-      showBag = !showBag;
+      showBag = true;
+      bagPage = 0;
       return;
   }
 
@@ -835,7 +727,6 @@ function handleBasicClick() {
 
 }
 
-;
 
 // ============================================================
 // CUSTOMER PORTRAITS AND TRADING
@@ -970,8 +861,7 @@ function pawnTradeActive() {
 // Keep all the original setup work (shopkeeper, background, original assets).
 
 
-// Preserve customer route + original trade generation; replace random sprite.
-;
+
 
 // Panel with safe padding, fixed positions and no text running off the canvas.
 function pawnPanel(x,y,w,h) {
@@ -1012,7 +902,6 @@ function pawnPortrait() {
   fill(199,139,60);rect(43,449,205*pawnScore()/100,14);
   { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(16); text(pawnScore() + ' / 100', 43, 488); };
 }
-;
 
 // New trade board interactions; all unrelated input still uses existing handler.
 function handleCustomerClick() {
@@ -1030,7 +919,7 @@ function handleCustomerClick() {
   if(currentTrade.type==='sell') {
     if(pawnHit(312,489,152,36)) {
       let total=bundleTotal();
-      if(inventory.length+currentTrade.items.length>bagLimit){pawnMessage='NOT ENOUGH SPACE';return;}
+      if (inventory.length + reservedStorage() + currentTrade.items.length > shopCapacity()){pawnMessage='NOT ENOUGH SPACE';return;}
       if(total>money){pawnMessage='NOT ENOUGH MONEY';return;}
       money-=total;
       for(let idx of currentTrade.items) {
@@ -1056,33 +945,31 @@ function handleCustomerClick() {
     }
   }
 };
-;
-;
 
 
-;
 
 // ============================================================
 // SHOP UPGRADES AND RELATIONSHIPS
 // ============================================================
 
 // THE PAWN SHOP - relationships, upgrades, bargaining
-// Add AFTER sketch.js and customer_ui.js in index.html.
+
 // Only p5.js + beginner JavaScript (arrays, objects, functions and mousePressed).
 
 let shopMenu = "";             // "people", "upgrades", or ""
 let shopMenuPaused = false;
-let shopUpgrades = [false, false, false, false, false];
-let shopUpgradeTitles = ["PRICE CATALOG", "STORAGE +2", "DISPLAY SHELVES",
-                         "ADVERTISING", "ORDERING HOTLINE"];
-let shopUpgradePrices = [90, 130, 120, 100, 160];
-let shopUpgradeDescriptions = [
-  "Show original item values during trading.",
-  "Increase bag space by two items.",
-  "Earn 5% more on sales.",
-  "Attract customers more frequently.",
-  "Order an Apple for $8 whenever you have space."
-];
+let storageLevel = 0;
+let shelvesLevel = 0;
+let advertisingLevel = 0;
+let priceCatalogOwned = false;
+let supplierOwned = [false, false, false];
+let upgradePage = 0;
+let storagePrices = [120, 250, 500];
+let shelvesPrices = [100, 220, 450];
+let advertisingPrices = [100, 200, 400];
+let supplierNames = ["TIPSY BARREL", "FLASHBACK", "RUSTY WRENCH"];
+let supplierProducts = ["Wine", "Camera", "Drill"];
+let supplierPrices = [150, 220, 180];
 let shopMessage = "";
 let shopBargained = false;
 let shopTradeMultiplier = 1;
@@ -1095,7 +982,20 @@ function pawnScore() {
 };
 
 function shopCapacity() {
-  return bagLimit + (shopUpgrades[1] ? 2 : 0);
+  if (storageLevel === 1) return bagLimit + 5;
+  if (storageLevel === 2) return bagLimit + 10;
+  if (storageLevel === 3) return bagLimit + 20;
+  return bagLimit;
+}
+
+function reservedStorage() {
+  let total = 0;
+
+  for (let order of pendingDeliveries) {
+    total += order.quantity;
+  }
+
+  return total;
 }
 
 function shopCloseMenu() {
@@ -1143,48 +1043,112 @@ function shopDrawPeople() {
   drawButton("CLOSE", 347, 462, 170, true, color(98, 67, 46));
 }
 
+function getUpgradeList() {
+  let available = [];
+  let owned = [];
+  let roman = ["I", "II", "III"];
+
+  if (!priceCatalogOwned) {
+    available.push({name:"PRICE CATALOG", description:"Reveals the original value of items to help you make better deals.", price:90, type:"catalog"});
+  } else owned.push({name:"PRICE CATALOG"});
+
+  let storageDescriptions = [
+    "Expand your storage with 5 additional slots.",
+    "Organize your growing inventory and gain 5 more storage slots.",
+    "Expand your shop's storage by another 10 slots."
+  ];
+  let shelvesDescriptions = [
+    "Better displays attract buyers willing to pay 5% more for your items.",
+    "Improved displays increase your selling prices by another 5%.",
+    "Premium displays increase your selling prices by another 5%."
+  ];
+  let advertisingDescriptions = [
+    "A small boost of customers is attracted to your shop each day.",
+    "A moderate boost of customers is attracted to your shop each day.",
+    "A large boost of customers is attracted to your shop each day."
+  ];
+
+  if (storageLevel < 3) available.push({
+    name:"STORAGE " + roman[storageLevel],
+    description:storageDescriptions[storageLevel],
+    price:storagePrices[storageLevel], type:"storage"
+  });
+  if (shelvesLevel < 3) available.push({
+    name:"DISPLAY SHELVES " + roman[shelvesLevel],
+    description:shelvesDescriptions[shelvesLevel],
+    price:shelvesPrices[shelvesLevel], type:"shelves"
+  });
+  if (advertisingLevel < 3) available.push({
+    name:"ADVERTISING " + roman[advertisingLevel],
+    description:advertisingDescriptions[advertisingLevel],
+    price:advertisingPrices[advertisingLevel], type:"advertising"
+  });
+
+  let partnerships = [
+    ["TIPSY BARREL PARTNERSHIP", "Call Tipsy Barrel Brewing Co. to buy wine at wholesale prices."],
+    ["FLASHBACK PARTNERSHIP", "Call Flashback Electronics to buy cameras at wholesale prices."],
+    ["RUSTY WRENCH PARTNERSHIP", "Call Rusty Wrench Hardware to buy drills at wholesale prices."]
+  ];
+  for (let i = 0; i < partnerships.length; i++) {
+    if (supplierOwned[i]) owned.push({name:partnerships[i][0]});
+    else available.push({name:partnerships[i][0], description:partnerships[i][1],
+                         price:supplierPrices[i], type:"supplier", supplier:i});
+  }
+  for (let i = 0; i < storageLevel; i++) owned.push({name:"STORAGE " + roman[i]});
+  for (let i = 0; i < shelvesLevel; i++) owned.push({name:"DISPLAY SHELVES " + roman[i]});
+  for (let i = 0; i < advertisingLevel; i++) owned.push({name:"ADVERTISING " + roman[i]});
+  return available.concat(owned);
+}
+
 function shopDrawUpgrades() {
   noStroke(); fill(0, 0, 0, 175); rect(0, 0, width, height);
   pixelBoard(94, 33, 676, 508);
-  { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(22); text("SHOP UPGRADES", 125, 74); };
-  { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(16); text("BALANCE: $" + money.toFixed(2), 125, 103); };
-  for (let i = 0; i < 5; i++) {
-    let y = 120 + i * 69;
+  fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(22);
+  text("SHOP UPGRADES", 125, 74);
+  textSize(16); text("BALANCE: $" + money.toFixed(2), 125, 103);
+
+  let upgrades = getUpgradeList();
+  let totalPages = ceil(upgrades.length / 5);
+  upgradePage = constrain(upgradePage, 0, totalPages - 1);
+
+  for (let row = 0; row < 5; row++) {
+    let i = upgradePage * 5 + row;
+    if (i >= upgrades.length) break;
+    let upgrade = upgrades[i];
+    let y = 120 + row * 69;
     shopMenuCard(119, y, 626, 62);
-    { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(17); text(shopUpgradeTitles[i], 134, y + 22, 450, 28); };
-    { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(14); text(shopUpgradeDescriptions[i], 134, y + 43, 455, 28); };
-    let owned = shopUpgrades[i];
-    drawButton(owned ? "OWNED" : "$" + shopUpgradePrices[i],
-               609, y + 15, 116, !owned && money >= shopUpgradePrices[i],
-               color(73, 120, 72));
+    fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(17);
+    text(upgrade.name, 134, y + 22);
+    textSize(13); text(upgrade.description || "", 134, y + 43, 465);
+    let owned = upgrade.price === undefined;
+    drawButton(owned ? "OWNED" : "$" + upgrade.price, 609, y + 15, 116,
+               !owned && money >= upgrade.price, color(73, 120, 72));
   }
-  if (shopUpgrades[4]) {
-    drawButton("ORDER $8", 568, 474, 156,
-               money >= 8 && inventory.length < shopCapacity(), color(73, 120, 72));
-  }
-  { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(12); text(shopMessage.substring(0, 34), 125, 504); };
+  if (upgradePage > 0) drawButton("<", 245, 467, 58, true, color(98, 67, 46));
+  if (upgradePage < totalPages - 1) drawButton(">", 561, 467, 58, true, color(98, 67, 46));
+  fill(63, 40, 30); textAlign(CENTER); textSize(14);
+  text((upgradePage + 1) + " / " + totalPages, 432, 490);
   drawButton("CLOSE", 350, 501, 166, true, color(98, 67, 46));
 }
 
-// Save prior wrappers, so customer movement and trade logic continue to run.
-;
 
-;
 
-;
-;
-;
 
-;
 
-// Supplement customer_ui's trade screen, without changing its portrait layout.
-;
+
+
 
 function shopBuyUpgrade(i) {
-  if (shopUpgrades[i] || money < shopUpgradePrices[i]) return;
-  money -= shopUpgradePrices[i];
-  shopUpgrades[i] = true;
-  shopMessage = shopUpgradeTitles[i] + " UNLOCKED";
+  let upgrade = getUpgradeList()[i];
+  if (!upgrade || upgrade.price === undefined || money < upgrade.price) return;
+  money -= upgrade.price;
+  if (upgrade.type === "catalog") priceCatalogOwned = true;
+  else if (upgrade.type === "storage") storageLevel++;
+  else if (upgrade.type === "shelves") shelvesLevel++;
+  else if (upgrade.type === "advertising") advertisingLevel++;
+  else if (upgrade.type === "supplier") supplierOwned[upgrade.supplier] = true;
+  shopMessage = upgrade.name + " UNLOCKED";
+  upgradePage = 0;
 }
 
 function handleShopClick() {
@@ -1193,18 +1157,17 @@ function handleShopClick() {
     if (shopMenu === "people") {
       if (pawnHit(347, 462, 170, 32)) shopCloseMenu();
     } else {
-      if (pawnHit(350, 501, 166, 32)) shopCloseMenu();
-      else if (shopUpgrades[4] && pawnHit(568, 474, 156, 32)) {
-        if (money >= 8 && inventory.length < shopCapacity()) {
-          money -= 8;
-          inventory.push({product:3, boughtFor:8});
-          dailyLog.push({type:"BUY", name:"Apple", amount:8});
-          shopMessage = "APPLE ORDER RECEIVED";
-        }
-      } else {
-        for (let i = 0; i < 5; i++) {
-          let y = 120 + i * 69 + 15;
-          if (pawnHit(609, y, 116, 32)) { shopBuyUpgrade(i); break; }
+      if (pawnHit(350, 501, 166, 32)) { shopCloseMenu(); return; }
+      let upgrades = getUpgradeList();
+      let totalPages = ceil(upgrades.length / 5);
+      if (pawnHit(245, 467, 58, 32) && upgradePage > 0) { upgradePage--; return; }
+      if (pawnHit(561, 467, 58, 32) && upgradePage < totalPages - 1) { upgradePage++; return; }
+      for (let row = 0; row < 5; row++) {
+        let i = upgradePage * 5 + row;
+        if (i >= upgrades.length) break;
+        if (pawnHit(609, 135 + row * 69, 116, 32)) {
+          shopBuyUpgrade(i);
+          return;
         }
       }
     }
@@ -1223,7 +1186,7 @@ function handleShopClick() {
   if (pawnTradeActive() && currentTrade.type === "sell" &&
       !gamePaused && !showBag && pawnHit(312, 489, 152, 36)) {
     let cost = bundleTotal();
-    if (inventory.length + currentTrade.items.length > shopCapacity()) {
+    if (inventory.length + reservedStorage() + currentTrade.items.length > shopCapacity()) {
       pawnMessage = "NOT ENOUGH SPACE"; return;
     }
     if (cost > money) { pawnMessage = "NOT ENOUGH MONEY"; return; }
@@ -1240,17 +1203,15 @@ function handleShopClick() {
   handleCustomerClick();
 };
 
-;
 
 
-;
 
 // ============================================================
 // CUSTOMER DIALOGUE
 // ============================================================
 
 // Dialogue-only update for The Pawn Shop.
-// Load AFTER sketch.js, customer_ui.js and shop_systems.js.
+
 // Does not change trading layout, art, fonts, buttons or trade mechanics.
 
 
@@ -1514,13 +1475,10 @@ function pawnNewConversation() {
 };
 
 // Handle bargaining outcomes after the original bargaining calculation.
-;
 
 // Show one brief, customer-only parting remark over the *existing* shop scene.
-;
 
 // Detect completed sales without replacing the existing money/inventory logic.
-;
 
 // Observe the previous game actions so successful purchase has a parting line.
 function handleTradeClick() {
@@ -1528,26 +1486,23 @@ function handleTradeClick() {
   let buyingFromCustomer = active && currentTrade.type === 'sell';
   let payButton = buyingFromCustomer && pawnHit(312, 489, 152, 36);
   let eligible = payButton && money >= bundleTotal() &&
-    inventory.length + currentTrade.items.length <= shopCapacity();
+    inventory.length + reservedStorage() + currentTrade.items.length <= shopCapacity();
   if (eligible) customerDialogueOutcome = 'accepted';
   handleShopClick();
   // If transaction did not actually end, discard speculative outcome.
   if (eligible && currentCustomer.state === 'waiting') customerDialogueOutcome = 'rejected';
 };
 
-;
-
-;
 
 
-;
+
 
 // ============================================================
 // LANDLORD, RENT, AND TEST TOOLS
 // ============================================================
 
 // The Pawn Shop: red telephone, Mr. Pennyworth, upgrades and weekly rent.
-// Load LAST in index.html, after customer_dialogue_only.js.
+
 // Uses p5.js, arrays, objects, conditions, loops, and mousePressed().
 
 let phoneSheet;
@@ -1559,6 +1514,13 @@ let phoneSavedPause = false;
 let phoneHint = '';
 let phoneHintUntil = 0;
 let phonePaidToday = false;
+let selectedSupplier = -1;
+let supplierMessage = "";
+let pendingDeliveries = [];
+let deliveryNoticeUntil = 0;
+let orderConfirmation = "";
+let orderConfirmationUntil = 0;
+let pendingQuantity = 0;
 const phoneX = 673, phoneY = 360, phoneW = 180, phoneH = 180;
 
 // Request the asset at startup. Existing setup() remains the only setup function.
@@ -1596,6 +1558,9 @@ function phoneEndCall() {
   phonePending = '';
   phoneCall = '';
   phoneSelected = [];
+  selectedSupplier = -1;
+  pendingQuantity = 0;
+  supplierMessage = "";
   if (phoneSavedPause) togglePause();
   phoneSavedPause = false;
 }
@@ -1603,24 +1568,251 @@ function phoneEndCall() {
 // Replace the original daily closing logic, which deducted $10 every day.
 // Rent is collected only by the landlord's rent-day call.
 function updateDay() {
-  if (dayStarted && !closing && millis() - startTime >= dayLength) {
+  if (dayStarted && !closing && customersLeft <= 0) {
     closing = true;
     showBag = false;
-    if (currentCustomer.state === 'waiting') finishTrade();
-    else if (currentCustomer.state === 'entering') currentCustomer.state = 'leaving';
-    if (currentCustomer.state === 'gone') {
-      shopkeeperActor.state = 'leaving';
-      shopkeeperActor.routeIndex = shopkeeperRoute.length - 2;
-    }
+    shopkeeperActor.leave();
   }
+}
+function getDailyCustomers() {
+  if (advertisingLevel === 1) return 7;
+  if (advertisingLevel === 2) return 10;
+  if (advertisingLevel === 3) return 13;
+  return 5;
 };
 
 // Day banner countdown only appears after the Day 7 surprise.
-;
 
 // Hide upgrades until Day 3, without changing the PEOPLE button.
-;
 
+
+function buySupplierItems(quantity, confirmed = false) {
+  let productIndex = 12 + selectedSupplier;
+  let unitPrices = [20, 35, 30];
+  let unitPrice = unitPrices[selectedSupplier];
+
+  let discount = 0;
+
+  if (quantity === 3) discount = 0.15;
+  if (quantity === 6) discount = 0.25;
+
+  let total = round(quantity * unitPrice * (1 - discount));
+
+  // Count storage space reserved for deliveries
+  let reservedSpace = reservedStorage();
+
+  if (money < total) {
+    supplierMessage = "NOT ENOUGH MONEY";
+    return;
+  }
+
+  let futureStorage = inventory.length + reservedSpace + quantity;
+
+  if (futureStorage > shopCapacity()) {
+    // TODO: Integrate Abdullah's Tetris storage mini-game for overflow later.
+    supplierMessage = "NOT ENOUGH SPACE";
+    return;
+  }
+
+  if (futureStorage === shopCapacity() && !confirmed) {
+    pendingQuantity = quantity;
+    phoneCall = "storageWarning";
+    return;
+  }
+
+  // Pay now
+  money -= total;
+
+  // Deliver tomorrow
+  pendingDeliveries.push({
+    product: productIndex,
+    quantity: quantity,
+    boughtFor: total / quantity,
+    deliveryDay: dayNumber + 1
+  });
+
+  // Record the payment in today's receipt
+  for (let i = 0; i < quantity; i++) {
+    dailyLog.push({
+      type: "BUY",
+      name: products[productIndex].name,
+      amount: total / quantity
+    });
+  }
+
+  let productName = products[productIndex].name.toLowerCase();
+
+  if (selectedSupplier === 0) {
+    productName = quantity === 1 ? "bottle of wine" : "bottles of wine";
+  } else if (quantity > 1) {
+    productName += "s";
+  }
+
+  orderConfirmation = quantity + " " + productName;
+  orderConfirmationUntil = millis() + 3000;
+  pendingQuantity = 0;
+  supplierMessage = "";
+  phoneCall = "orderConfirmed";
+}
+
+function deliverOrders() {
+  let deliveredCount = 0;
+  for (let i = pendingDeliveries.length - 1; i >= 0; i--) {
+    let order = pendingDeliveries[i];
+
+    if (order.deliveryDay <= dayNumber) {
+      for (let j = 0; j < order.quantity; j++) {
+        inventory.push({
+          product: order.product,
+          boughtFor: order.boughtFor
+        });
+      }
+
+      // Remove the completed delivery
+      deliveredCount += order.quantity;
+      pendingDeliveries.splice(i, 1);
+    }
+  }
+  if (deliveredCount > 0) {
+    deliveryNoticeUntil = millis() + 3000;
+  }
+}
+
+function drawSupplierPhone() {
+  let x = 420;
+  let y = 240;
+
+  pixelBoard(x, y, 245, 270);
+
+  fill(65, 40, 28);
+  textAlign(CENTER);
+  textStyle(NORMAL);
+
+  // SCREEN 1: Choose a supplier
+  if (phoneCall === "suppliers") {
+    textSize(17);
+    text("Who do you want to call?", x + 122, y + 35);
+
+    let row = 0;
+
+    for (let i = 0; i < supplierOwned.length; i++) {
+      if (supplierOwned[i]) {
+        drawButton(
+          supplierNames[i],
+          x + 9,
+          y + 55 + row * 40,
+          227,
+          true,
+          color(73, 120, 72)
+        );
+
+        row++;
+      }
+    }
+
+    drawButton(
+      "CANCEL",
+      x + 9, y + 225, 227,
+      true, color(155, 83, 66)
+    );
+  }
+
+  // SCREEN 2: Choose how many items to buy
+  else if (phoneCall === "supplierOrder") {
+    let product = supplierProducts[selectedSupplier];
+    let price = [20, 35, 30][selectedSupplier];
+
+    textSize(17);
+    text(supplierNames[selectedSupplier], x + 122, y + 29);
+
+    textSize(14);
+    text("How many would you like?", x + 122, y + 56);
+
+    let quantities = [1, 3, 6];
+    let discounts = [0, 0.15, 0.25];
+
+    for (let i = 0; i < 3; i++) {
+      let quantity = quantities[i];
+      let total = round(quantity * price * (1 - discounts[i]));
+
+      let label;
+
+      if (selectedSupplier === 0) {
+        label = quantity + (quantity === 1
+          ? " bottle of wine"
+          : " bottles of wine");
+      } else {
+        label = quantity + " " + product.toLowerCase();
+
+        if (quantity > 1) {
+          label += "s";
+        }
+      }
+
+      if (i === 1) label += " -15%";
+      if (i === 2) label += " -25%";
+
+      label += " ($" + total + ")";
+
+      drawButton(
+        label,
+        x + 9,
+        y + 75 + i * 40,
+        227,
+        true,
+        color(73, 120, 72)
+      );
+    }
+
+    drawButton(
+      "DON'T PURCHASE",
+      x + 9, y + 195, 227,
+      true, color(155, 83, 66)
+    );
+
+    fill(140, 55, 45);
+    textAlign(CENTER);
+    textSize(12);
+    text(supplierMessage, x + 122, y + 255);
+  }
+
+  // SCREEN 3: Warn before filling all storage slots
+  else if (phoneCall === "storageWarning") {
+    fill(65, 40, 28);
+    textAlign(CENTER);
+    textStyle(BOLD);
+    textSize(19);
+    text("STORAGE WARNING", x + 122, y + 48);
+    textStyle(NORMAL);
+    textSize(14);
+    text("This order will fill", x + 122, y + 91);
+    text("your storage completely.", x + 122, y + 115);
+    text("Still want to purchase?", x + 122, y + 139);
+
+    drawButton("CONFIRM", x + 9, y + 160, 227,
+               true, color(73, 120, 72));
+    drawButton("CANCEL", x + 9, y + 205, 227,
+               true, color(155, 83, 66));
+  }
+
+  // SCREEN 4: Order confirmation
+  else if (phoneCall === "orderConfirmed") {
+    fill(65, 40, 28);
+    textAlign(CENTER);
+
+    textStyle(BOLD);
+    textSize(19);
+    text("PAYMENT RECEIVED", x + 122, y + 55);
+
+    textStyle(NORMAL);
+    textSize(15);
+
+    text(orderConfirmation, x + 122, y + 110);
+    text("will be delivered", x + 122, y + 140);
+    text("tomorrow!", x + 122, y + 165);
+
+  }
+}
 
 function phoneBox() {
   noStroke(); fill(0, 0, 0, 185); rect(0, 0, width, height);
@@ -1630,6 +1822,10 @@ function phoneBox() {
   textStyle(NORMAL);
 }
 function phoneDrawCall() {
+  if (phoneCall === "suppliers" || phoneCall === "supplierOrder" || phoneCall === "storageWarning" || phoneCall === "orderConfirmed") {
+    drawSupplierPhone();
+    return;
+  } 
   phoneBox();
   if (phoneCall === 'hello') {
     fill(66, 43, 29);
@@ -1713,12 +1909,7 @@ function phoneDrawCall() {
     { fill(66, 43, 29); textAlign(LEFT); textStyle(NORMAL); textSize(17); text('Selected sale: $' + total.toFixed(2), 135, 420, 340, 28); };
     drawButton('SELL SELECTED', 135, 460, 235, true, color(70, 115, 65));
     drawButton('SELL NOTHING', 495, 460, 235, true, color(155, 83, 66));
-  } else if (phoneCall === 'hotline') {
-    { fill(66, 43, 29); textAlign(LEFT); textStyle(NORMAL); textSize(24); text('ORDERING HOTLINE', 143, 186, 570, 28); };
-    { fill(66, 43, 29); textAlign(LEFT); textStyle(NORMAL); textSize(20); text('Order one Apple for $8?', 143, 267, 570, 28); };
-    { fill(66, 43, 29); textAlign(LEFT); textStyle(NORMAL); textSize(17); text('Available bag space: ' + (shopCapacity() - inventory.length), 143, 310, 570, 28); };
-    drawButton('ORDER $8', 151, 420, 200, money >= 8 && inventory.length < shopCapacity(), color(70, 115, 65));
-    drawButton('CANCEL', 511, 420, 200, true, color(155, 83, 66));
+
   }
 }
 function phoneSaleTotal() {
@@ -1750,11 +1941,26 @@ function phoneSellSelection() {
 }
 
 // Receipts no longer treat rent as a daily $10 charge.
-;
 
-;
 
 function mousePressed() {
+
+  if (showBag) {
+    let totalPages = max(1, ceil(inventory.length / 6));
+
+    if (bagPage > 0 && pawnHit(285, 411, 58, 32)) {
+      bagPage--;
+      return;
+    }
+    if (bagPage < totalPages - 1 && pawnHit(521, 411, 58, 32)) {
+      bagPage++;
+      return;
+    }
+
+    showBag = false;
+    return;
+  }
+
   if (phonePending && !phoneCall) {
     if (pawnHit(phoneX,phoneY,phoneW,phoneH)) {
       phoneCall = phonePending;
@@ -1763,54 +1969,95 @@ function mousePressed() {
     return;
   }
   if (phoneCall) {
-    if (phoneCall === 'rent') {
+    if (phoneCall === "rent") {
       for (let i = 0; i < inventory.length && i < 8; i++) {
         let x = 135 + (i % 2) * 297;
         let y = 220 + floor(i / 2) * 44;
-        if (pawnHit(x,y,278,36)) {
+        if (pawnHit(x, y, 278, 36)) {
           let pos = phoneSelected.indexOf(i);
           if (pos === -1) phoneSelected.push(i);
-          else phoneSelected.splice(pos,1);
+          else phoneSelected.splice(pos, 1);
           return;
         }
       }
-      if (pawnHit(135,460,235,32)) { phoneSellSelection(); return; }
-      if (pawnHit(495,460,235,32)) { phoneSelected=[]; phonePayRent();phoneEndCall();return; }
-    } else if (phoneCall === 'hotline') {
-      if (pawnHit(151,420,200,32)) {
-        if (money >= 8 && inventory.length < shopCapacity()) {
-          money -= 8; inventory.push({product:3,boughtFor:8});
-          dailyLog.push({type:'BUY',name:'Apple',amount:8});
-          phoneEndCall();
-        }
+      if (pawnHit(135, 460, 235, 32)) { phoneSellSelection(); return; }
+      if (pawnHit(495, 460, 235, 32)) {
+        phoneSelected = [];
+        phonePayRent();
+        phoneEndCall();
         return;
       }
-      if (pawnHit(511,420,200,32)) { phoneEndCall();return; }
-    } else if (pawnHit(330,443,204,32)) { phoneEndCall(); return; }
+    } else if (phoneCall === "suppliers") {
+      let row = 0;
+      for (let i = 0; i < supplierOwned.length; i++) {
+        if (supplierOwned[i]) {
+          if (pawnHit(429, 295 + row * 40, 227, 32)) {
+            selectedSupplier = i;
+            supplierMessage = "";
+            phoneCall = "supplierOrder";
+            return;
+          }
+          row++;
+        }
+      }
+      if (pawnHit(429, 465, 227, 32)) { phoneEndCall(); return; }
+    } else if (phoneCall === "supplierOrder") {
+      for (let i = 0; i < 3; i++) {
+        if (pawnHit(429, 315 + i * 40, 227, 32)) {
+          buySupplierItems([1, 3, 6][i]);
+          return;
+        }
+      }
+      if (pawnHit(429, 435, 227, 32)) {
+        supplierMessage = "";
+        phoneCall = "suppliers";
+        return;
+      }
+    } else if (phoneCall === "storageWarning") {
+      if (pawnHit(429, 400, 227, 32)) {
+        buySupplierItems(pendingQuantity, true);
+        return;
+      }
+      if (pawnHit(429, 445, 227, 32)) {
+        pendingQuantity = 0;
+        phoneCall = "supplierOrder";
+        return;
+      }
+    } else if (pawnHit(330, 443, 204, 32) && phoneCall !== "orderConfirmed") {
+      phoneEndCall();
+      return;
+    }
     return;
   }
   if (showIntro || showReceipt || gameOver || closing || pawnIntroType) {
     handleTradeClick(); return;
   }
+  // The bag can also be opened while a customer is trading.
+  if (pawnTradeActive() && !gamePaused && !shopMenu &&
+      pawnHit(230, 10, 88, 76)) {
+    showBag = true;
+    bagPage = 0;
+    return;
+  }
   // Block the hidden upgrade tab until the Day 3 call has finished.
   if (dayNumber < 3 && pawnHit(462,12,140,32)) return;
-  if (pawnHit(phoneX,phoneY,phoneW,phoneH) && !pawnTradeActive() && !shopMenu) {
-    if (shopUpgrades[4]) {
+  if (pawnHit(phoneX, phoneY, phoneW, phoneH) && !pawnTradeActive() && !shopMenu) {
+    if (supplierOwned.includes(true)) {
       phoneSavedPause = !gamePaused;
       if (phoneSavedPause) togglePause();
-      phoneCall = 'hotline';
+      phoneCall = "suppliers";
+      supplierMessage = "";
     } else {
-      phoneHint='ORDERING HOTLINE LOCKED'; phoneHintUntil=millis()+2200;
+      phoneHint = "NO SUPPLIER CONTACTS";
+      phoneHintUntil = millis() + 2200;
     }
     return;
   }
   handleTradeClick();
 };
 
-;
 
 // Ensure each rent day is handled only once even if the receipt stays open.
-;
 
 // ------------------------------------------------------------
 // DEVELOPMENT TEST MODE (turn OFF before submitting the game)
@@ -1839,6 +2086,8 @@ function testJumpToDay(day) {
   dayNumber = day;
   dayStarted = true;
   startTime = millis();
+  dailyCustomerLimit = getDailyCustomers();
+  customersLeft = dailyCustomerLimit;
   nextArrival = millis() + 6000;
   nextMorning = 0;
   shopkeeperActor.state = 'working';
@@ -1856,6 +2105,7 @@ function testJumpToDay(day) {
 
 // Close the day immediately and open its receipt. Phone events work normally.
 function testEndDay() {
+  customersLeft = 0;
   if (showIntro || phonePending || phoneCall || pawnIntroType || gameOver) return;
   if (shopMenu) shopCloseMenu();
   gamePaused = false;
@@ -1881,11 +2131,10 @@ function drawTestPanel() {
   text('N = next day     E = end today', 234, 160);
   text('3 = Day 3       7 = Day 7', 234, 187);
   text('8 = Day 8       0 = Day 14', 234, 214);
-  text('T = hide/show    (not for release)', 234, 244);
+  text('M = +$100      T = hide/show', 234, 244);
   pop();
 }
 
-;
 
 function keyPressed() {
   if (DEV_TEST_MODE) {
@@ -1894,6 +2143,7 @@ function keyPressed() {
     if (testPanelVisible) {
       if (k === 'n') testJumpToDay(dayNumber + 1);
       else if (k === 'e') testEndDay();
+      else if (k === 'm') money += 100;
       else if (k === '3') testJumpToDay(3);
       else if (k === '7') testJumpToDay(7);
       else if (k === '8') testJumpToDay(8);
@@ -1940,6 +2190,10 @@ function keyPressed() {
 
 
 function draw() {
+    // Supplier order confirmations close automatically after three seconds.
+    if (phoneCall === "orderConfirmed" && millis() >= orderConfirmationUntil) {
+      phoneEndCall();
+    }
 
     phoneCheckEvents();
     background(0);
@@ -1960,12 +2214,7 @@ function draw() {
     
     drawInfo();
     drawClock();
-    drawPauseButton();
     drawBagIcon();
-
-    if (showBag) {
-        drawBag();
-    }
 
     if (closing) {
         fill(255);
@@ -1990,6 +2239,8 @@ function draw() {
         drawGameOver();
     }
   if(pawnTradeActive()) pawnTradeBoard();
+  // Keep the bag icon visible above the customer trading panel.
+  if (pawnTradeActive() && !showBag && !shopMenu) drawBagIcon();
     pawnStartIntroIfNeeded();
     if (pawnIntroType) pawnDrawIntro();
 
@@ -2038,6 +2289,19 @@ function draw() {
       }
   }
 
+  if (deliveryNoticeUntil > millis() && !showIntro &&
+      !showReceipt && !gameOver && !phoneCall && !phonePending && !pawnIntroType) {
+    pixelBoard(297, 86, 270, 56);
+    fill(65, 40, 28);
+    textAlign(CENTER);
+    textStyle(BOLD);
+    textSize(19);
+    text("DELIVERY ARRIVED!", 432, 121);
+    textStyle(NORMAL);
+  }
+
+  // The bag must be drawn after the trading screen.
+  if (showBag) drawBag();
   drawTestPanel();
 }
 
@@ -2073,6 +2337,7 @@ function restartGame() {
 
   // Reset screens
   showBag = false;
+  bagPage = 0;
   showReceipt = false;
   showBudgetWarning = false;
   gamePaused = false;
@@ -2093,10 +2358,24 @@ function restartGame() {
   
   shopMenu = "";
   shopMenuPaused = false;
-  shopUpgrades = [false, false, false, false, false];
+  storageLevel = 0;
+  shelvesLevel = 0;
+  advertisingLevel = 0;
+  priceCatalogOwned = false;
+  supplierOwned = [false, false, false];
+  upgradePage = 0;
+  selectedSupplier = -1;
+  supplierMessage = "";
+  dailyCustomerLimit = 5;
+  customersLeft = 5;
   shopMessage = "";
   shopBargained = false;
   shopTradeMultiplier = 1;
+  pendingDeliveries = [];
+  deliveryNoticeUntil = 0;
+  orderConfirmation = "";
+  orderConfirmationUntil = 0;
+  pendingQuantity = 0;
 
   
   lastCustomerDialogue = '';
@@ -2115,7 +2394,7 @@ function generateCustomer() {
 
 
 
-  let itemIndex = floor(random(products.length));
+  let itemIndex = floor(random(products.length - 3));
   let type = random(["sell", "category"]);
 
   // Buyer offers 5% to 20% above original value
@@ -2136,7 +2415,7 @@ function generateCustomer() {
       let quantity = floor(random(1, 4));
 
       for (let i = 0; i < quantity; i++) {
-          let productIndex = floor(random(products.length));
+          let productIndex = floor(random(products.length - 3));
           currentTrade.items.push(productIndex);
       }
   }
@@ -2225,57 +2504,79 @@ function completeBuyerSale() {
 
 function drawBag() {
   pixelBoard(125, 100, 610, 370);
-
   fill(65, 40, 28);
   textAlign(LEFT);
   textSize(18);
-
   text("YOUR BAG (" + inventory.length + "/" + shopCapacity() + ")", 151, 139);
+  if (reservedStorage() > 0) {
+    textSize(12);
+    text("PENDING DELIVERY: " + reservedStorage() + " SLOTS", 151, 157);
+  }
 
   // Column headers
   textSize(14);
   textStyle(BOLD);
   text("ITEM", 155, 178);
-  text("CATEGORY", 345, 178);
-  text("BOUGHT FOR", 560, 178);
+  text("CATEGORY", 305, 178);
+  if (priceCatalogOwned) text("ORIGINAL", 465, 178);
+  text("BOUGHT FOR", 590, 178);
   textStyle(NORMAL);
 
-  // Header separator
   stroke(165, 130, 95);
   line(150, 190, 710, 190);
+
+  // Show up to six items on each page.
+  let itemsPerPage = 6;
+  let totalPages = max(1, ceil(inventory.length / itemsPerPage));
+  bagPage = constrain(bagPage, 0, totalPages - 1);
 
   if (inventory.length === 0) {
     noStroke();
     text("Your bag is empty.", 155, 225);
   }
 
-  // Display inventory
-  for (let i = 0; i < inventory.length; i++) {
+  let start = bagPage * itemsPerPage;
+
+  for (let row = 0; row < itemsPerPage; row++) {
+    let i = start + row;
+    if (i >= inventory.length) break;
+
     let entry = inventory[i];
     let item = products[entry.product];
-    let y = 220 + i * 34;
+    let y = 220 + row * 34;
 
     noStroke();
     fill(65, 40, 28);
     textSize(14);
-
     textAlign(LEFT);
     text(item.name, 155, y);
-    text(item.category, 345, y);
+    text(item.category, 305, y);
+
+    if (priceCatalogOwned) {
+      textAlign(RIGHT);
+      text("$" + item.value.toFixed(2), 545, y);
+    }
 
     textAlign(RIGHT);
     text("$" + entry.boughtFor.toFixed(2), 690, y);
 
-    // Separate each item
     stroke(190, 160, 120);
     line(150, y + 10, 710, y + 10);
+  }
+
+  if (bagPage > 0) {
+    drawButton("<", 285, 411, 58, true, color(98, 67, 46));
+  }
+  if (bagPage < totalPages - 1) {
+    drawButton(">", 521, 411, 58, true, color(98, 67, 46));
   }
 
   noStroke();
   fill(65, 40, 28);
   textAlign(CENTER);
   textSize(13);
-  text("CLICK BAG TO CLOSE", 430, 449);
+  text("PAGE " + (bagPage + 1) + " / " + totalPages, 432, 433);
+  text("CLICK ANYWHERE ELSE TO CLOSE", 430, 457);
 }
 
 
@@ -2460,6 +2761,13 @@ function moveShopkeeper() {
   if (previousState === "entering" && shopkeeperActor.state === "working") {
     dayStarted = true;
     startTime = millis();
+  
+    // Receive yesterday's supplier orders
+    deliverOrders();
+  
+    dailyCustomerLimit = getDailyCustomers();
+    customersLeft = dailyCustomerLimit;
+  
     scheduleCustomer();
   }
   if (previousState === "leaving" && shopkeeperActor.state === "gone") {
@@ -2467,11 +2775,16 @@ function moveShopkeeper() {
     else showReceipt = true;
   }
 
-  if (shopkeeperActor.state === "gone" && closing && millis() >= nextMorning) {
+  if (shopkeeperActor.state === "gone" &&
+    closing &&
+    !showReceipt &&
+    nextMorning > 0 &&
+    millis() >= nextMorning) {
     dayNumber++;
     dayStarted = false;
     closing = false;
     dailyLog = [];
+    nextMorning = 0;
     shopkeeperActor.reset();
   }
   if (dayNumber !== before) phonePaidToday = false;
@@ -2480,7 +2793,7 @@ function moveShopkeeper() {
 
 function buyerPrice(index) {
   let price = products[index].value * currentTrade.markup;
-  if (shopUpgrades[2]) price *= 1.05;
+  price *= 1 + shelvesLevel * 0.05;
   return Number(price.toFixed(2));
 }
 
@@ -2499,8 +2812,7 @@ function bundleTotal() {
 
 
 function scheduleCustomer() {
-  if (shopUpgrades[3]) nextArrival = millis() + random(1000, 3200);
-  else nextArrival = millis() + random(1500, 5000);
+  nextArrival = millis() + random(1500, 5000);
 }
 
 
@@ -2520,22 +2832,58 @@ function pawnTradeBoard() {
     for (let i=0; i<items.length && i<4; i++) {
       let product = products[items[i]];
       pawnPanel(306,242+i*47,504,44);
-      { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(16); text(product.name.toUpperCase(), 324, 268+i*47); };
-      { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(15); textAlign(RIGHT); text('$' + product.value.toFixed(2), 790, 268 + i * 47); };
+      fill(63, 40, 30);
+      textStyle(NORMAL);
+      textSize(15);
+
+      // Item name
+      textAlign(LEFT);
+      text(product.name.toUpperCase(), 324, 268 + i * 47);
+
+      // Original value (only after unlocking Price Catalog)
+      if (priceCatalogOwned) {
+        textSize(13);
+        textAlign(RIGHT);
+        text("ORIGINAL $" + product.value.toFixed(2), 690, 268 + i * 47);
+      }
+
+      // Customer's asking price
+      textSize(15);
+      textAlign(RIGHT);
+      text("$" + (product.value * shopTradeMultiplier).toFixed(2),790, 268 + i * 47);
     }
-    let canBuy = inventory.length + items.length <= bagLimit && money >= bundleTotal();
+    let canBuy = inventory.length + reservedStorage() + items.length <= shopCapacity()
+                 && money >= bundleTotal();
     pawnButton('BUY ALL',312,489,152,canBuy,color(60,112,67));
   } else {
     { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(16); text('WANTS: ' + currentTrade.category.toUpperCase(), 310, 207); };
-    { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(15); text('BUDGET $'+currentTrade.budget+' | SELECTED $'+selectedTotal().toFixed(2), 310, 229, 480, 28); };
+    { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(15); text('BUDGET $'+currentTrade.budget+' | SELECTED $'+selectedTotal().toFixed(2), 310, 220, 480, 28); };
     let entries = availableItems();
     for(let i=0; i<entries.length && i<4; i++) {
       let idx=entries[i];let item=products[inventory[idx].product];
       let y=242+i*47;
       pawnPanel(306,y,504,44);
       let checked=selectedItems.includes(idx);
-      { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(14); text((checked?'[X] ':'[ ] ')+item.name.toUpperCase(), 324, y+26); };
-      { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(15); textAlign(RIGHT); text('$' + buyerPrice(inventory[idx].product).toFixed(2), 790, y + 26); };
+      fill(63, 40, 30);
+      textStyle(NORMAL);
+
+      // Item name and selection checkbox
+      textSize(14);
+      textAlign(LEFT);
+      text((checked ? "[X] " : "[ ] ") + item.name.toUpperCase(),
+          324, y + 26);
+
+      // Original value (only after unlocking Price Catalog)
+      if (priceCatalogOwned) {
+        textSize(13);
+        textAlign(RIGHT);
+        text("ORIGINAL $" + item.value.toFixed(2), 690, y + 26);
+      }
+
+      // Selling price
+      textSize(15);
+      textAlign(RIGHT);
+      text("$" + buyerPrice(inventory[idx].product).toFixed(2), 790, y + 26);
       pawnRows.push({index:idx,x:306,y:y,w:504,h:44});
     }
     if(entries.length===0) { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(14); text('NO MATCHING ITEMS IN BAG', 324, 275); };
@@ -2547,18 +2895,6 @@ function pawnTradeBoard() {
 
 
   if (!pawnTradeActive()) return;
-
-  if (shopUpgrades[0]) {
-    // Show bundle's base value or buyer's requested category reference.
-    let value = 0;
-    if (currentTrade.type === "sell") {
-      for (let idx of currentTrade.items) value += products[idx].value;
-    } else value = products[currentTrade.product].value;
-    { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(14); text("CATALOG VALUE: $" + value.toFixed(2), 501, 230); };
-  }
-  if (pawnScore() >= 60 && !shopBargained) {
-    pawnButton("BARGAIN", 481, 489, 152, true, color(157, 113, 55));
-  }
 }
 
 
