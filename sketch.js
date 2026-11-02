@@ -305,7 +305,6 @@ function drawIntro() {
     fill(86, 61, 42);
     textAlign(CENTER);
     textSize(15);
-    text("OPEN 8 AM - MIDNIGHT", 432, 457);
   
     drawButton("START GAME", 317, 474, 220, true, color(70, 115, 65));
   }
