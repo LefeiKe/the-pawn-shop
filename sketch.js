@@ -1627,6 +1627,7 @@ let selectedSupplier = -1;
 let supplierMessage = "";
 let pendingDeliveries = [];
 let orderConfirmation = "";
+let pendingQuantity = 0;
 const phoneX = 673, phoneY = 360, phoneW = 180, phoneH = 180;
 
 // Request the asset at startup. Existing setup() remains the only setup function.
@@ -1665,6 +1666,7 @@ function phoneEndCall() {
   phoneCall = '';
   phoneSelected = [];
   selectedSupplier = -1;
+  pendingQuantity = 0;
   supplierMessage = "";
   if (phoneSavedPause) togglePause();
   phoneSavedPause = false;
@@ -1693,7 +1695,7 @@ function getDailyCustomers() {
 ;
 
 
-function buySupplierItems(quantity) {
+function buySupplierItems(quantity, confirmed = false) {
   let productIndex = 12 + selectedSupplier;
   let unitPrices = [20, 35, 30];
   let unitPrice = unitPrices[selectedSupplier];
@@ -1713,8 +1715,17 @@ function buySupplierItems(quantity) {
     return;
   }
 
-  if (inventory.length + reservedSpace + quantity > shopCapacity()) {
+  let futureStorage = inventory.length + reservedSpace + quantity;
+
+  if (futureStorage > shopCapacity()) {
+    // TODO: Integrate Abdullah's Tetris storage mini-game for overflow later.
     supplierMessage = "NOT ENOUGH SPACE";
+    return;
+  }
+
+  if (futureStorage === shopCapacity() && !confirmed) {
+    pendingQuantity = quantity;
+    phoneCall = "storageWarning";
     return;
   }
 
@@ -1747,6 +1758,7 @@ function buySupplierItems(quantity) {
   }
 
   orderConfirmation = quantity + " " + productName;
+  pendingQuantity = 0;
   supplierMessage = "";
   phoneCall = "orderConfirmed";
 }
@@ -1867,7 +1879,26 @@ function drawSupplierPhone() {
     text(supplierMessage, x + 122, y + 255);
   }
 
-  // SCREEN 3: Order confirmation
+  // SCREEN 3: Warn before filling all storage slots
+  else if (phoneCall === "storageWarning") {
+    fill(65, 40, 28);
+    textAlign(CENTER);
+    textStyle(BOLD);
+    textSize(19);
+    text("STORAGE WARNING", x + 122, y + 48);
+    textStyle(NORMAL);
+    textSize(14);
+    text("This order will fill", x + 122, y + 91);
+    text("your storage completely.", x + 122, y + 115);
+    text("Still want to purchase?", x + 122, y + 139);
+
+    drawButton("CONFIRM", x + 9, y + 160, 227,
+               true, color(73, 120, 72));
+    drawButton("CANCEL", x + 9, y + 205, 227,
+               true, color(155, 83, 66));
+  }
+
+  // SCREEN 4: Order confirmation
   else if (phoneCall === "orderConfirmed") {
     fill(65, 40, 28);
     textAlign(CENTER);
@@ -1899,7 +1930,7 @@ function phoneBox() {
   textStyle(NORMAL);
 }
 function phoneDrawCall() {
-  if (phoneCall === "suppliers" || phoneCall === "supplierOrder" || phoneCall === "orderConfirmed") {
+  if (phoneCall === "suppliers" || phoneCall === "supplierOrder" || phoneCall === "storageWarning" || phoneCall === "orderConfirmed") {
     drawSupplierPhone();
     return;
   } 
@@ -2090,6 +2121,16 @@ function mousePressed() {
       if (pawnHit(429, 435, 227, 32)) {
         supplierMessage = "";
         phoneCall = "suppliers";
+        return;
+      }
+    } else if (phoneCall === "storageWarning") {
+      if (pawnHit(429, 400, 227, 32)) {
+        buySupplierItems(pendingQuantity, true);
+        return;
+      }
+      if (pawnHit(429, 445, 227, 32)) {
+        pendingQuantity = 0;
+        phoneCall = "supplierOrder";
         return;
       }
     } else if (phoneCall === "orderConfirmed") {
@@ -2428,6 +2469,7 @@ function restartGame() {
   shopTradeMultiplier = 1;
   pendingDeliveries = [];
   orderConfirmation = "";
+  pendingQuantity = 0;
 
   
   lastCustomerDialogue = '';
@@ -2560,6 +2602,10 @@ function drawBag() {
   textAlign(LEFT);
   textSize(18);
   text("YOUR BAG (" + inventory.length + "/" + shopCapacity() + ")", 151, 139);
+  if (reservedStorage() > 0) {
+    textSize(12);
+    text("PENDING DELIVERY: " + reservedStorage() + " SLOTS", 151, 157);
+  }
 
   // Column headers
   textSize(14);
