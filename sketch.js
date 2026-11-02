@@ -1626,6 +1626,7 @@ let phonePaidToday = false;
 let selectedSupplier = -1;
 let supplierMessage = "";
 let pendingDeliveries = [];
+let deliveryNoticeUntil = 0;
 let orderConfirmation = "";
 let pendingQuantity = 0;
 const phoneX = 673, phoneY = 360, phoneW = 180, phoneH = 180;
@@ -1764,6 +1765,7 @@ function buySupplierItems(quantity, confirmed = false) {
 }
 
 function deliverOrders() {
+  let deliveredCount = 0;
   for (let i = pendingDeliveries.length - 1; i >= 0; i--) {
     let order = pendingDeliveries[i];
 
@@ -1776,8 +1778,12 @@ function deliverOrders() {
       }
 
       // Remove the completed delivery
+      deliveredCount += order.quantity;
       pendingDeliveries.splice(i, 1);
     }
+  }
+  if (deliveredCount > 0) {
+    deliveryNoticeUntil = millis() + 3000;
   }
 }
 
@@ -2147,6 +2153,13 @@ function mousePressed() {
   if (showIntro || showReceipt || gameOver || closing || pawnIntroType) {
     handleTradeClick(); return;
   }
+  // The bag can also be opened while a customer is trading.
+  if (pawnTradeActive() && !gamePaused && !shopMenu &&
+      pawnHit(230, 10, 88, 76)) {
+    showBag = true;
+    bagPage = 0;
+    return;
+  }
   // Block the hidden upgrade tab until the Day 3 call has finished.
   if (dayNumber < 3 && pawnHit(462,12,140,32)) return;
   if (pawnHit(phoneX, phoneY, phoneW, phoneH) && !pawnTradeActive() && !shopMenu) {
@@ -2323,10 +2336,6 @@ function draw() {
     drawClock();
     drawBagIcon();
 
-    if (showBag) {
-        drawBag();
-    }
-
     if (closing) {
         fill(255);
         textAlign(CENTER);
@@ -2350,6 +2359,8 @@ function draw() {
         drawGameOver();
     }
   if(pawnTradeActive()) pawnTradeBoard();
+  // Keep the bag icon visible above the customer trading panel.
+  if (pawnTradeActive() && !showBag && !shopMenu) drawBagIcon();
     pawnStartIntroIfNeeded();
     if (pawnIntroType) pawnDrawIntro();
 
@@ -2398,6 +2409,19 @@ function draw() {
       }
   }
 
+  if (deliveryNoticeUntil > millis() && !showIntro &&
+      !showReceipt && !gameOver && !phoneCall && !phonePending && !pawnIntroType) {
+    pixelBoard(297, 86, 270, 56);
+    fill(65, 40, 28);
+    textAlign(CENTER);
+    textStyle(BOLD);
+    textSize(19);
+    text("DELIVERY ARRIVED!", 432, 121);
+    textStyle(NORMAL);
+  }
+
+  // The bag must be drawn after the trading screen.
+  if (showBag) drawBag();
   drawTestPanel();
 }
 
@@ -2468,6 +2492,7 @@ function restartGame() {
   shopBargained = false;
   shopTradeMultiplier = 1;
   pendingDeliveries = [];
+  deliveryNoticeUntil = 0;
   orderConfirmation = "";
   pendingQuantity = 0;
 
