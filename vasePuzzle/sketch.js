@@ -1,4 +1,5 @@
 let vaseSpriteSheet;
+let vaseChoice;
 let pieces = [];
 let emptySquare = {col: 2, row: 2};
 
@@ -166,6 +167,8 @@ function chooseVase(vaseIndex, boardX, boardY) {
 
     let pieceSourceW = bounds.w / cols;
     let pieceSourceH = bounds.h / rows;
+
+    let startingSpriteIndex = 4 + (vaseIndex * 8);
 
     // generate puzzle pieces
     for (let i = 0; i < 8; i++) {
