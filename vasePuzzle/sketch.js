@@ -1,5 +1,4 @@
 let vaseSpriteSheet;
-let vaseChoice
 let pieces = [];
 let emptySquare = {col: 2, row: 2};
 
@@ -122,6 +121,7 @@ function drawPlayScreen() {
             }, window.location.origin);
         }
         drawCompletedVase(selectedVaseIndex, boardOffsetX, boardOffsetY, boardW, boardH);
+        gameState = "win";
         drawWinScreen();
     } else {
 
