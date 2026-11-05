@@ -20,6 +20,7 @@ let cols = 3;
 let rows = 3;
 
 let selectedVaseIndex = 0;
+let completionReported = false;
 
 // track dragging state
 let selectedPiece = null;
@@ -113,8 +114,16 @@ function drawPlayScreen() {
     drawReferenceImage(selectedVaseIndex, referenceX, referenceY, referenceSize);
 
     if (checkWin()) {
+        if (!completionReported) {
+            completionReported = true;
+            window.parent.postMessage({
+                type: "vasePuzzleCompleted",
+                vaseIndex: selectedVaseIndex
+            }, window.location.origin);
+        }
         drawCompletedVase(selectedVaseIndex, boardOffsetX, boardOffsetY, boardW, boardH);
-
+        gameState = "win";
+        drawWinScreen();
     } else {
 
         for (let p of pieces) {
@@ -176,7 +185,18 @@ function chooseVase(vaseIndex, boardX, boardY) {
             boardX, boardY,
             displayPieceSize));
         }
+}
 
+function drawWinScreen() {
+    fill(0, 0, 0, 150);
+    rect(0, 0, width, height);
+    textSize(20);
+    fill(255);
+    textAlign(CENTER);
+    text("YOU DID IT!", width / 2, height / 2 - 60);
+    text("IT'S AS GOOD AS NEW.", width / 2, height / 2 - 20);
+    textSize(12);
+    text("CLICK FOR A REWARD", width / 2, height / 2 + 10);
 }
 
 function drawReferenceImage(vaseIndex, x, y, size) {

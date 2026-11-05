@@ -7,10 +7,65 @@
     <title>Mini Pawn Shop</title>
     <link href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.11.11/p5.min.js"></script>
+    <style>
+        #posh-game-overlay[hidden] {
+            display: none;
+        }
+
+        #posh-game-overlay {
+            align-items: center;
+            background: rgba(0, 0, 0, 0.78);
+            display: flex;
+            height: 100vh;
+            justify-content: center;
+            left: 0;
+            position: fixed;
+            top: 0;
+            width: 100vw;
+            z-index: 10;
+        }
+
+        #posh-game-window {
+            background: #ead0a1;
+            border: 8px solid #3c261c;
+            box-shadow: 0 0 0 4px #8c5b38;
+            padding: 14px;
+            position: relative;
+        }
+
+        #posh-game-frame {
+            border: 0;
+            display: block;
+            height: min(600px, 80vh);
+            width: min(864px, 90vw);
+        }
+
+        #close-posh-game {
+            background: #9c3f34;
+            border: 0;
+            color: #fff;
+            cursor: pointer;
+            font-family: "Pixelify Sans", sans-serif;
+            font-size: 16px;
+            padding: 8px 14px;
+            position: absolute;
+            right: 14px;
+            top: 14px;
+            z-index: 1;
+        }
+    </style>
 </head>
 
 <body>
     <div id="game"></div>
+
+    <div id="posh-game-overlay" hidden>
+        <div id="posh-game-window">
+            <button id="close-posh-game" type="button">CLOSE GAME</button>
+            <iframe id="posh-game-frame" data-src="vasePuzzle/index.html"
+                title="Posh patron vase puzzle game"></iframe>
+        </div>
+    </div>
 
     <script src="sketch.js"></script>
 
