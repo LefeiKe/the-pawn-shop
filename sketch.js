@@ -19,9 +19,19 @@ let shopkeeperRoute = [
   { x: 710, y: 260 },  // 2: Walk left
 ];
 
-let shopBg, shopkeeper;
+let shopBg, shopkeeper, vaseSpriteSheet;
 let shopkeeperActor;
 let currentCustomer;
+let completedVaseIndexes = [];
+const maxCompletedVases = 4;
+const vaseSpriteSize = 2016;
+const vaseSpriteCols = 2;
+const vaseBounds = [
+  { x: 0, y: 0, w: 2016, h: 2016 },
+  { x: 250, y: 0, w: 1516, h: 2016 },
+  { x: 350, y: 0, w: 1316, h: 2016 },
+  { x: 50, y: 0, w: 1916, h: 2016 }
+];
 
 class Customer {
   constructor(name, type, sprite, portrait) {
@@ -197,6 +207,12 @@ let closing = false;
 let startTime = 0;
 let nextArrival = 0;
 let nextMorning = 0;
+let poshGamePending = false;
+let poshOfferActive = false;
+let poshGameOverlay;
+let poshGameFrame;
+let poshGamePausedShop = false;
+let poshOfferPausedShop = false;
 
 // Each day ends after its customer quota is served.
 const bagLimit = 6;
@@ -217,8 +233,13 @@ async function setup() {
   canvas.parent("game");
   noSmooth();
   textFont("Pixelify Sans");
+  poshGameOverlay = document.getElementById("posh-game-overlay");
+  poshGameFrame = document.getElementById("posh-game-frame");
+  document.getElementById("close-posh-game").addEventListener("click", closePoshGame);
+  window.addEventListener("message", handleVasePuzzleMessage);
 
   shopBg = await loadImage("images/shop.png");
+  vaseSpriteSheet = await loadImage("vasePuzzle/images/vases.png");
   shopkeeper = await loadImage("images/shopkeeper.png");
   shopkeeperActor = new Shopkeeper(shopkeeper);
   currentCustomer = new Customer("", "", null, null);
@@ -232,6 +253,65 @@ async function setup() {
     pawnPortraits[customer.name] = await loadImage("images/customer_portraits/" + file);
   }
   pawnReady = true;
+}
+
+function handleVasePuzzleMessage(event) {
+  if (!poshGameFrame || event.source !== poshGameFrame.contentWindow) return;
+  if (event.data?.type !== "vasePuzzleCompleted") return;
+  if (!Number.isInteger(event.data.vaseIndex) ||
+      event.data.vaseIndex < 0 || event.data.vaseIndex >= vaseBounds.length) return;
+  completedVaseIndexes.push(event.data.vaseIndex);
+}
+
+function showPoshGame() {
+  if (!poshGameOverlay || !poshGameFrame || !poshGameOverlay.hidden) return;
+  poshGamePending = false;
+  poshGamePausedShop = !gamePaused;
+  if (poshGamePausedShop) togglePause();
+  poshGameFrame.src = poshGameFrame.dataset.src;
+  poshGameOverlay.hidden = false;
+}
+
+function showPoshOffer() {
+  if (poshOfferActive) return;
+  poshOfferActive = true;
+  poshOfferPausedShop = !gamePaused;
+  if (poshOfferPausedShop) togglePause();
+}
+
+function choosePoshOffer(choice) {
+  if (!poshOfferActive) return;
+  poshOfferActive = false;
+  if (poshOfferPausedShop) togglePause();
+  poshOfferPausedShop = false;
+
+  if (choice === 'play') {
+    showPoshGame();
+    return;
+  }
+
+  poshGamePending = false;
+  finishTrade();
+}
+
+function closePoshGame() {
+  if (!poshGameOverlay || !poshGameFrame) return;
+  poshGameOverlay.hidden = true;
+  poshGameFrame.src = "";
+  if (poshGamePausedShop) togglePause();
+  poshGamePausedShop = false;
+}
+
+function drawCompletedVase() {
+  if (!vaseSpriteSheet) return;
+  for (let i = 0; i < completedVaseIndexes.length; i++) {
+    let vaseIndex = completedVaseIndexes[i];
+    let bounds = vaseBounds[vaseIndex];
+    let cellX = (vaseIndex % vaseSpriteCols) * vaseSpriteSize;
+    let cellY = floor(vaseIndex / vaseSpriteCols) * vaseSpriteSize;
+    image(vaseSpriteSheet, 300 + i * 32, 268, 30, 30,
+      cellX + bounds.x, cellY + bounds.y, bounds.w, bounds.h);
+  }
 }
 
 
@@ -264,11 +344,11 @@ function drawIntro() {
     textAlign(CENTER);
     textStyle(BOLD);
     textSize(29);
-    text("WELCOME TO THE PAWN SHOP", width / 2, 102);
+    text("WELCOME TO PIXEL PAT'S PAWNS AND PARCELS", width / 2, 102);
   
     textStyle(NORMAL);
     textSize(18);
-    text("Make smart deals and grow your little shop.", width / 2, 133);
+    text("Be prudent and profitable to help your little shop prosper!", width / 2, 133);
   
     // How to play
     fill(65, 40, 28);
@@ -762,12 +842,12 @@ let pawnIntroSeen = {Regular:false,Bargain:false,Collector:false,Suspicious:fals
 let pawnIntroType = '';
 let pawnIntroPausedGame = false;
 let pawnConversation = '';
-const pawnTypeNames = {Regular:'REGULAR CUSTOMER',Bargain:'BARGAIN HUNTER',Collector:'WEALTHY COLLECTOR',Suspicious:'SUSPICIOUS SELLER',Inspector:'SHOP VISITOR'};
+const pawnTypeNames = {Regular:"PAL OF PAT'S",Bargain:'PENNY PINCHER',Collector:'POSH PATRON',Suspicious:'PRECARIOUS PURVEYORS',Inspector:'PAWN SHOW PATROLLER'};
 const pawnTypeExplanations = {
-  Regular:['REGULAR CUSTOMERS','The most common visitors to your pawn shop.','Fair trades help build trust over time.'],
-  Bargain:['BARGAIN HUNTERS','These customers have tighter budgets.','They are especially difficult to negotiate with.'],
-  Collector:['WEALTHY COLLECTORS','Collectors can spend more than ordinary buyers.','Their offers may be especially profitable.'],
-  Suspicious:['SUSPICIOUS SELLERS','These visitors seem to be in a hurry to make a deal.','They are often surprisingly flexible with their prices.']
+  Regular:["PALS OF PAT'S","The most common visitors to your pawn shop.","Fair trades help build trust over time."],
+  Bargain:['PENNY PINCHERS','These customers have tighter budgets.','They are especially difficult to negotiate with.'],
+  Collector:['POSH PATRONS','These wealthy collectors can spend more than ordinary buyers.','Their offers may be especially profitable.'],
+  Suspicious:['PRECARIOUS PURVEYORS','These visitors seem to be in a hurry to make a deal.','They are often surprisingly flexible with their prices.']
 };
 const pawnDialogue = {
   Regular:{sell:['I FOUND A FEW THINGS TO SELL.','WOULD YOU BE INTERESTED IN THESE?','I HOPE THIS IS A FAIR PRICE.'],category:['DO YOU HAVE ANYTHING USEFUL?','I AM LOOKING FOR SOMETHING TODAY.','LET ME SEE WHAT YOU HAVE IN STOCK.']},
@@ -786,6 +866,21 @@ function pawnDrawIntro() {
   { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(17); text(lines[1], 165, 272, 540, 28); };
   { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(17); text(lines[2], 165, 303, 540, 28); };
   pawnButton('CONTINUE',333,381,198,true,color(70,115,65));
+}
+function pawnDrawPoshOffer() {
+  noStroke(); fill(0,0,0,190); rect(0,0,width,height);
+  pawnPanel(80,55,704,455);
+  fill(63, 40, 30);
+  textAlign(CENTER);
+  textStyle(NORMAL);
+  textSize(20);
+  text(`My antique vase shattered! I bought a new one,`, 110, 125, 644, 28);
+  text(`but thought I'd donate this old one to the shop.`, 110, 175, 644, 28);
+  text(`Would you like to try your hand at restoring it?`, 110, 225, 644, 28);
+  text(`If you can fix it, it's yours! I bet some`, 110, 275, 644, 28);
+  text(`repair skills would boost the shop's reputation.`, 110, 325, 644, 28);
+  pawnButton("Sure, I can take a stab at it", 140, 415, 280, true, color(70,115,65));
+  pawnButton('Not today', 444, 415, 280, true, color(156,63,52));
 }
 function pawnStartIntroIfNeeded() {
   if (!pawnTradeActive() || pawnIntroType || !pawnVisitor) return;
@@ -811,8 +906,12 @@ let pawnRows = []; // [{index,x,y,w,h}] - current clickable buyer rows
 // Inspector is reserved for Sara's future mini-game.
 let pawnUnlockedTypes = {Regular:true, Bargain:false, Collector:false, Suspicious:false};
 let pawnNewTypeDay = -1;
-function pawnPickVisitor() {
+function pawnPickVisitor(forcedType) {
   let types = ['Regular', 'Bargain', 'Collector', 'Suspicious'];
+  if (forcedType) {
+    let choices = pawnProfiles.filter(p => p.type === forcedType);
+    if (choices.length) return random(choices);
+  }
   let weights = [60, 20, 12, 8];
   let allowed = [];
   let total = 0;
@@ -907,6 +1006,11 @@ function pawnPortrait() {
 function handleCustomerClick() {
   if (pawnIntroType) {
     if (pawnHit(333,381,198,36)) pawnCloseIntro();
+    return;
+  }
+  if (poshOfferActive) {
+    if (pawnHit(140, 415, 280, 36)) choosePoshOffer('play');
+    else if (pawnHit(444, 415, 280, 36)) choosePoshOffer('leave');
     return;
   }
   if(!pawnTradeActive()) {handleBasicClick();return;}
@@ -1029,7 +1133,7 @@ function shopDrawPeople() {
   { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(14); text("Every group starts at 50 / 100", 145, 131); };
 
   let groups = ["Regular", "Bargain", "Collector", "Suspicious"];
-  let names = ["REGULAR CUSTOMERS", "BARGAIN HUNTERS", "WEALTHY COLLECTORS", "SUSPICIOUS SELLERS"];
+  let names = ["PALS OF PAT'S", "PENNY PINCHERS", "POSH PATRONS", "PRECARIOUS PURVEYORS"];
   for (let i = 0; i < groups.length; i++) {
     let y = 151 + i * 74;
     let score = pawnRelationship[groups[i]];
@@ -1501,7 +1605,7 @@ function handleTradeClick() {
 // LANDLORD, RENT, AND TEST TOOLS
 // ============================================================
 
-// The Pawn Shop: red telephone, Mr. Pennyworth, upgrades and weekly rent.
+// The Pawn Shop: red telephone, Pixel Pat, upgrades and weekly rent.
 
 // Uses p5.js, arrays, objects, conditions, loops, and mousePressed().
 
@@ -1509,6 +1613,7 @@ let phoneSheet;
 let phonePending = '';  // 'hello', 'upgrades', 'rentReveal', 'rent'
 let phoneCall = '';     // active call panel
 let phoneSeen = {hello:false, upgrades:false, rentReveal:false};
+let helloPage = 0;
 let phoneSelected = [];
 let phoneSavedPause = false;
 let phoneHint = '';
@@ -1534,6 +1639,7 @@ function phoneRentAmount(day) {
 function phoneStart(eventName) {
   phonePending = eventName;
   phoneSelected = [];
+  if (eventName === 'hello') helloPage = 0;
   phoneSavedPause = !gamePaused;
   if (phoneSavedPause) togglePause();
 }
@@ -1818,7 +1924,7 @@ function phoneBox() {
   noStroke(); fill(0, 0, 0, 185); rect(0, 0, width, height);
   pixelBoard(105, 65, 654, 455);
   textAlign(CENTER); textStyle(BOLD); fill(97, 58, 36);
-  textSize(24); text('MR. PENNYWORTH', 432, 112);
+  textSize(24); text('PIXEL PAT', 432, 112);
   textStyle(NORMAL);
 }
 function phoneDrawCall() {
@@ -1832,11 +1938,17 @@ function phoneDrawCall() {
     textAlign(LEFT);
     textStyle(NORMAL);
     textSize(19);
-    text('Ah, you must be the new shopkeeper!', 190, 177);
-    text("Name's Mr. Pennyworth. I own this place,", 190, 212);
-    text("so I thought I'd give you a little welcome call.", 190, 247);
-    text('Take good care of the shop, will you?', 190, 301);
-    text("I'll be checking in from time to time!", 190, 336);
+    if (helloPage === 0) {
+      text('Ah, you must be the new shopkeeper!', 190, 170);
+      text("Name's Pat. I own this place,", 190, 205);
+      text("so I thought I'd give you a little welcome call.", 190, 240);
+    } else {
+      text('Take good care of the shop, will you?', 190, 170);
+      text(`It's been my pride and joy for 70 years.`, 190, 205);
+      text(`Boy oh boy, if I could withstand those long hours, ${"\n"}you bet I would.`, 190, 240);
+      text(`But that's a job for a spry young whippersnapper ${"\n"}like yourself.`, 190, 295);
+      text(`I'll be checking in from time to time!`, 190, 375);
+    }
     drawButton('CONTINUE', 330, 443, 204, true, color(70, 115, 65));
 
   } else if (phoneCall === 'upgrades') {
@@ -1846,7 +1958,7 @@ function phoneDrawCall() {
     textSize(19);
     text("How's business treating you?", 190, 170);
     textSize(18);
-    text("I've got some improvements available for your shop.", 190, 214);
+    text("I've got some improvements available for the shop.", 190, 214);
     text("Take a look when you've got some spare cash!", 190, 254);
 
     fill(65, 40, 28);
@@ -1866,12 +1978,12 @@ function phoneDrawCall() {
     textStyle(NORMAL);
     textSize(18);
 
-    text("Well, well! You've made it through your first week!", 170, 157);
-    text("I hope you've enjoyed my generosity.", 170, 193);
-    text("The first week was on the house!", 170, 229);
-    text("From now on, rent is due every seven days.", 170, 265);
-    text("$10 to start, with a 20% increase each week.", 170, 301);
-    text("Business is business!", 170, 337);
+    text(`Well, well! You've made it through your first week!`, 170, 157);
+    text(`I wanted to give you some time to get settled in.`, 170, 193);
+    text(`So the first week was on the house!`, 170, 229);
+    text(`From now on, rent is due every seven days.`, 170, 265);
+    text(`$10 to start, with a 20% increase each week.`, 170, 301);
+    text(`Business is business!`, 170, 337);
 
     fill(65, 40, 28);
     textAlign(CENTER);
@@ -2023,6 +2135,9 @@ function mousePressed() {
         phoneCall = "supplierOrder";
         return;
       }
+    } else if (pawnHit(330, 443, 204, 32) && phoneCall === "hello" && helloPage === 0) {
+      helloPage = 1;
+      return;
     } else if (pawnHit(330, 443, 204, 32) && phoneCall !== "orderConfirmed") {
       phoneEndCall();
       return;
@@ -2103,6 +2218,25 @@ function testJumpToDay(day) {
   if (day === 7) phoneSeen.rentReveal = false; // Test the reveal at closing.
 }
 
+// Spawn a Collector immediately so the posh patron offer can be tested.
+function testEnterPoshPatron() {
+  if (phonePending || phoneCall || showIntro || showReceipt || gameOver ||
+      closing || currentCustomer.state === 'waiting') return;
+  if (pawnIntroType) pawnCloseIntro();
+  if (shopMenu) shopCloseMenu();
+  gamePaused = false;
+  showBag = false;
+  showBudgetWarning = false;
+  dayStarted = true;
+  closing = false;
+  if (customersLeft <= 0) customersLeft = 1;
+  currentCustomer.state = 'gone';
+  currentTrade = undefined;
+  selectedItems = [];
+  nextArrival = 0;
+  generateCustomer('Collector');
+}
+
 // Close the day immediately and open its receipt. Phone events work normally.
 function testEndDay() {
   customersLeft = 0;
@@ -2124,14 +2258,15 @@ function testEndDay() {
 function drawTestPanel() {
   if (!DEV_TEST_MODE || !testPanelVisible) return;
   push();
-  noStroke(); fill(40, 29, 25, 235); rect(216, 100, 433, 170);
+  noStroke(); fill(40, 29, 25, 235); rect(216, 100, 433, 205);
   fill(255); textFont('Pixelify Sans'); textAlign(LEFT); textStyle(NORMAL);
   textSize(20); text('DEV TEST MODE', 234, 130);
   textSize(16);
   text('N = next day     E = end today', 234, 160);
   text('3 = Day 3       7 = Day 7', 234, 187);
   text('8 = Day 8       0 = Day 14', 234, 214);
-  text('M = +$100      T = hide/show', 234, 244);
+  text('M = +$100      P = posh patron', 234, 244);
+  text('T = hide/show', 234, 272);
   pop();
 }
 
@@ -2148,6 +2283,7 @@ function keyPressed() {
       else if (k === '7') testJumpToDay(7);
       else if (k === '8') testJumpToDay(8);
       else if (k === '0') testJumpToDay(14);
+      else if (k === 'p') testEnterPoshPatron();
       
       return false;
     }
@@ -2203,6 +2339,7 @@ function draw() {
     }
 
     image(shopBg, 0, 0, width, height);
+    drawCompletedVase();
 
     if (!showIntro && !gamePaused && !showReceipt && !gameOver) {
       updateDay();
@@ -2242,7 +2379,13 @@ function draw() {
   // Keep the bag icon visible above the customer trading panel.
   if (pawnTradeActive() && !showBag && !shopMenu) drawBagIcon();
     pawnStartIntroIfNeeded();
-    if (pawnIntroType) pawnDrawIntro();
+  if (poshGamePending && pawnTradeActive() && !pawnIntroType) {
+    showPoshOffer();
+  }
+  if (poshOfferActive) {
+    pawnDrawPoshOffer();
+  }
+  if (pawnIntroType) pawnDrawIntro();
 
   if (!showIntro && !showReceipt && !gameOver && !pawnIntroType) {
     shopDrawTabs();
@@ -2390,7 +2533,7 @@ function restartGame() {
 }
 
 
-function generateCustomer() {
+function generateCustomer(forcedVisitorType) {
 
 
 
@@ -2429,11 +2572,15 @@ function generateCustomer() {
 
 
   if (!pawnReady) return;
-  pawnVisitor = pawnPickVisitor();
+  pawnVisitor = pawnPickVisitor(forcedVisitorType);
   currentCustomer = new Customer(
     pawnVisitor.name, pawnVisitor.type,
     pawnSprites[pawnVisitor.name], pawnPortraits[pawnVisitor.name]
   );
+  // Posh patrons occasionally invite the shopkeeper to play their vase puzzle.
+  poshGamePending = completedVaseIndexes.length < maxCompletedVases &&
+    pawnVisitor.type === "Collector" && (forcedVisitorType === "Collector" || random() < 0.3);
+  poshOfferActive = false;
   pawnMessage = '';
   pawnConversation = pawnNewConversation();
   // Collector has more to spend; bargain hunters have less.
@@ -2730,7 +2877,7 @@ function drawReceipt() {
       text("-$" + abs(budgetAdjustment).toFixed(2), 705, y);
   }
 
-  // Rent appears only after Mr. Pennyworth's weekly call.
+  // Rent appears only after Pat's weekly call.
   let rent = 0;
   for (let entry of dailyLog) {
     if (entry.type === "RENT") rent += entry.amount;
