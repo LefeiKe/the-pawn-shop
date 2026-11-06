@@ -212,7 +212,9 @@ let dayNumber = 1;
 // Inspector visits are separate from the daily customer quota.
 let nextInspectionDay = 3;
 let latestInspectionGrade = '';
-let inspectorPhase = ''; // intro, awaiting minigame, result
+let inspectorPhase = ''; // entering, intro, awaiting minigame, result, leaving
+let inspectorActor = null;
+let inspectorArrivalNoticeUntil = 0;
 let inspectorNoticePausedGame = false;
 let inspectorHasIntroduced = false;
 let inspectorResultText = '';
@@ -535,6 +537,7 @@ function drawCharacters() {
   shopkeeperActor.display();
   drawingContext.restore();
   currentCustomer.display();
+  if (inspectorActor) inspectorActor.display();
 }
 
 // Draw a frame from a sprite sheet
@@ -1889,13 +1892,44 @@ function checkInspectorVisit() {
       poshOfferActive || gamePaused) return;
 
   nextInspectionDay = dayNumber + floor(random(4, 7));
-  inspectorPhase = 'intro';
-  inspectorNoticePausedGame = !gamePaused;
-  if (inspectorNoticePausedGame) togglePause();
+  // Alex walks in just like a customer, but never counts toward the quota.
+  inspectorActor = new Customer('Alex', 'Inspector',
+    pawnSprites.Alex, pawnPortraits.Alex);
+  inspectorPhase = 'entering';
+  inspectorArrivalNoticeUntil = millis() + 3000;
+}
+
+function moveInspector() {
+  if (!inspectorActor || !inspectorPhase) return;
+  if (inspectorPhase !== 'entering' && inspectorPhase !== 'leaving') return;
+  inspectorActor.move();
+  if (inspectorPhase === 'entering' && inspectorActor.state === 'waiting') {
+    inspectorPhase = 'intro';
+    inspectorNoticePausedGame = !gamePaused;
+    if (inspectorNoticePausedGame) togglePause();
+  } else if (inspectorPhase === 'leaving' && inspectorActor.state === 'gone') {
+    inspectorPhase = '';
+    inspectorActor = null;
+    inspectorArrivalNoticeUntil = 0;
+    closeShopAfterInspection();
+  }
+}
+
+function drawInspectorArrivalNotice() {
+  if (!inspectorActor || millis() >= inspectorArrivalNoticeUntil) return;
+  if (inspectorPhase !== 'entering' && inspectorPhase !== 'intro') return;
+  push();
+  pixelBoard(123, 106, 618, 62);
+  fill(65, 40, 28);
+  textAlign(CENTER);
+  textStyle(NORMAL);
+  textSize(17);
+  text('A SPECIAL GUEST HAS ARRIVED...', 432, 145);
+  pop();
 }
 
 function drawInspectorNotice() {
-  if (!inspectorPhase) return;
+  if (!inspectorPhase || inspectorPhase === 'entering' || inspectorPhase === 'leaving') return;
   push();
   noStroke();
   fill(0, 0, 0, 175);
@@ -1911,7 +1945,7 @@ function drawInspectorNotice() {
 
   if (inspectorPhase === 'intro') {
     const greeting = !inspectorHasIntroduced ?
-      "Good day! I'm the local shop inspector. I'll be stopping by from time to time to make sure everything is in order. Inspection ratings are very important for businesses like yours. A good rating attracts more customers, while a poor one might drive them away. Now then, let's see how well you've been running this little shop!" :
+      "Good day! I'm Alex, the local shop inspector. I'll be stopping by from time to time to make sure everything is in order. Inspection ratings are very important for businesses like yours. A good rating attracts more customers, while a poor one might drive them away. Now then, let's see how well you've been running this little shop!" :
       "Well, well! It's time for another inspection. Let's see if you've been keeping this place in good shape!";
     text(greeting, 146, 185, 572, 212);
     drawButton('BEGIN INSPECTION', 302, 439, 260, true, color(70, 115, 65));
@@ -1938,11 +1972,11 @@ function advanceInspectorNotice() {
     return;
   }
   if (inspectorPhase !== 'awaiting' && inspectorPhase !== 'result') return;
-  inspectorPhase = '';
+  inspectorPhase = 'leaving';
   inspectorResultText = '';
   if (inspectorNoticePausedGame && gamePaused) togglePause();
   inspectorNoticePausedGame = false;
-  closeShopAfterInspection();
+  if (inspectorActor) inspectorActor.leave();
 }
 
 // Day banner countdown only appears after the Day 7 surprise.
@@ -2315,7 +2349,9 @@ function phoneSellSelection() {
 
 function mousePressed() {
   if (inspectorPhase) {
-    if (pawnHit(302, 439, 260, 32)) advanceInspectorNotice();
+    if (inspectorPhase === 'intro' || inspectorPhase === 'awaiting' || inspectorPhase === 'result') {
+      if (pawnHit(302, 439, 260, 32)) advanceInspectorNotice();
+    }
     return;
   }
 
@@ -2463,6 +2499,8 @@ function testJumpToDay(day) {
   dayNumber = day;
   nextInspectionDay = day >= 3 ? day : 3;
   inspectorPhase = '';
+  inspectorActor = null;
+  inspectorArrivalNoticeUntil = 0;
   inspectorNoticePausedGame = false;
   dayStarted = true;
   startTime = millis();
@@ -2639,7 +2677,10 @@ function draw() {
     if (!showIntro && !gamePaused && !showReceipt && !gameOver) {
       updateDay();
       moveShopkeeper();
-      if (!gamePaused) moveCustomer();
+      if (!gamePaused) {
+        moveCustomer();
+        moveInspector();
+      }
     }
     
     drawCharacters();
@@ -2741,6 +2782,7 @@ function draw() {
   // The bag must be drawn after the trading screen.
   if (showBag) drawBag();
   drawReputationNotice();
+  drawInspectorArrivalNotice();
   if (latestInspectionGrade) {
     push();
     fill(65, 40, 28); textSize(12); textAlign(CENTER);
@@ -2770,6 +2812,8 @@ function restartGame() {
   nextInspectionDay = 3;
   latestInspectionGrade = '';
   inspectorPhase = '';
+  inspectorActor = null;
+  inspectorArrivalNoticeUntil = 0;
   inspectorNoticePausedGame = false;
   inspectorHasIntroduced = false;
   inspectorResultText = '';
