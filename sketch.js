@@ -212,8 +212,12 @@ let dayNumber = 1;
 // Inspector visits are separate from the daily customer quota.
 let nextInspectionDay = 3;
 let latestInspectionGrade = '';
-let inspectorNotice = false;
+let inspectorPhase = ''; // intro, awaiting minigame, result
 let inspectorNoticePausedGame = false;
+let inspectorHasIntroduced = false;
+let inspectorResultText = '';
+let inspectorResponseQueues = {A:[], B:[], C:[]};
+let inspectorLastResponseIndex = {A:-1, B:-1, C:-1};
 
 let showIntro = true;
 let dayStarted = false;
@@ -513,8 +517,7 @@ function moveCustomer() {
       customersLeft--;
       if (customersLeft <= 0) {
         customersLeft = 0;
-        closing = true;
-        shopkeeperActor.leave();
+        finishCustomerDay();
       } else scheduleCustomer();
     } else shopkeeperActor.leave();
   }
@@ -858,13 +861,33 @@ let pawnIntroSeen = {Regular:false,Bargain:false,Collector:false,Suspicious:fals
 let pawnIntroType = '';
 let pawnIntroPausedGame = false;
 let pawnConversation = '';
-const pawnTypeNames = {Regular:"PAL OF PAT'S",Bargain:'PENNY PINCHER',Collector:'POSH PATRON',Suspicious:'PRECARIOUS PURVEYORS',Wholesaler:'WHOLESALER',Inspector:'PAWN SHOW PATROLLER'};
+const pawnTypeNames = {Regular:"PAL OF PAT'S",Bargain:'PENNY PINCHER',Collector:'POSH PATRON',Suspicious:'PRECARIOUS PURVEYORS',Wholesaler:'PALLET PEDDLER',Inspector:'PAWN SHOP PATROLLER'};
 const pawnTypeExplanations = {
-  Regular:["PALS OF PAT'S","The most common visitors to your pawn shop.","Fair trades help build trust over time."],
-  Bargain:['PENNY PINCHERS','These customers have tighter budgets.','They are especially difficult to negotiate with.'],
-  Collector:['POSH PATRONS','Wealthy collectors who bring expensive items to sell.','They have generous budgets and pay more for valuable goods.'],
-  Suspicious:['PRECARIOUS PURVEYORS','They offer tempting prices, but trades carry a risk.','Other customers may lose trust in your shop.'],
-  Wholesaler:['WHOLESALERS','They bring five items and offer fixed wholesale prices.','Choose what to buy. They do not bargain.']
+  Regular: [
+    "PALS OF PAT'S",
+    "Friendly faces who stop by for everyday treasures. They appreciate a fair deal and a shopkeeper they can trust.",
+    "Their offers vary, but a good reputation makes trading with them easier."
+  ],
+  Bargain: [
+    "PENNY PINCHERS",
+    "Every penny counts for these sharp-eyed shoppers. Winning them over might take a little extra charm.",
+    "Bargaining with them is especially difficult, but a successful negotiation can be highly rewarding."
+  ],
+  Collector: [
+    "POSH PATRONS",
+    "Distinguished collectors with expensive tastes and impressive possessions. Quality always catches their eye.",
+    "They are particularly generous when purchasing valuable items."
+  ],
+  Suspicious: [
+    "PRECARIOUS PURVEYORS",
+    "Mysterious visitors with offers that seem almost too good to be true. Word travels quickly around town...",
+    "Their tempting deals have consequences."
+  ],
+  Wholesaler: [
+    "PALLET PEDDLERS",
+    "Independent merchants who play by their own rules. Take your pick from their wares, but don't expect them to budge on price.",
+    "They trade at wholesale prices, regardless of market trends or shop upgrades."
+  ]
 };
 const pawnDialogue = {
   Regular:{sell:['I FOUND A FEW THINGS TO SELL.','WOULD YOU BE INTERESTED IN THESE?','I HOPE THIS IS A FAIR PRICE.'],category:['DO YOU HAVE ANYTHING USEFUL?','I AM LOOKING FOR SOMETHING TODAY.','LET ME SEE WHAT YOU HAVE IN STOCK.']},
@@ -881,9 +904,11 @@ function pawnDrawIntro() {
   if (!lines) return;
   { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(23); text('NEW CUSTOMER TYPE!', 165, 171, 540, 28); };
   { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(22); text(lines[0], 165, 220, 540, 28); };
-  { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(17); text(lines[1], 165, 272, 540, 28); };
-  { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(17); text(lines[2], 165, 303, 540, 28); };
-  pawnButton('CONTINUE',333,381,198,true,color(70,115,65));
+  fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL);
+  textSize(16); text(lines[1], 165, 255, 530, 66);
+  textStyle(BOLD); textSize(15); text(lines[2], 165, 344, 530, 48);
+  textStyle(NORMAL);
+  pawnButton('CONTINUE',333,412,198,true,color(70,115,65));
 }
 function pawnDrawPoshOffer() {
   noStroke(); fill(0,0,0,190); rect(0,0,width,height);
@@ -1015,11 +1040,7 @@ function pawnPortrait() {
   // Two lines keep the complete category inside the portrait panel.
   let fullType = pawnVisitor ? pawnTypeNames[pawnVisitor.type] : '';
   { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(17); text(fullType, 43, 388, 205, 28); };
-  if (pawnVisitor && pawnVisitor.type === 'Wholesaler') {
-    fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL);
-    textSize(15); text('FIXED PRICES', 43, 435);
-    textSize(16); text('90% OF MARKET VALUE', 43, 473);
-  } else {
+  if (!pawnVisitor || pawnVisitor.type !== 'Wholesaler') {
     fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL);
     textSize(15); text('REPUTATION', 43, 435);
     fill(115,91,72); rect(43,449,205,14);
@@ -1032,7 +1053,7 @@ function pawnPortrait() {
 // New trade board interactions; all unrelated input still uses existing handler.
 function handleCustomerClick() {
   if (pawnIntroType) {
-    if (pawnHit(333,381,198,36)) pawnCloseIntro();
+    if (pawnHit(333,412,198,36)) pawnCloseIntro();
     return;
   }
   if (poshOfferActive) {
@@ -1780,11 +1801,27 @@ function phoneEndCall() {
 // Replace the original daily closing logic, which deducted $10 every day.
 // Rent is collected only by the landlord's rent-day call.
 function updateDay() {
-  if (dayStarted && !closing && customersLeft <= 0) {
-    closing = true;
-    showBag = false;
-    shopkeeperActor.leave();
+  if (dayStarted && !closing && customersLeft <= 0 &&
+      currentCustomer.state === 'gone') {
+    finishCustomerDay();
   }
+}
+
+// The inspector is a separate end-of-day event, never a daily customer.
+function finishCustomerDay() {
+  if (inspectorPhase) return;
+  if (dayNumber === nextInspectionDay) {
+    checkInspectorVisit();
+    return;
+  }
+  closeShopAfterInspection();
+}
+
+function closeShopAfterInspection() {
+  if (closing) return;
+  closing = true;
+  showBag = false;
+  shopkeeperActor.leave();
 }
 function getDailyCustomers() {
   const base = [5, 7, 10, 13][advertisingLevel] || 5;
@@ -1793,51 +1830,119 @@ function getDailyCustomers() {
   return max(3, base + inspectionChange);
 }
 
-// Called by the future inspector memory game after its five questions.
+// The Inspector comments on each grade in three different ways.
+const inspectorGradeResponses = {
+  A: [
+    "Splendid! You've earned an A! A shop this well-run deserves some recognition. Expect to see a few more customers coming your way. Keep up the wonderful work!",
+    "Well, would you look at that! An A! You're certainly making a name for yourself around town. I wouldn't be surprised if a few more curious faces started showing up!",
+    "Outstanding work! An A, and a well-deserved one at that. People do love a trustworthy shop. I suspect you'll be seeing more visitors soon!"
+  ],
+  B: [
+    "You got a B... Lucky for you, customers are quite used to average shops. Nothing changes for now, but do try a little harder before my next visit. I believe in you!",
+    "A B! Not too shabby, but nothing to write home about either. Your customers won't mind, I suppose. Let's see if you can impress me next time!",
+    "Hmm... A B. You're doing just fine, though I know you've got more in you! Business should carry on as usual. I'll be expecting a little extra effort next time!"
+  ],
+  C: [
+    "Oh dear... A C, I'm afraid. Customers might think twice before visiting a shop with a rating like this. Don't lose heart, though! There's always room for improvement before I return.",
+    "Oh my... A C. That's rather unfortunate. Word gets around quickly in this town, and some customers may decide to shop elsewhere. Let's hope things look better next time!",
+    "Well... this isn't quite what I'd hoped to see. A C, I'm afraid. You might notice fewer visitors for a while, but chin up! Every shop deserves a second chance."
+  ]
+};
+
+// Each grade has an independent shuffled cycle. Never repeat at the boundary.
+function nextInspectorResponse(grade) {
+  let queue = inspectorResponseQueues[grade];
+  if (queue.length === 0) {
+    queue = [0, 1, 2];
+    for (let i = queue.length - 1; i > 0; i--) {
+      let j = floor(random(i + 1));
+      [queue[i], queue[j]] = [queue[j], queue[i]];
+    }
+    if (queue[0] === inspectorLastResponseIndex[grade]) {
+      [queue[0], queue[1]] = [queue[1], queue[0]];
+    }
+    inspectorResponseQueues[grade] = queue;
+  }
+  let index = queue.shift();
+  inspectorLastResponseIndex[grade] = index;
+  return inspectorGradeResponses[grade][index];
+}
+
+// Sara's future memory game will call this after its five questions.
 // The latest grade changes tomorrow's customer quota, not today's.
 function recordInspectionResult(correctAnswers) {
   if (!Number.isInteger(correctAnswers) || correctAnswers < 0 || correctAnswers > 5) return;
   latestInspectionGrade = correctAnswers === 5 ? 'A' :
                           correctAnswers >= 3 ? 'B' : 'C';
+  if (inspectorPhase === 'awaiting') {
+    inspectorResultText = nextInspectorResponse(latestInspectionGrade);
+    inspectorPhase = 'result';
+  }
 }
 
-// Placeholder until Sara's memory game is added. No grade is assigned here.
+// Called only once the last customer has completely left.
 function checkInspectorVisit() {
-  if (!dayStarted || closing || dayNumber !== nextInspectionDay || inspectorNotice ||
-      showIntro || showReceipt || gameOver || gamePaused ||
+  if (!dayStarted || closing || customersLeft > 0 ||
+      dayNumber !== nextInspectionDay || inspectorPhase ||
+      currentCustomer.state !== 'gone' || showIntro || showReceipt || gameOver ||
       phonePending || phoneCall || pawnIntroType || shopMenu || showBag ||
-      pawnTradeActive() || poshOfferActive || currentCustomer.state !== 'gone') return;
+      poshOfferActive || gamePaused) return;
 
   nextInspectionDay = dayNumber + floor(random(4, 7));
-  inspectorNotice = true;
+  inspectorPhase = 'intro';
   inspectorNoticePausedGame = !gamePaused;
   if (inspectorNoticePausedGame) togglePause();
 }
 
 function drawInspectorNotice() {
-  if (!inspectorNotice) return;
+  if (!inspectorPhase) return;
   push();
   noStroke();
-  fill(0, 0, 0, 170);
+  fill(0, 0, 0, 175);
   rect(0, 0, width, height);
-  pixelBoard(165, 157, 534, 258);
+  pixelBoard(94, 78, 676, 425);
   fill(65, 40, 28);
   textAlign(CENTER);
   textStyle(BOLD);
   textSize(23);
-  text('INSPECTOR VISIT', 432, 212);
+  text('PAWN SHOP PATROLLER', 432, 133);
   textStyle(NORMAL);
   textSize(16);
-  text('The inspector has arrived!', 432, 267);
-  text('Memory game coming soon.', 432, 299);
-  drawButton('CONTINUE', 317, 346, 230, true, color(70, 115, 65));
+
+  if (inspectorPhase === 'intro') {
+    const greeting = !inspectorHasIntroduced ?
+      "Good day! I'm the local shop inspector. I'll be stopping by from time to time to make sure everything is in order. Inspection ratings are very important for businesses like yours. A good rating attracts more customers, while a poor one might drive them away. Now then, let's see how well you've been running this little shop!" :
+      "Well, well! It's time for another inspection. Let's see if you've been keeping this place in good shape!";
+    text(greeting, 146, 185, 572, 212);
+    drawButton('BEGIN INSPECTION', 302, 439, 260, true, color(70, 115, 65));
+  } else if (inspectorPhase === 'awaiting') {
+    text("The inspector is ready.", 146, 227, 572, 30);
+    text("Memory game coming soon.", 146, 276, 572, 35);
+    textSize(13);
+    text("For now, continue without a grade.", 146, 338, 572, 30);
+    drawButton('CONTINUE', 302, 439, 260, true, color(70, 115, 65));
+  } else if (inspectorPhase === 'result') {
+    textStyle(BOLD); textSize(22);
+    text('INSPECTION GRADE: ' + latestInspectionGrade, 432, 189);
+    textStyle(NORMAL); textSize(16);
+    text(inspectorResultText, 146, 225, 572, 205);
+    drawButton('CONTINUE', 302, 439, 260, true, color(70, 115, 65));
+  }
   pop();
 }
 
-function dismissInspectorNotice() {
-  inspectorNotice = false;
+function advanceInspectorNotice() {
+  if (inspectorPhase === 'intro') {
+    inspectorHasIntroduced = true;
+    inspectorPhase = 'awaiting'; // Replace with Sara's iframe launch later.
+    return;
+  }
+  if (inspectorPhase !== 'awaiting' && inspectorPhase !== 'result') return;
+  inspectorPhase = '';
+  inspectorResultText = '';
   if (inspectorNoticePausedGame && gamePaused) togglePause();
   inspectorNoticePausedGame = false;
+  closeShopAfterInspection();
 }
 
 // Day banner countdown only appears after the Day 7 surprise.
@@ -2209,8 +2314,8 @@ function phoneSellSelection() {
 
 
 function mousePressed() {
-  if (inspectorNotice) {
-    if (pawnHit(317, 346, 230, 32)) dismissInspectorNotice();
+  if (inspectorPhase) {
+    if (pawnHit(302, 439, 260, 32)) advanceInspectorNotice();
     return;
   }
 
@@ -2357,7 +2462,7 @@ function testJumpToDay(day) {
   pawnVisitor = null;
   dayNumber = day;
   nextInspectionDay = day >= 3 ? day : 3;
-  inspectorNotice = false;
+  inspectorPhase = '';
   inspectorNoticePausedGame = false;
   dayStarted = true;
   startTime = millis();
@@ -2426,6 +2531,13 @@ function testEndDay() {
   currentCustomer.state = 'gone';
   currentTrade = undefined;
   selectedItems = [];
+  if (dayNumber === nextInspectionDay) {
+    // Developer shortcut behaves like the last customer just left.
+    dayStarted = true;
+    closing = false;
+    finishCustomerDay();
+    return;
+  }
   closing = true;
   dayStarted = false;
   shopkeeperActor.state = 'gone';
@@ -2527,7 +2639,6 @@ function draw() {
     if (!showIntro && !gamePaused && !showReceipt && !gameOver) {
       updateDay();
       moveShopkeeper();
-      checkInspectorVisit();
       if (!gamePaused) moveCustomer();
     }
     
@@ -2658,8 +2769,12 @@ function restartGame() {
   nextMorning = 0;
   nextInspectionDay = 3;
   latestInspectionGrade = '';
-  inspectorNotice = false;
+  inspectorPhase = '';
   inspectorNoticePausedGame = false;
+  inspectorHasIntroduced = false;
+  inspectorResultText = '';
+  inspectorResponseQueues = {A:[], B:[], C:[]};
+  inspectorLastResponseIndex = {A:-1, B:-1, C:-1};
 
   // Reset shopkeeper
   shopkeeperActor.reset();
