@@ -1037,7 +1037,7 @@ function handleCustomerClick() {
         inventory.push({product:idx,boughtFor:products[idx].value});
         dailyLog.push({type:'BUY',name:products[idx].name,amount:products[idx].value});
       }
-      pawnChangeScore(3);finishTrade();return;
+      pawnChangeScore(1);finishTrade();return;
     }
   } else {
     for(let row of pawnRows) {
@@ -1137,7 +1137,7 @@ function shopDrawPeople() {
   noStroke(); fill(0, 0, 0, 175); rect(0, 0, width, height);
   pixelBoard(116, 57, 632, 462);
   { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(22); text("CUSTOMER RELATIONSHIPS", 145, 102); };
-  { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(14); text("Every group starts at 50 / 100", 145, 131); };
+  { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(14); text("Higher relationships increase bargaining success rates.", 145, 131); };
 
   let groups = ["Regular", "Bargain", "Collector", "Suspicious"];
   let names = ["PALS OF PAT'S", "PENNY PINCHERS", "POSH PATRONS", "PRECARIOUS PURVEYORS"];
@@ -1289,7 +1289,7 @@ function handleShopClick() {
     if (pawnHit(462, 12, 140, 32)) { shopOpenMenu("upgrades"); return; }
   }
   if (pawnTradeActive() && !gamePaused && !showBag &&
-      pawnScore() >= 60 && !shopBargained &&
+      !shopBargained &&
       pawnHit(481, 489, 152, 36)) {
     shopTryBargain(); return;
   }
@@ -1307,7 +1307,7 @@ function handleShopClick() {
       inventory.push({product:idx, boughtFor:bought});
       dailyLog.push({type:"BUY", name:products[idx].name, amount:bought});
     }
-    pawnChangeScore(3);
+    pawnChangeScore(1);
     finishTrade();
     return;
   }
@@ -2670,7 +2670,7 @@ function completeBuyerSale() {
 
   showBudgetWarning = false;
   finishTrade();
-  pawnChangeScore(3);
+  pawnChangeScore(1);
 }
 
 
@@ -3069,6 +3069,7 @@ function pawnTradeBoard() {
     if(entries.length>4) { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(12); text('SHOWING FIRST 4 MATCHING ITEMS', 324, 455); };
     pawnButton('SELL',312,489,152,selectedItems.length>0,color(60,112,67));
   }
+  pawnButton('BARGAIN',481,489,152,!shopBargained,color(98,67,46));
   pawnButton('REJECT',651,489,152,true,color(156,63,52));
   { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(12); text(pawnMessage.substring(0,50), 310, 468); };
 
@@ -3078,31 +3079,29 @@ function pawnTradeBoard() {
 
 
 function shopTryBargain() {
-
-  let before = shopBargained;
-  let oldScore = pawnScore();
-
-  if (pawnScore() < 60 || shopBargained || !currentTrade) return;
+  if (shopBargained || !currentTrade || !pawnVisitor) return;
   shopBargained = true;
-  let chance = 0.5 + (pawnScore() - 60) * 0.005;
-  if (pawnVisitor.type === "Bargain") chance -= 0.12;
-  if (random() < chance) {
+
+  let score = pawnScore();
+  let chance = score >= 85 ? 0.85 :
+               score >= 65 ? 0.65 :
+               score >= 35 ? 0.50 :
+               score >= 15 ? 0.35 : 0.15;
+
+  // Different customer personalities affect the chance of a successful bargain.
+  const adjustments = {Regular:0, Bargain:-0.10, Collector:-0.05, Suspicious:0.10};
+  chance = constrain(chance + (adjustments[pawnVisitor.type] || 0), 0, 1);
+
+  let succeeded = random() < chance;
+  if (succeeded) {
     if (currentTrade.type === "sell") shopTradeMultiplier *= 0.9;
     else currentTrade.markup *= 1.1;
-    pawnChangeScore(2);
-    pawnMessage = "COUNTEROFFER ACCEPTED!";
   } else {
     pawnChangeScore(-3);
-    pawnMessage = "COUNTEROFFER REJECTED!";
   }
-  if (!before && shopBargained) {
-    let succeeded = pawnScore() > oldScore;
-    pawnConversation = chooseCustomerLine(succeeded ? 'bargainYes' : 'bargainNo');
-    // Preserve the text panel layout; use its existing message line for status only.
-    pawnMessage = succeeded ? 'BARGAIN ACCEPTED' : 'BARGAIN REJECTED';
-  }
+  pawnConversation = chooseCustomerLine(succeeded ? 'bargainYes' : 'bargainNo');
+  pawnMessage = succeeded ? 'BARGAIN ACCEPTED' : 'BARGAIN REJECTED';
 }
-
 
 function finishTrade() {
 
