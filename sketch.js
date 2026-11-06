@@ -868,19 +868,18 @@ function pawnDrawIntro() {
   pawnButton('CONTINUE',333,381,198,true,color(70,115,65));
 }
 function pawnDrawPoshOffer() {
-  noStroke(); fill(0,0,0,190); rect(0,0,width,height);
-  pawnPanel(80,55,704,455);
+  pawnPanel(280,95,562,458);
   fill(63, 40, 30);
   textAlign(CENTER);
   textStyle(NORMAL);
-  textSize(20);
-  text(`My antique vase shattered! I bought a new one,`, 110, 125, 644, 28);
-  text(`but thought I'd donate this old one to the shop.`, 110, 175, 644, 28);
-  text(`Would you like to try your hand at restoring it?`, 110, 225, 644, 28);
-  text(`If you can fix it, it's yours! I bet some`, 110, 275, 644, 28);
-  text(`repair skills would boost the shop's reputation.`, 110, 325, 644, 28);
-  pawnButton("Sure, I can take a stab at it", 140, 415, 280, true, color(70,115,65));
-  pawnButton('Not today', 444, 415, 280, true, color(156,63,52));
+  textSize(18);
+  text(`My antique vase shattered! I bought a new one,`, 310, 170, 502, 28);
+  text(`but thought I'd donate this old one to the shop.`, 310, 215, 502, 28);
+  text(`Would you like to try your hand at restoring it?`, 310, 260, 502, 28);
+  text(`If you can fix it, it's yours! I bet some`, 310, 305, 502, 28);
+  text(`repair skills would boost the shop's reputation.`, 310, 350, 502, 28);
+  pawnButton("I'll take a stab at it", 312, 489, 152, true, color(70,120,65));
+  pawnButton('Not today', 651, 489, 152, true, color(156,63,52));
 }
 function pawnStartIntroIfNeeded() {
   if (!pawnTradeActive() || pawnIntroType || !pawnVisitor) return;
@@ -1009,8 +1008,8 @@ function handleCustomerClick() {
     return;
   }
   if (poshOfferActive) {
-    if (pawnHit(140, 415, 280, 36)) choosePoshOffer('play');
-    else if (pawnHit(444, 415, 280, 36)) choosePoshOffer('leave');
+    if (pawnHit(312, 489, 152, 36)) choosePoshOffer('play');
+    else if (pawnHit(651, 489, 152, 36)) choosePoshOffer('leave');
     return;
   }
   if(!pawnTradeActive()) {handleBasicClick();return;}
@@ -2289,42 +2288,6 @@ function keyPressed() {
     }
   }
 };
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 function draw() {
     // Supplier order confirmations close automatically after three seconds.
     if (phoneCall === "orderConfirmed" && millis() >= orderConfirmationUntil) {

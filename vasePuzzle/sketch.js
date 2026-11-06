@@ -59,6 +59,23 @@ function draw() {
 
     if (gameState === "play") {
         drawPlayScreen();
+        return;
+    }
+
+    if (gameState === "win") {
+        const boardW = cols * displayPieceSize;
+        const boardH = rows * displayPieceSize;
+        const boardOffsetX = 60;
+        const boardOffsetY = (height - boardH) / 2;
+
+        drawCompletedVase(
+            selectedVaseIndex,
+            boardOffsetX,
+            boardOffsetY,
+            boardW,
+            boardH
+        );
+        drawWinScreen();
     }
 }
 
