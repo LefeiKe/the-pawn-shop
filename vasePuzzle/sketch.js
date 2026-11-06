@@ -4,6 +4,8 @@ let pieces = [];
 let emptySquare = {col: 2, row: 2};
 
 let gameState = "start";
+const puzzleTimeLimit = 3 * 60 * 1000;
+let puzzleStartedAt = 0;
 
 const vaseBounds = [
   { x: 0,   y: 0, w: 2016, h: 2016 }, // Vase 0: Takes full cell
@@ -76,6 +78,11 @@ function draw() {
             boardH
         );
         drawWinScreen();
+        return;
+    }
+
+    if (gameState === "timeout") {
+        drawTimeoutScreen();
     }
 }
 
@@ -92,6 +99,17 @@ function drawStartScreen() {
 }
 
 function drawPlayScreen() {
+    const timeRemaining = max(0, puzzleTimeLimit - (millis() - puzzleStartedAt));
+    if (timeRemaining === 0) {
+        gameState = "timeout";
+        selectedPiece = null;
+        window.parent.postMessage({
+            type: "vasePuzzleFailed"
+        }, window.location.origin);
+        drawTimeoutScreen();
+        return;
+    }
+
     let boardW = cols * displayPieceSize;
     let boardH = rows * displayPieceSize;
     let boardOffsetX = 60;
@@ -110,6 +128,12 @@ function drawPlayScreen() {
     noStroke();
     textAlign(CENTER);
     text("EMERGENCY REPAIR", referenceX + referenceSize * 0.5, boardOffsetY * 1.25);
+
+    pixelBoard(15, 15, 160, 52);
+    fill(255);
+    textSize(15);
+    textAlign(CENTER);
+    text(`TIME ${formatTime(timeRemaining)}`, 95, 48);
 
     textAlign(CENTER);
     textSize(9);
@@ -131,13 +155,6 @@ function drawPlayScreen() {
     drawReferenceImage(selectedVaseIndex, referenceX, referenceY, referenceSize);
 
     if (checkWin()) {
-        if (!completionReported) {
-            completionReported = true;
-            window.parent.postMessage({
-                type: "vasePuzzleCompleted",
-                vaseIndex: selectedVaseIndex
-            }, window.location.origin);
-        }
         drawCompletedVase(selectedVaseIndex, boardOffsetX, boardOffsetY, boardW, boardH);
         gameState = "win";
         drawWinScreen();
@@ -216,6 +233,24 @@ function drawWinScreen() {
     text("CLICK FOR A REWARD", width / 2, height / 2 + 10);
 }
 
+function drawTimeoutScreen() {
+    pixelBoard(160, 130, 544, 320);
+
+    fill(65, 40, 28);
+    textAlign(CENTER);
+    textSize(22);
+    text("TIME'S UP!", width / 2, height / 2 - 20);
+    textSize(10);
+    text("OH WELL, BETTER LUCK NEXT TIME!", width / 2, height / 2 + 30);
+}
+
+function formatTime(milliseconds) {
+    const totalSeconds = ceil(milliseconds / 1000);
+    const minutes = floor(totalSeconds / 60);
+    const seconds = String(totalSeconds % 60).padStart(2, "0");
+    return `${minutes}:${seconds}`;
+}
+
 function drawReferenceImage(vaseIndex, x, y, size) {
     let cellCol = vaseIndex % spriteSheetCols;
     let cellRow = Math.floor(vaseIndex / spriteSheetCols);
@@ -248,6 +283,7 @@ function pixelBoard(x, y, w, h) {
 function mousePressed() {
     if (gameState === "start") {
         gameState = "play";
+        puzzleStartedAt = millis();
         return;
     }
 
@@ -272,7 +308,13 @@ function mousePressed() {
     }
 
     if (gameState === "win") {
-        drawWinScreen();
+        if (!completionReported) {
+            completionReported = true;
+            window.parent.postMessage({
+                type: "vasePuzzleCompleted",
+                vaseIndex: selectedVaseIndex
+            }, window.location.origin);
+        }
     }
 }
 

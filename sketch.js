@@ -213,6 +213,7 @@ let poshGameOverlay;
 let poshGameFrame;
 let poshGamePausedShop = false;
 let poshOfferPausedShop = false;
+let poshGameResult = null;
 
 // Each day ends after its customer quota is served.
 const bagLimit = 6;
@@ -237,6 +238,7 @@ async function setup() {
   poshGameFrame = document.getElementById("posh-game-frame");
   document.getElementById("close-posh-game").addEventListener("click", closePoshGame);
   window.addEventListener("message", handleVasePuzzleMessage);
+  window.addEventListener("message", handleVasePuzzleFailure);
 
   shopBg = await loadImage("images/shop.png");
   vaseSpriteSheet = await loadImage("vasePuzzle/images/vases.png");
@@ -260,7 +262,19 @@ function handleVasePuzzleMessage(event) {
   if (event.data?.type !== "vasePuzzleCompleted") return;
   if (!Number.isInteger(event.data.vaseIndex) ||
       event.data.vaseIndex < 0 || event.data.vaseIndex >= vaseBounds.length) return;
-  completedVaseIndexes.push(event.data.vaseIndex);
+  if (!completedVaseIndexes.includes(event.data.vaseIndex)) {
+    completedVaseIndexes.push(event.data.vaseIndex);
+  }
+  if (!phoneSeen.upgrades) {
+    money *= 1.5;
+  }
+  resolvePoshGame(true);
+}
+
+function handleVasePuzzleFailure(event) {
+  if (!poshGameFrame || event.source !== poshGameFrame.contentWindow) return;
+  if (event.data?.type !== "vasePuzzleFailed") return;
+  resolvePoshGame(false);
 }
 
 function showPoshGame() {
@@ -268,6 +282,7 @@ function showPoshGame() {
   poshGamePending = false;
   poshGamePausedShop = !gamePaused;
   if (poshGamePausedShop) togglePause();
+  poshGameResult = null;
   poshGameFrame.src = poshGameFrame.dataset.src;
   poshGameOverlay.hidden = false;
 }
@@ -296,10 +311,27 @@ function choosePoshOffer(choice) {
 
 function closePoshGame() {
   if (!poshGameOverlay || !poshGameFrame) return;
+  resolvePoshGame(false);
+}
+
+function resolvePoshGame(won) {
+  if (poshGameResult !== null) return;
+  poshGameResult = won ? "win" : "loss";
+  if (!poshGameOverlay || !poshGameFrame) return;
   poshGameOverlay.hidden = true;
   poshGameFrame.src = "";
   if (poshGamePausedShop) togglePause();
   poshGamePausedShop = false;
+  poshGamePending = false;
+  if (won) {
+    customerDialogueOutcome = "accepted";
+  }
+  finishTrade();
+  if (won) {
+    customerReaction = "You're a marvel! I've left a nice bonus for you.";
+    customerReactionUntil = millis() + 2200;
+    rewardHighlightUntil = customerReactionUntil;
+  }
 }
 
 function drawCompletedVase() {
@@ -1562,6 +1594,7 @@ const naturalCustomerLines = {
 let lastCustomerDialogue = '';
 let customerReaction = '';
 let customerReactionUntil = 0;
+let rewardHighlightUntil = 0;
 let customerDialogueOutcome = 'rejected';
 
 function chooseCustomerLine(kind) {
@@ -2271,7 +2304,6 @@ function drawTestPanel() {
   pop();
 }
 
-
 function keyPressed() {
   if (DEV_TEST_MODE) {
     let k = String(key).toLowerCase();
@@ -2370,6 +2402,20 @@ function draw() {
       text(customerReaction, width / 2, height - 75);
       pop();
     }
+
+  if (millis() < rewardHighlightUntil && !showIntro && !showReceipt && !gameOver) {
+    push();
+    noFill();
+    stroke(255);
+    strokeWeight(3);
+    rect(17, 47, 194, 25);
+    noStroke();
+    fill(255);
+    textAlign(LEFT);
+    textSize(11);
+    text("BONUS!", 158, 42);
+    pop();
+  }
 
   if (!showIntro && !gameOver) {
     // An easy-to-see 180px red telephone at the lower-right of the shop.
@@ -2489,6 +2535,7 @@ function restartGame() {
   lastCustomerDialogue = '';
   customerReaction = '';
   customerReactionUntil = 0;
+  rewardHighlightUntil = 0;
   customerDialogueOutcome = 'rejected';
 
   
