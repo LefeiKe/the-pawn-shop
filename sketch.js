@@ -852,7 +852,7 @@ let pawnSprites = {};
 let pawnPortraits = {};
 let pawnVisitor = null;
 let pawnMessage = '';
-let pawnRelationship = {Regular:50,Bargain:50,Collector:50,Suspicious:50,Wholesaler:50};
+let pawnRelationship = {Regular:50,Bargain:50,Collector:50,Suspicious:50};
 let pawnReady = false;
 let pawnIntroSeen = {Regular:false,Bargain:false,Collector:false,Suspicious:false,Wholesaler:false};
 let pawnIntroType = '';
@@ -967,7 +967,7 @@ function pawnHit(x,y,w,h) {
 }
 // pawnScore is defined by its final game-specific implementation below.
 function pawnChangeScore(amount) {
-  if (!pawnVisitor) return;
+  if (!pawnVisitor || pawnVisitor.type === 'Wholesaler') return;
   let type = pawnVisitor.type;
   pawnRelationship[type] = constrain(pawnRelationship[type] + amount,0,100);
 }
@@ -1015,10 +1015,18 @@ function pawnPortrait() {
   // Two lines keep the complete category inside the portrait panel.
   let fullType = pawnVisitor ? pawnTypeNames[pawnVisitor.type] : '';
   { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(17); text(fullType, 43, 388, 205, 28); };
-  { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(15); text('REPUTATION', 43, 435, 205, 28); };
-  fill(115,91,72); rect(43,449,205,14);
-  fill(199,139,60);rect(43,449,205*pawnScore()/100,14);
-  { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(16); text(pawnScore() + ' / 100', 43, 488); };
+  if (pawnVisitor && pawnVisitor.type === 'Wholesaler') {
+    fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL);
+    textSize(15); text('FIXED PRICES', 43, 435);
+    textSize(16); text('90% OF MARKET VALUE', 43, 473);
+  } else {
+    fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL);
+    textSize(15); text('REPUTATION', 43, 435);
+    fill(115,91,72); rect(43,449,205,14);
+    fill(199,139,60); rect(43,449,205*pawnScore()/100,14);
+    fill(63, 40, 30); textSize(16);
+    text(pawnScore() + ' / 100', 43, 488);
+  }
 }
 
 // New trade board interactions; all unrelated input still uses existing handler.
@@ -1115,8 +1123,7 @@ function suspiciousTradeConsequence() {
   const groups = [
     {type:'Regular', name:"Pals of Pat's"},
     {type:'Bargain', name:'Penny Pinchers'},
-    {type:'Collector', name:'Posh Patrons'},
-    {type:'Wholesaler', name:'Wholesalers'}
+    {type:'Collector', name:'Posh Patrons'}
   ];
   const group = random(groups);
   pawnRelationship[group.type] = constrain(pawnRelationship[group.type] - 5, 0, 100);
@@ -1141,7 +1148,7 @@ function drawReputationNotice() {
 // Fix a score of 0 displaying as 50 in the earlier customer UI.
 function pawnScore() {
   if (!pawnVisitor) return 50;
-  return pawnRelationship[pawnVisitor.type];
+  return pawnVisitor.type === 'Wholesaler' ? null : pawnRelationship[pawnVisitor.type];
 };
 
 function shopCapacity() {
@@ -1191,17 +1198,17 @@ function shopDrawPeople() {
   { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(22); text("CUSTOMER REPUTATION", 145, 102); };
   { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(14); text("A better reputation increases bargaining success rates.", 145, 131); };
 
-  let groups = ["Regular", "Bargain", "Collector", "Suspicious", "Wholesaler"];
-  let names = ["PALS OF PAT'S", "PENNY PINCHERS", "POSH PATRONS", "PRECARIOUS PURVEYORS", "WHOLESALERS"];
+  let groups = ["Regular", "Bargain", "Collector", "Suspicious"];
+  let names = ["PALS OF PAT'S", "PENNY PINCHERS", "POSH PATRONS", "PRECARIOUS PURVEYORS"];
   for (let i = 0; i < groups.length; i++) {
-    let y = 151 + i * 60;
+    let y = 151 + i * 74;
     let score = pawnRelationship[groups[i]];
-    shopMenuCard(140, y, 584, 54);
+    shopMenuCard(140, y, 584, 66);
     { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(17); text(names[i], 155, y + 22, 450, 28); };
     { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(16); text(score + "/100", 638, y + 22, 70, 28); };
-    fill(119, 94, 68); rect(155, y + 33, 548, 10);
+    fill(119, 94, 68); rect(155, y + 36, 548, 12);
     fill(score >= 60 ? color(78, 128, 77) : color(198, 143, 70));
-    rect(155, y + 33, 548 * score / 100, 10);
+    rect(155, y + 36, 548 * score / 100, 12);
   }
   drawButton("CLOSE", 347, 462, 170, true, color(98, 67, 46));
 }
@@ -1356,7 +1363,7 @@ function handleShopClick() {
           selectedWholesaleItems.splice(position, 1);
           pawnMessage = '';
         } else if (inventory.length + reservedStorage() + selectedWholesaleItems.length >= shopCapacity()) {
-          pawnMessage = 'NOT ENOUGH INVENTORY SPACE';
+          pawnMessage = 'Buying pass storage capacity from wholesaler is not allowed';
         } else {
           selectedWholesaleItems.push(i);
           pawnMessage = '';
@@ -1369,7 +1376,7 @@ function handleShopClick() {
       const cost = sellerSelectedTotal();
       if (!items.length) { pawnMessage = 'SELECT AN ITEM FIRST'; return; }
       if (inventory.length + reservedStorage() + items.length > shopCapacity()) {
-        pawnMessage = 'NOT ENOUGH INVENTORY SPACE'; return;
+        pawnMessage = 'Buying pass storage capacity from wholesaler is not allowed'; return;
       }
       if (cost > money) { pawnMessage = 'NOT ENOUGH MONEY'; return; }
       money -= cost;
@@ -1378,7 +1385,6 @@ function handleShopClick() {
         inventory.push({product:index, boughtFor:paid});
         dailyLog.push({type:'BUY', name:products[index].name, amount:paid});
       }
-      pawnChangeScore(2);
       customerDialogueOutcome = 'accepted';
       finishTrade();
       return;
@@ -2681,7 +2687,7 @@ function restartGame() {
   showIntro = true;
 
   
-  pawnRelationship = {Regular:50,Bargain:50,Collector:50,Suspicious:50,Wholesaler:50};
+  pawnRelationship = {Regular:50,Bargain:50,Collector:50,Suspicious:50};
   pawnVisitor=null;pawnMessage='';pawnRows=[];
   pawnIntroSeen={Regular:false,Bargain:false,Collector:false,Suspicious:false,Wholesaler:false};
   pawnIntroType='';pawnIntroPausedGame=false;pawnConversation='';
@@ -2734,7 +2740,7 @@ function generateCustomer(forcedVisitorType) {
   let type = random(["sell", "category"]);
 
   // Regular buyers may offer below or above the item's original value.
-  let markup = random(0.90, 1.15);
+  let markup = random(0.95, 1.15);
 
   currentTrade = {
       type: type,
@@ -3271,7 +3277,7 @@ function pawnTradeBoard() {
   }
   pawnButton('BARGAIN',481,489,152,!shopBargained && pawnVisitor.type !== 'Wholesaler',color(98,67,46));
   pawnButton('REJECT',651,489,152,true,color(156,63,52));
-  { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(12); text(pawnMessage.substring(0,50), 310, 468); };
+  { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(pawnVisitor.type === 'Wholesaler' ? 10 : 12); text(pawnMessage, 310, 468); };
 
 
   if (!pawnTradeActive()) return;
