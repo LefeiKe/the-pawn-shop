@@ -871,13 +871,15 @@ function pawnDrawPoshOffer() {
   pawnPanel(280,95,562,458);
   fill(63, 40, 30);
   textAlign(CENTER);
+  textSize(22);
+  text("NEW CHALLENGE UNLOCKED", 310, 140, 502, 28);
   textStyle(NORMAL);
   textSize(18);
-  text(`My antique vase shattered! I bought a new one,`, 310, 170, 502, 28);
-  text(`but thought I'd donate this old one to the shop.`, 310, 215, 502, 28);
-  text(`Would you like to try your hand at restoring it?`, 310, 260, 502, 28);
-  text(`If you can fix it, it's yours! I bet some`, 310, 305, 502, 28);
-  text(`repair skills would boost the shop's reputation.`, 310, 350, 502, 28);
+  text(`My antique vase shattered! I bought a new one,`, 310, 195, 502, 28);
+  text(`but thought I'd donate this old one to the shop.`, 310, 240, 502, 28);
+  text(`Would you like to try your hand at restoring it?`, 310, 285, 502, 28);
+  text(`If you can fix it, it's yours! I bet some`, 310, 330, 502, 28);
+  text(`repair skills would boost the shop's reputation.`, 310, 375, 502, 28);
   pawnButton("I'll take a stab at it", 312, 489, 152, true, color(70,120,65));
   pawnButton('Not today', 651, 489, 152, true, color(156,63,52));
 }
