@@ -1025,7 +1025,6 @@ function handleCustomerClick() {
   if(gamePaused || showBag) {handleBasicClick();return;}
   // Reject current customer.
   if(pawnHit(651,489,152,36)) {
-    pawnChangeScore(-1);
     finishTrade();return;
   }
   if(currentTrade.type==='sell') {
@@ -3093,7 +3092,7 @@ function shopTryBargain() {
     pawnChangeScore(2);
     pawnMessage = "COUNTEROFFER ACCEPTED!";
   } else {
-    pawnChangeScore(-5);
+    pawnChangeScore(-3);
     pawnMessage = "COUNTEROFFER REJECTED!";
   }
   if (!before && shopBargained) {
