@@ -187,8 +187,16 @@ const products = [
     // Supplier-only stock (not sold to the player by walk-in customers).
     new Product("Wine", "Food", 40),
     new Product("Camera", "Daily", 70),
-    new Product("Drill", "Tools", 60)
+    new Product("Drill", "Tools", 60),
+    // Posh Patron exclusive items. Other customers can buy these from the shop.
+    new Product("Pearl Necklace", "Daily", 150),
+    new Product("Leather Handbag", "Daily", 130),
+    new Product("Telescope", "Tools", 160),
+    new Product("Sewing Machine", "Tools", 140),
+    new Product("Champagne", "Food", 100),
+    new Product("Premium Whiskey", "Food", 120)
 ];
+const poshProductStart = products.length - 6;
 
 let gamePaused = false;
 let pauseStart = 0;
@@ -846,7 +854,7 @@ const pawnTypeNames = {Regular:"PAL OF PAT'S",Bargain:'PENNY PINCHER',Collector:
 const pawnTypeExplanations = {
   Regular:["PALS OF PAT'S","The most common visitors to your pawn shop.","Fair trades help build trust over time."],
   Bargain:['PENNY PINCHERS','These customers have tighter budgets.','They are especially difficult to negotiate with.'],
-  Collector:['POSH PATRONS','These wealthy collectors can spend more than ordinary buyers.','Their offers may be especially profitable.'],
+  Collector:['POSH PATRONS','Wealthy collectors who bring expensive items to sell.','They have generous budgets and pay more for valuable goods.'],
   Suspicious:['PRECARIOUS PURVEYORS','These visitors seem to be in a hurry to make a deal.','They are often surprisingly flexible with their prices.']
 };
 const pawnDialogue = {
@@ -2537,7 +2545,7 @@ function generateCustomer(forcedVisitorType) {
 
 
 
-  let itemIndex = floor(random(products.length - 3));
+  let itemIndex = floor(random(12));
   let type = random(["sell", "category"]);
 
   // Buyer offers 5% to 20% above original value
@@ -2558,7 +2566,7 @@ function generateCustomer(forcedVisitorType) {
       let quantity = floor(random(1, 4));
 
       for (let i = 0; i < quantity; i++) {
-          let productIndex = floor(random(products.length - 3));
+          let productIndex = floor(random(12));
           currentTrade.items.push(productIndex);
       }
   }
@@ -2585,8 +2593,27 @@ function generateCustomer(forcedVisitorType) {
   pawnConversation = pawnNewConversation();
   // Collector has more to spend; bargain hunters have less.
   if (pawnVisitor.type === 'Collector') {
-    currentTrade.budget = floor(currentTrade.budget * 1.5);
-    currentTrade.markup *= 1.1;
+    if (type === 'sell') {
+      // Posh Patrons bring one or two exclusive, expensive items.
+      currentTrade.items = [];
+      let quantity = floor(random(1, 3));
+      for (let i = 0; i < quantity; i++) {
+        currentTrade.items.push(floor(random(poshProductStart, products.length)));
+      }
+    } else {
+      // Their requests can include merchandise from any previous seller or supplier.
+      // Prefer categories containing valuable inventory, if any is available.
+      if (inventory.length > 0 && random() < 0.75) {
+        let stock = random(inventory);
+        for (let entry of inventory) {
+          if (products[entry.product].value > products[stock.product].value && random() < 0.7) {
+            stock = entry;
+          }
+        }
+        currentTrade.category = products[stock.product].category;
+      }
+      currentTrade.budget = max(250, floor(random(300, 651)));
+    }
   }
   if (pawnVisitor.type === 'Bargain') {
     currentTrade.budget = floor(currentTrade.budget * 0.85);
@@ -2940,6 +2967,12 @@ function moveShopkeeper() {
 
 function buyerPrice(index) {
   let price = products[index].value * currentTrade.markup;
+  // Wealthy collectors pay increasingly generous prices for valuable items.
+  if (pawnVisitor && pawnVisitor.type === "Collector" && currentTrade.type === "category") {
+    let value = products[index].value;
+    let bonus = value >= 150 ? 1.20 : value >= 100 ? 1.15 : value >= 50 ? 1.10 : 1.05;
+    price *= bonus;
+  }
   price *= 1 + shelvesLevel * 0.05;
   return Number(price.toFixed(2));
 }
