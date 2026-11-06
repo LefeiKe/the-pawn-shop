@@ -209,6 +209,12 @@ let dailyCustomerLimit = 5;
 let customersLeft = 5;
 let dayNumber = 1;
 
+// Inspector visits are separate from the daily customer quota.
+let nextInspectionDay = 3;
+let latestInspectionGrade = '';
+let inspectorNotice = false;
+let inspectorNoticePausedGame = false;
+
 let showIntro = true;
 let dayStarted = false;
 let closing = false;
@@ -1688,11 +1694,58 @@ function updateDay() {
   }
 }
 function getDailyCustomers() {
-  if (advertisingLevel === 1) return 7;
-  if (advertisingLevel === 2) return 10;
-  if (advertisingLevel === 3) return 13;
-  return 5;
-};
+  const base = [5, 7, 10, 13][advertisingLevel] || 5;
+  const inspectionChange = latestInspectionGrade === 'A' ? 2 :
+                           latestInspectionGrade === 'C' ? -2 : 0;
+  return max(3, base + inspectionChange);
+}
+
+// Called by the future inspector memory game after its five questions.
+// The latest grade changes tomorrow's customer quota, not today's.
+function recordInspectionResult(correctAnswers) {
+  if (!Number.isInteger(correctAnswers) || correctAnswers < 0 || correctAnswers > 5) return;
+  latestInspectionGrade = correctAnswers === 5 ? 'A' :
+                          correctAnswers >= 3 ? 'B' : 'C';
+}
+
+// Placeholder until Sara's memory game is added. No grade is assigned here.
+function checkInspectorVisit() {
+  if (!dayStarted || closing || dayNumber !== nextInspectionDay || inspectorNotice ||
+      showIntro || showReceipt || gameOver || gamePaused ||
+      phonePending || phoneCall || pawnIntroType || shopMenu || showBag ||
+      pawnTradeActive() || poshOfferActive || currentCustomer.state !== 'gone') return;
+
+  nextInspectionDay = dayNumber + floor(random(4, 7));
+  inspectorNotice = true;
+  inspectorNoticePausedGame = !gamePaused;
+  if (inspectorNoticePausedGame) togglePause();
+}
+
+function drawInspectorNotice() {
+  if (!inspectorNotice) return;
+  push();
+  noStroke();
+  fill(0, 0, 0, 170);
+  rect(0, 0, width, height);
+  pixelBoard(165, 157, 534, 258);
+  fill(65, 40, 28);
+  textAlign(CENTER);
+  textStyle(BOLD);
+  textSize(23);
+  text('INSPECTOR VISIT', 432, 212);
+  textStyle(NORMAL);
+  textSize(16);
+  text('The inspector has arrived!', 432, 267);
+  text('Memory game coming soon.', 432, 299);
+  drawButton('CONTINUE', 317, 346, 230, true, color(70, 115, 65));
+  pop();
+}
+
+function dismissInspectorNotice() {
+  inspectorNotice = false;
+  if (inspectorNoticePausedGame && gamePaused) togglePause();
+  inspectorNoticePausedGame = false;
+}
 
 // Day banner countdown only appears after the Day 7 surprise.
 
@@ -2063,6 +2116,10 @@ function phoneSellSelection() {
 
 
 function mousePressed() {
+  if (inspectorNotice) {
+    if (pawnHit(317, 346, 230, 32)) dismissInspectorNotice();
+    return;
+  }
 
   if (showBag) {
     let totalPages = max(1, ceil(inventory.length / 6));
@@ -2206,6 +2263,9 @@ function testJumpToDay(day) {
   selectedItems = [];
   pawnVisitor = null;
   dayNumber = day;
+  nextInspectionDay = day >= 3 ? day : 3;
+  inspectorNotice = false;
+  inspectorNoticePausedGame = false;
   dayStarted = true;
   startTime = millis();
   dailyCustomerLimit = getDailyCustomers();
@@ -2265,7 +2325,7 @@ function testEndDay() {
 function drawTestPanel() {
   if (!DEV_TEST_MODE || !testPanelVisible) return;
   push();
-  noStroke(); fill(40, 29, 25, 235); rect(216, 100, 433, 205);
+  noStroke(); fill(40, 29, 25, 235); rect(216, 100, 433, 225);
   fill(255); textFont('Pixelify Sans'); textAlign(LEFT); textStyle(NORMAL);
   textSize(20); text('DEV TEST MODE', 234, 130);
   textSize(16);
@@ -2273,7 +2333,8 @@ function drawTestPanel() {
   text('3 = Day 3       7 = Day 7', 234, 187);
   text('8 = Day 8       0 = Day 14', 234, 214);
   text('M = +$100      P = posh patron', 234, 244);
-  text('T = hide/show', 234, 272);
+  text('A/B/C = test inspection grade', 234, 272);
+  text('T = hide/show', 234, 295);
   pop();
 }
 
@@ -2291,6 +2352,9 @@ function keyPressed() {
       else if (k === '8') testJumpToDay(8);
       else if (k === '0') testJumpToDay(14);
       else if (k === 'p') testEnterPoshPatron();
+      else if (k === 'a') recordInspectionResult(5);
+      else if (k === 'b') recordInspectionResult(4);
+      else if (k === 'c') recordInspectionResult(2);
       
       return false;
     }
@@ -2351,7 +2415,8 @@ function draw() {
     if (!showIntro && !gamePaused && !showReceipt && !gameOver) {
       updateDay();
       moveShopkeeper();
-      moveCustomer();
+      checkInspectorVisit();
+      if (!gamePaused) moveCustomer();
     }
     
     drawCharacters();
@@ -2452,7 +2517,14 @@ function draw() {
 
   // The bag must be drawn after the trading screen.
   if (showBag) drawBag();
+  if (latestInspectionGrade) {
+    push();
+    fill(65, 40, 28); textSize(12); textAlign(CENTER);
+    text('INSPECTION: ' + latestInspectionGrade, 763, 83);
+    pop();
+  }
   drawTestPanel();
+  drawInspectorNotice();
 }
 
 
@@ -2471,6 +2543,10 @@ function restartGame() {
   startTime = 0;
   nextArrival = 0;
   nextMorning = 0;
+  nextInspectionDay = 3;
+  latestInspectionGrade = '';
+  inspectorNotice = false;
+  inspectorNoticePausedGame = false;
 
   // Reset shopkeeper
   shopkeeperActor.reset();
