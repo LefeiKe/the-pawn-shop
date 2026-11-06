@@ -1004,7 +1004,7 @@ function pawnPortrait() {
   // Two lines keep the complete category inside the portrait panel.
   let fullType = pawnVisitor ? pawnTypeNames[pawnVisitor.type] : '';
   { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(17); text(fullType, 43, 388, 205, 28); };
-  { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(15); text('RELATIONSHIP', 43, 435, 205, 28); };
+  { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(15); text('REPUTATION', 43, 435, 205, 28); };
   fill(115,91,72); rect(43,449,205,14);
   fill(199,139,60);rect(43,449,205*pawnScore()/100,14);
   { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(16); text(pawnScore() + ' / 100', 43, 488); };
@@ -1037,7 +1037,7 @@ function handleCustomerClick() {
         inventory.push({product:idx,boughtFor:products[idx].value});
         dailyLog.push({type:'BUY',name:products[idx].name,amount:products[idx].value});
       }
-      pawnChangeScore(1);finishTrade();return;
+      pawnChangeScore(2);finishTrade();return;
     }
   } else {
     for(let row of pawnRows) {
@@ -1136,8 +1136,8 @@ function shopMenuCard(x, y, w, h) {
 function shopDrawPeople() {
   noStroke(); fill(0, 0, 0, 175); rect(0, 0, width, height);
   pixelBoard(116, 57, 632, 462);
-  { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(22); text("CUSTOMER RELATIONSHIPS", 145, 102); };
-  { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(14); text("Higher relationships increase bargaining success rates.", 145, 131); };
+  { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(22); text("CUSTOMER REPUTATION", 145, 102); };
+  { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(14); text("A better reputation increases bargaining success rates.", 145, 131); };
 
   let groups = ["Regular", "Bargain", "Collector", "Suspicious"];
   let names = ["PALS OF PAT'S", "PENNY PINCHERS", "POSH PATRONS", "PRECARIOUS PURVEYORS"];
@@ -1285,8 +1285,8 @@ function handleShopClick() {
     return;
   }
   if (!showIntro && !showReceipt && !gameOver && !closing && !showBudgetWarning) {
-    if (pawnHit(328, 12, 124, 32)) { shopOpenMenu("people"); return; }
-    if (pawnHit(462, 12, 140, 32)) { shopOpenMenu("upgrades"); return; }
+    if (pawnHit(328, 12, 150, 32)) { shopOpenMenu("people"); return; }
+    if (pawnHit(488, 12, 140, 32)) { shopOpenMenu("upgrades"); return; }
   }
   if (pawnTradeActive() && !gamePaused && !showBag &&
       !shopBargained &&
@@ -1307,7 +1307,7 @@ function handleShopClick() {
       inventory.push({product:idx, boughtFor:bought});
       dailyLog.push({type:"BUY", name:products[idx].name, amount:bought});
     }
-    pawnChangeScore(1);
+    pawnChangeScore(2);
     finishTrade();
     return;
   }
@@ -1696,7 +1696,7 @@ function getDailyCustomers() {
 
 // Day banner countdown only appears after the Day 7 surprise.
 
-// Hide upgrades until Day 3, without changing the PEOPLE button.
+// Hide upgrades until Day 3, without changing the REPUTATION button.
 
 
 function buySupplierItems(quantity, confirmed = false) {
@@ -2670,7 +2670,7 @@ function completeBuyerSale() {
 
   showBudgetWarning = false;
   finishTrade();
-  pawnChangeScore(1);
+  pawnChangeScore(2);
 }
 
 
@@ -3120,8 +3120,8 @@ function finishTrade() {
 function shopDrawTabs() {
 
   if (showIntro || showReceipt || gameOver || closing) return;
-  drawButton('PEOPLE', 328, 12, 124, true, color(98, 67, 46));
+  drawButton('REPUTATION', 328, 12, 150, true, color(98, 67, 46));
   if (dayNumber >= 3 && phoneSeen.upgrades && !phonePending && !phoneCall) {
-    drawButton('UPGRADES', 462, 12, 140, true, color(98, 67, 46));
+    drawButton('UPGRADES', 488, 12, 140, true, color(98, 67, 46));
   }
 }
