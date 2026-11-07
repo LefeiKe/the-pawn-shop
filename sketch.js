@@ -217,10 +217,10 @@ function chooseFinalEnding() {
   const upgrades = unlockedUpgradeCount();
   if (money < 0) return {title:"SHOP CLOSED", message:"Bankruptcy: your shop could not cover its final debts.", won:false};
   if (upgrades >= 8 && totalSalesEarned >= 7500) {
-    return {title:"LEGENDARY SHOPKEEPER!", message:"A thriving pawn shop and a remarkable fortune!", won:true};
+    return {title:"SPECIAL ENDING: LEGENDARY SHOPKEEPER!", message:"A thriving pawn shop and a remarkable fortune!", won:true};
   }
   if (upgrades <= 2 && totalSalesEarned < 1000) {
-    return {title:"THE QUIET SHOP", message:"You survived four weeks! A humble beginning for your shop.", won:true};
+    return {title:"SPECIAL ENDING: THE QUIET SHOP", message:"You survived four weeks! A humble beginning for your shop.", won:true};
   }
   if (upgrades >= 5 && totalSalesEarned >= 2500) {
     return {title:"YOU WIN!", message:"Your pawn shop has become a neighborhood success!", won:true};
@@ -658,7 +658,7 @@ function drawGameOver() {
   pixelBoard(125,96,614,385);
   const result = ending || {title:"SHOP CLOSED", message:"Your shop has closed.", won:false};
   fill(result.won ? color(70,115,65) : color(160,70,60));
-  textAlign(CENTER); textStyle(BOLD); textSize(25);
+  textAlign(CENTER); textStyle(BOLD); textSize(result.title.startsWith("SPECIAL ENDING:") ? 20 : 25);
   text(result.title,432,150);
   fill(65,40,28); textStyle(NORMAL); textSize(15);
   text(result.message,165,182,534,52);
