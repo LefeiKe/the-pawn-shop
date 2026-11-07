@@ -92,7 +92,7 @@ function drawStartScreen() {
   fill(65, 40, 28);
   textAlign(CENTER);
   textSize(20);
-  text("EMERGENCY REPAIR", 432, 265);
+  text("PAWNBROKEN!", 432, 265);
 
   textSize(9);
   text("CLICK TO START", 432, 330);
@@ -127,7 +127,7 @@ function drawPlayScreen() {
     fill(65, 40, 28);
     noStroke();
     textAlign(CENTER);
-    text("EMERGENCY REPAIR", referenceX + referenceSize * 0.5, boardOffsetY * 1.25);
+    text("PAWNBROKEN!", referenceX + referenceSize * 0.5, boardOffsetY * 1.25);
 
     pixelBoard(15, 15, 160, 52);
     fill(255);
