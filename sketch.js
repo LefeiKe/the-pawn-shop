@@ -201,6 +201,56 @@ const poshProductStart = products.length - 6;
 let gamePaused = false;
 let pauseStart = 0;
 let gameOver = false;
+let ending = null;
+let recoveryDeadline = 0;
+let totalSalesEarned = 0;
+const FINAL_DAY = 28;
+
+// Count purchased upgrades and up to three storage reorganization milestones.
+function unlockedUpgradeCount() {
+  return Number(priceCatalogOwned) + shelvesLevel + advertisingLevel +
+    supplierOwned.filter(Boolean).length + min(3, floor(storageBonus / 3));
+}
+
+function chooseFinalEnding() {
+  const upgrades = unlockedUpgradeCount();
+  if (money < 0) return {title:"BANKRUPT", message:"Your shop could not cover its final debts.", won:false};
+  if (upgrades >= 8 && totalSalesEarned >= 7500) {
+    return {title:"LEGENDARY SHOPKEEPER!", message:"A thriving pawn shop and a remarkable fortune!", won:true};
+  }
+  if (upgrades <= 2 && totalSalesEarned < 1000) {
+    return {title:"THE QUIET SHOP", message:"You made it four weeks, but the shop never found its feet.", won:false};
+  }
+  if (upgrades >= 5 && totalSalesEarned >= 2500) {
+    return {title:"YOU WIN!", message:"Your pawn shop has become a neighborhood success!", won:true};
+  }
+  return {title:"SHOP CLOSED", message:"Four weeks are over. More upgrades and sales were needed.", won:false};
+}
+
+function finishGame(result) {
+  ending = result;
+  gameOver = true;
+  showReceipt = false;
+  nextMorning = 0;
+}
+
+// Called once after the day's business (including rent on rent days).
+function settleDay() {
+  if (recoveryDeadline && money >= 0) recoveryDeadline = 0;
+  if (recoveryDeadline && dayNumber >= recoveryDeadline && money < 0) {
+    finishGame({title:"BANKRUPT", message:"The three-day recovery period has ended.", won:false});
+    return;
+  }
+  if (dayNumber === FINAL_DAY) {
+    finishGame(chooseFinalEnding());
+    return;
+  }
+  if (dayNumber % 7 === 0 && money < 0 && !recoveryDeadline) {
+    recoveryDeadline = dayNumber + 3;
+  }
+  showReceipt = true;
+}
+
 
 let inventory = [];
 let money = 150;
@@ -585,31 +635,20 @@ function drawBagIcon() {
 // Inventory window
 
 function drawGameOver() {
-
-  // Darken the background
-  noStroke();
-  fill(0, 0, 0, 180);
-  rect(0, 0, width, height);
-
-  // Game over window
-  pixelBoard(160, 130, 544, 320);
-
-  fill(160, 70, 60);
-  textAlign(CENTER);
-  textSize(24);
-  text("GAME OVER", 432, 195);
-
-  fill(65, 40, 28);
-  textSize(14);
-
-  text("YOUR SHOP HAS GONE BANKRUPT!", 432, 250);
-  text("FINAL BALANCE: $" + money.toFixed(2), 432, 290);
-  text("YOU SURVIVED " + dayNumber + " DAYS", 432, 330);
-
-  drawButton("RESTART GAME", 307, 375, 250, true,
-             color(70, 115, 65));
+  noStroke(); fill(0,0,0,180); rect(0,0,width,height);
+  pixelBoard(125,96,614,385);
+  const result = ending || {title:"BANKRUPT", message:"Your shop has closed.", won:false};
+  fill(result.won ? color(70,115,65) : color(160,70,60));
+  textAlign(CENTER); textStyle(BOLD); textSize(25);
+  text(result.title,432,150);
+  fill(65,40,28); textStyle(NORMAL); textSize(15);
+  text(result.message,165,182,534,52);
+  text("DAYS COMPLETED: " + dayNumber + " / " + FINAL_DAY,432,252);
+  text("UPGRADES UNLOCKED: " + unlockedUpgradeCount(),432,281);
+  text("TOTAL SALES: $" + totalSalesEarned.toFixed(2),432,310);
+  text("FINAL BALANCE: $" + money.toFixed(2),432,339);
+  drawButton("RESTART GAME",307,408,250,true,color(70,115,65));
 }
-
 
 
 
@@ -785,7 +824,7 @@ function handleBasicClick() {
   if (gameOver) {
 
     if (mouseX >= 307 && mouseX <= 557 &&
-        mouseY >= 375 && mouseY <= 407) {
+        mouseY >= 408 && mouseY <= 440) {
 
         restartGame();
     }
@@ -2411,10 +2450,7 @@ function phonePayRent() {
   money -= amount;
   dailyLog.push({type:'RENT', amount:amount});
   phonePaidToday = true;
-  if (money < 0) {
-    showReceipt = false;
-    gameOver = true;
-  }
+  settleDay();
 }
 function phoneSellSelection() {
   let total = phoneSaleTotal();
@@ -2425,6 +2461,7 @@ function phoneSellSelection() {
     inventory.splice(i,1);
   }
   money += total;
+  totalSalesEarned += total;
   phonePayRent();
   phoneEndCall();
 }
@@ -2584,6 +2621,8 @@ function testJumpToDay(day) {
   showBag = false;
   showBudgetWarning = false;
   gameOver = false;
+  ending = null;
+  recoveryDeadline = 0;
   closing = false;
   currentCustomer.state = 'gone';
   currentTrade = undefined;
@@ -2936,6 +2975,9 @@ function restartGame() {
   gamePaused = false;
   pauseStart = 0;
   gameOver = false;
+  ending = null;
+  recoveryDeadline = 0;
+  totalSalesEarned = 0;
 
   // Return to introduction screen
   showIntro = true;
@@ -3122,6 +3164,7 @@ function completeBuyerSale() {
 
   // Receive money
   money += actual;
+  totalSalesEarned += actual;
 
   // Remove sold items from inventory
   selectedItems.sort((a, b) => b - a);
@@ -3227,6 +3270,10 @@ function drawInfo() {
 
     text("DAY " + dayNumber, 24, 40);
     text("MONEY $" + money.toFixed(2), 24, 63);
+  if (recoveryDeadline && money < 0) {
+    fill(160,70,60); textAlign(LEFT); textSize(12);
+    text("RECOVER BY DAY " + recoveryDeadline,325,41);
+  }
   if (dayNumber > 7) {
     let remaining = 7 - (dayNumber % 7);
     if (remaining === 7) remaining = 0;
@@ -3407,8 +3454,9 @@ function moveShopkeeper() {
     scheduleCustomer();
   }
   if (previousState === "leaving" && shopkeeperActor.state === "gone") {
-    if (money < 0) gameOver = true;
-    else showReceipt = true;
+    // Rent days finish only after the landlord's payment call.
+    if (dayNumber >= 14 && dayNumber % 7 === 0 && !phonePaidToday) showReceipt = true;
+    else settleDay();
   }
 
   if (shopkeeperActor.state === "gone" &&
