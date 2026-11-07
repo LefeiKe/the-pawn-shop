@@ -658,18 +658,35 @@ function drawBankruptcyNotice() {
 function drawAchievementToast() {
   if (!gameOver || !ending || !ending.achievement) return;
   const elapsed = millis() - endingShownAt;
-  if (elapsed < 700 || elapsed > 5200) return;
+  const delay = 700, slideTime = 420, holdTime = 3500;
+  const total = delay + slideTime * 2 + holdTime;
+  if (elapsed < delay || elapsed > total) return;
+
+  // Steam-style movement: rise from the bottom-right, rest, slide back down.
+  let offsetY = 0;
+  const phase = elapsed - delay;
+  if (phase < slideTime) {
+    const t = constrain(phase / slideTime, 0, 1);
+    offsetY = 145 * (1 - (1 - t) * (1 - t) * (1 - t));
+    offsetY = 145 - offsetY;
+  } else if (phase > slideTime + holdTime) {
+    const t = constrain((phase - slideTime - holdTime) / slideTime, 0, 1);
+    offsetY = 145 * t * t * t;
+  }
+
   push();
-  pixelBoard(514,18,336,119);
-  // Little pixel-art trophy, using the same warm palette as the shop UI.
+  translate(0, offsetY);
+  const x = width - 350, y = height - 134;
+  pixelBoard(x,y,336,119);
+  // Golden trophy built from pixel blocks to match the shop's visual style.
   noStroke(); fill(191,147,67);
-  rect(535,55,29,23); rect(530,55,5,13); rect(564,55,5,13);
-  rect(547,78,5,11); rect(539,89,21,5);
+  rect(x+21,y+37,29,23); rect(x+16,y+37,5,13); rect(x+50,y+37,5,13);
+  rect(x+33,y+60,5,11); rect(x+25,y+71,21,5);
   fill(65,40,28); textAlign(LEFT); textStyle(BOLD);
-  textSize(14); text("ACHIEVEMENT UNLOCKED!",580,48);
-  textSize(17); text(ending.achievement,580,76);
+  textSize(14); text("ACHIEVEMENT UNLOCKED!",x+66,y+30);
+  textSize(17); text(ending.achievement,x+66,y+58);
   textStyle(NORMAL); textSize(12);
-  text(ending.announcement,580,88,248,42);
+  text(ending.announcement,x+66,y+70,248,42);
   pop();
 }
 
