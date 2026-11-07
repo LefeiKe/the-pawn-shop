@@ -728,8 +728,10 @@ const endingSpeeches = {
 function endingDialogue() {
   return endingSpeeches[ending?.achievement] || endingSpeeches["Shop Closed"];
 }
-function endingButtonsY() { return 210 + endingDialogue().length * 68 + 250; }
-function endingMaxScroll() { return max(0, endingButtonsY() + 44 - 508); }
+function endingMaxScroll() {
+  const statsY = 210 + endingDialogue().length * 68;
+  return max(0, statsY + 196 - 410);
+}
 
 function drawGameOver() {
   noStroke(); fill(0,0,0,185); rect(0,0,width,height);
@@ -741,7 +743,7 @@ function drawGameOver() {
   push();
   drawingContext.save();
   drawingContext.beginPath();
-  drawingContext.rect(104,68,646,440);
+  drawingContext.rect(104,68,646,344);
   drawingContext.clip();
   translate(0,-endingScroll);
 
@@ -760,21 +762,23 @@ function drawGameOver() {
   textStyle(NORMAL); textSize(16);
   text("DAYS COMPLETED: " + dayNumber + " / " + FINAL_DAY,432,statsY+43);
   text("UPGRADES UNLOCKED: " + unlockedUpgradeCount(),432,statsY+75);
-  text("TOTAL SALES: $" + totalSalesEarned.toFixed(2),432,statsY+107);
-  text("FINAL BALANCE: $" + money.toFixed(2),432,statsY+139);
-  text("FINAL STORAGE CAPACITY: " + shopCapacity() + " SLOTS",432,statsY+171);
-  drawButton("RETRY GAME",194,endingButtonsY(),210,true,color(70,115,65));
-  drawButton("RETURN TO HOME",460,endingButtonsY(),210,true,color(98,67,46));
+  text("FINAL STORAGE CAPACITY: " + shopCapacity() + " SLOTS",432,statsY+107);
+  text("TOTAL SALES: $" + totalSalesEarned.toFixed(2),432,statsY+139);
+  text("FINAL BALANCE: $" + money.toFixed(2),432,statsY+171);
   drawingContext.restore();
   pop();
 
-  noStroke(); fill(190,162,124); rect(756,82,6,410);
+  // The footer stays fixed while only the conversation and statistics scroll.
+  noStroke(); fill(190,162,124); rect(756,82,6,323);
   const maxScroll = endingMaxScroll();
-  const thumbH = max(55,410*410/(410+maxScroll));
+  const thumbH = max(48,323*323/(323+maxScroll));
   fill(98,67,46);
-  rect(756,82+(410-thumbH)*(maxScroll ? endingScroll/maxScroll : 0),6,thumbH);
-  fill(65,40,28); textAlign(CENTER); textStyle(NORMAL); textSize(12);
-  text(endingScroll < maxScroll-2 ? "SCROLL DOWN TO SEE YOUR RESULTS" : "END OF RESULTS",432,524);
+  rect(756,82+(323-thumbH)*(maxScroll ? endingScroll/maxScroll : 0),6,thumbH);
+  stroke(174,130,85); strokeWeight(2); line(112,431,752,431);
+  noStroke(); fill(65,40,28); textAlign(CENTER); textStyle(NORMAL); textSize(12);
+  text(endingScroll < maxScroll-2 ? "SCROLL DOWN TO SEE YOUR RESULTS" : "END OF RESULTS",432,424);
+  drawButton("RETRY GAME",194,460,210,true,color(70,115,65));
+  drawButton("RETURN TO HOME",460,460,210,true,color(98,67,46));
 }
 
 
@@ -950,10 +954,10 @@ function selectedTotal() {
 function handleBasicClick() {
   // Retry starts a fresh run; Home returns to the introduction screen.
   if (gameOver) {
-    if (pawnHit(194,endingButtonsY()-endingScroll,210,32)) {
+    if (pawnHit(194,460,210,32)) {
       restartGame();
       showIntro = false;
-    } else if (pawnHit(460,endingButtonsY()-endingScroll,210,32)) {
+    } else if (pawnHit(460,460,210,32)) {
       restartGame();
     }
     return;
