@@ -202,6 +202,7 @@ let gamePaused = false;
 let pauseStart = 0;
 let gameOver = false;
 let ending = null;
+let endingShownAt = 0;
 let recoveryDeadline = 0;
 let bankruptcyNotice = false;
 let totalSalesEarned = 0;
@@ -215,21 +216,22 @@ function unlockedUpgradeCount() {
 
 function chooseFinalEnding() {
   const upgrades = unlockedUpgradeCount();
-  if (money < 0) return {title:"SHOP CLOSED", message:"Bankruptcy: your shop could not cover its final debts.", won:false};
+  if (money < 0) return {title:"SHOP CLOSED", message:"Your shop could not cover its final debts.", won:false, achievement:"Shop Closed", announcement:"The Pawn Shop has closed its doors."};
   if (upgrades >= 8 && totalSalesEarned >= 7500) {
-    return {title:"SPECIAL ENDING: LEGENDARY SHOPKEEPER!", message:"A thriving pawn shop and a remarkable fortune!", won:true};
+    return {title:"SPECIAL ENDING: THE NEW OWNER", message:"Pat has entrusted the pawn shop to you!", won:true, achievement:"The New Owner", announcement:"You are now the owner of The Pawn Shop!"};
   }
   if (upgrades <= 2 && totalSalesEarned < 1000) {
-    return {title:"SPECIAL ENDING: THE QUIET SHOP", message:"You survived four weeks! A humble beginning for your shop.", won:true};
+    return {title:"SPECIAL ENDING: THE QUIET SHOP", message:"You survived four weeks! A humble beginning for your shop.", won:true, achievement:"The Quiet Shop", announcement:"A humble beginning..."};
   }
   if (upgrades >= 5 && totalSalesEarned >= 2500) {
-    return {title:"YOU WIN!", message:"Your pawn shop has become a neighborhood success!", won:true};
+    return {title:"A TRUSTED SUCCESSOR", message:"Pat has asked you to stay as the shop's manager!", won:true, achievement:"A Trusted Successor", announcement:"You've become the shop's permanent manager!"};
   }
-  return {title:"YOU MADE IT!", message:"You kept the shop alive for 28 days. Well done, kiddo!", won:true};
+  return {title:"A PROMISING START", message:"You kept the shop alive for 28 days. Well done, kiddo!", won:true, achievement:"A Promising Start", announcement:"You've successfully completed your first month!"};
 }
 
 function finishGame(result) {
   ending = result;
+  endingShownAt = millis();
   gameOver = true;
   showReceipt = false;
   nextMorning = 0;
@@ -239,7 +241,7 @@ function finishGame(result) {
 function settleDay() {
   if (recoveryDeadline && money >= 0) recoveryDeadline = 0;
   if (recoveryDeadline && dayNumber >= recoveryDeadline && money < 0) {
-    finishGame({title:"SHOP CLOSED", message:"Bankruptcy: the three-day recovery period has ended.", won:false});
+    finishGame({title:"SHOP CLOSED", message:"The three-day recovery period has ended.", won:false, achievement:"Shop Closed", announcement:"The Pawn Shop has closed its doors."});
     return;
   }
   if (dayNumber === FINAL_DAY) {
@@ -651,6 +653,24 @@ function drawBankruptcyNotice() {
   text("Get your balance back to $0 or more by the end of Day " + recoveryDeadline + ".",145,315,574,55);
   text("Make every trade count, pal. I'm rooting for ya!",145,372,574,40);
   drawButton("I'VE GOT THIS!",312,425,240,true,color(70,115,65));
+}
+
+function drawAchievementToast() {
+  if (!gameOver || !ending || !ending.achievement) return;
+  const elapsed = millis() - endingShownAt;
+  if (elapsed < 700 || elapsed > 5200) return;
+  push();
+  pixelBoard(514,18,336,119);
+  // Little pixel-art trophy, using the same warm palette as the shop UI.
+  noStroke(); fill(191,147,67);
+  rect(535,55,29,23); rect(530,55,5,13); rect(564,55,5,13);
+  rect(547,78,5,11); rect(539,89,21,5);
+  fill(65,40,28); textAlign(LEFT); textStyle(BOLD);
+  textSize(14); text("ACHIEVEMENT UNLOCKED!",580,48);
+  textSize(17); text(ending.achievement,580,76);
+  textStyle(NORMAL); textSize(12);
+  text(ending.announcement,580,88,248,42);
+  pop();
 }
 
 function drawGameOver() {
@@ -2646,6 +2666,7 @@ function testJumpToDay(day) {
   showBudgetWarning = false;
   gameOver = false;
   ending = null;
+  endingShownAt = 0;
   recoveryDeadline = 0;
   bankruptcyNotice = false;
   closing = false;
@@ -2951,6 +2972,7 @@ function draw() {
   drawInspectorNotice();
   if (tetrisPromptActive) drawStorageTetrisPrompt();
   drawBankruptcyNotice();
+  drawAchievementToast();
 }
 
 
@@ -3002,6 +3024,7 @@ function restartGame() {
   pauseStart = 0;
   gameOver = false;
   ending = null;
+  endingShownAt = 0;
   recoveryDeadline = 0;
   bankruptcyNotice = false;
   totalSalesEarned = 0;
