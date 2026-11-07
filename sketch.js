@@ -207,6 +207,8 @@ let endingScroll = 0;
 let recoveryDeadline = 0;
 let bankruptcyNotice = false;
 let totalSalesEarned = 0;
+let pastItemsBought = 0;
+let pastItemsSold = 0;
 const FINAL_DAY = 28;
 
 // Count purchased upgrades and up to three storage reorganization milestones.
@@ -729,8 +731,14 @@ function endingDialogue() {
   return endingSpeeches[ending?.achievement] || endingSpeeches["Shop Closed"];
 }
 function endingMaxScroll() {
-  const statsY = 210 + endingDialogue().length * 68;
-  return max(0, statsY + 196 - 410);
+  return max(0, 430 + 260 - 410);
+}
+
+function finalItemCounts() {
+  return {
+    bought: pastItemsBought + dailyLog.filter(entry => entry.type === "BUY").length,
+    sold: pastItemsSold + dailyLog.filter(entry => entry.type === "SELL").length
+  };
 }
 
 function drawGameOver() {
@@ -738,7 +746,8 @@ function drawGameOver() {
   pixelBoard(80,40,704,496);
   const result = ending || {title:"SHOP CLOSED", won:false};
   const dialogue = endingDialogue();
-  const statsY = 210 + dialogue.length * 68;
+  const statsY = 430;
+  const itemCounts = finalItemCounts();
 
   push();
   drawingContext.save();
@@ -753,8 +762,10 @@ function drawGameOver() {
   text(result.title,432,111);
   fill(65,40,28); textSize(21);
   text("PIXEL PAT'S FINAL CALL",432,155);
-  textStyle(NORMAL); textSize(17);
-  for (let i=0; i<dialogue.length; i++) text(dialogue[i],140,187+i*68,584,58);
+  // Match Pat's original call: left-aligned, continuous text with normal leading.
+  textAlign(LEFT); textStyle(NORMAL); textSize(17); textLeading(28);
+  text(dialogue.join(" "),140,190,584,212);
+  textAlign(CENTER);
   stroke(174,130,85); strokeWeight(2);
   line(150,statsY-30,714,statsY-30);
   noStroke(); fill(65,40,28); textStyle(BOLD); textSize(21);
@@ -763,8 +774,10 @@ function drawGameOver() {
   text("DAYS COMPLETED: " + dayNumber + " / " + FINAL_DAY,432,statsY+43);
   text("UPGRADES UNLOCKED: " + unlockedUpgradeCount(),432,statsY+75);
   text("FINAL STORAGE CAPACITY: " + shopCapacity() + " SLOTS",432,statsY+107);
-  text("TOTAL SALES: $" + totalSalesEarned.toFixed(2),432,statsY+139);
-  text("FINAL BALANCE: $" + money.toFixed(2),432,statsY+171);
+  text("ITEMS BOUGHT: " + itemCounts.bought,432,statsY+139);
+  text("ITEMS SOLD: " + itemCounts.sold,432,statsY+171);
+  text("TOTAL SALES: $" + totalSalesEarned.toFixed(2),432,statsY+203);
+  text("FINAL BALANCE: $" + money.toFixed(2),432,statsY+235);
   drawingContext.restore();
   pop();
 
@@ -3121,6 +3134,8 @@ function restartGame() {
   recoveryDeadline = 0;
   bankruptcyNotice = false;
   totalSalesEarned = 0;
+  pastItemsBought = 0;
+  pastItemsSold = 0;
 
   // Return to introduction screen
   showIntro = true;
@@ -3607,6 +3622,9 @@ function moveShopkeeper() {
     !showReceipt &&
     nextMorning > 0 &&
     millis() >= nextMorning) {
+    // Archive the completed day's item counts before clearing its receipt.
+    pastItemsBought += dailyLog.filter(entry => entry.type === "BUY").length;
+    pastItemsSold += dailyLog.filter(entry => entry.type === "SELL").length;
     dayNumber++;
     dayStarted = false;
     closing = false;
