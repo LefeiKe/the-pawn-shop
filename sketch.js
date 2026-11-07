@@ -235,7 +235,9 @@ let poshGameFrame;
 let poshGamePausedShop = false;
 let poshOfferPausedShop = false;
 let storageBonus = 0; // permanent slots won in Storage Tetris
-let tetrisStoreItems = null;
+let tetrisPurchase = null;
+let tetrisIntroduced = false;
+let tetrisAcceptPurchase = null;
 let tetrisPromptActive = false;
 let tetrisPausedShop = false;
 let tetrisOverlay;
@@ -333,63 +335,114 @@ function closePoshGame() {
   poshGamePausedShop = false;
 }
 
-// ---------- Storage Tetris: an overflowing purchase is already paid for. ----------
-// Win: +5 permanent slots and the items are stored. Lose/give up: items are lost.
-function startStorageOverflow(storeItems) {
-  tetrisStoreItems = storeItems;
-  tetrisPromptActive = true;
-  tetrisPausedShop = !gamePaused;
-  if (tetrisPausedShop) togglePause();
+// Storage Reorganization is offered before payment whenever a purchase would overflow.
+// Supplier confirmations stay in the compact phone panel; walk-in customers use this board.
+function needsStorageChallenge(quantity) {
+  return inventory.length + reservedStorage() + quantity > shopCapacity();
 }
 
-function openStorageTetris() {
+function requestStorageChallenge(source, purchase) {
+  tetrisAcceptPurchase = purchase;
+  tetrisPromptActive = true;
+}
+
+function startStorageOverflow(entries, source = "customer", supplierOrder = null) {
+  tetrisPurchase = {entries: entries, source: source, order: supplierOrder};
   tetrisPromptActive = false;
+  tetrisPausedShop = !gamePaused;
+  if (tetrisPausedShop) togglePause();
   tetrisFrame.src = tetrisFrame.dataset.src;
   tetrisOverlay.hidden = false;
-  // Give the iframe keyboard focus so the arrow keys reach the game.
   tetrisFrame.onload = () => tetrisFrame.focus();
 }
 
-function handleStorageTetrisMessage(event) {
-  if (!tetrisFrame || event.source !== tetrisFrame.contentWindow) return;
-  // Ignore a repeated result (e.g. a double click) once the game has already closed.
-  if (event.data?.type !== "storageTetrisResult" || tetrisOverlay.hidden) return;
-  tetrisOverlay.hidden = true;
-  tetrisFrame.src = "";
-  if (event.data.won === true) {
-    storageBonus += 5;
-    // shortcut: items are stored even if still over capacity after +5; fine while purchases stay <= 6 items.
-    if (tetrisStoreItems) tetrisStoreItems();
-    reputationNotice = 'Storage reorganized! +5 permanent storage slots.';
+function finishStorageChallenge(won) {
+  let purchase = tetrisPurchase;
+  if (won) {
+    storageBonus += 3;
+    // Existing inventory and reserved deliveries stay protected.
+    const free = max(0, shopCapacity() - inventory.length - reservedStorage());
+    const kept = purchase.entries.slice().sort((a, b) => b.boughtFor - a.boughtFor).slice(0, free);
+    if (purchase.source === "supplier") {
+      if (kept.length) {
+        purchase.order.quantity = kept.length;
+        pendingDeliveries.push(purchase.order);
+      }
+    } else {
+      for (let item of kept) inventory.push(item);
+    }
+    let lost = purchase.entries.length - kept.length;
+    reputationNotice = lost
+      ? "Storage reorganized: +3 slots. " + lost + " item(s) could not be saved."
+      : "Storage reorganized! +3 permanent storage slots.";
   } else {
-    reputationNotice = "The items couldn't fit and had to be thrown out...";
+    reputationNotice = "The purchase and payment were lost in the stockroom...";
   }
   reputationNoticeUntil = millis() + 3000;
-  tetrisStoreItems = null;
+  tetrisPurchase = null;
   if (tetrisPausedShop) togglePause();
   tetrisPausedShop = false;
 }
 
-function drawStorageTetrisPrompt() {
-  noStroke(); fill(0,0,0,190); rect(0,0,width,height);
-  pawnPanel(123,150,618,270);
-  fill(63, 40, 30);
-  textAlign(CENTER);
-  textStyle(BOLD);
-  textSize(23);
-  text('YOUR STORAGE IS FULL!', 432, 205);
-  textStyle(NORMAL);
-  textSize(17);
-  text("You've already paid, but there's no room for the new items.", 165, 230, 534, 50);
-  text('Reorganize the storage room to make space, or lose them!', 165, 285, 534, 50);
-  pawnButton('REORGANIZE STORAGE', 312, 360, 240, true, color(70,115,65));
+function handleStorageTetrisMessage(event) {
+  if (!tetrisFrame || event.source !== tetrisFrame.contentWindow) return;
+  if (event.data?.type !== "storageTetrisResult" || tetrisOverlay.hidden) return;
+  tetrisOverlay.hidden = true;
+  tetrisFrame.src = "";
+  finishStorageChallenge(event.data.won === true);
 }
 
-// Call AFTER paying: stores the bought entries now, or after a Tetris win if they overflow.
-function storeOrOverflow(entries) {
-  let store = () => { for (let entry of entries) inventory.push(entry); };
-  if (inventory.length + reservedStorage() + entries.length > shopCapacity()) startStorageOverflow(store);
-  else store();
+function acceptStorageChallenge() {
+  if (!tetrisAcceptPurchase) return;
+  const purchase = tetrisAcceptPurchase;
+  tetrisAcceptPurchase = null;
+  tetrisPromptActive = false;
+  tetrisIntroduced = true;
+  purchase(); // Commit the purchase only after the player explicitly accepts.
+}
+
+function cancelStorageChallenge() {
+  tetrisAcceptPurchase = null;
+  tetrisPromptActive = false;
+  // The first introduction should appear again if the player did not try it.
+}
+
+function drawStorageTetrisPrompt() {
+  noStroke(); fill(0,0,0,190); rect(0,0,width,height);
+  if (!tetrisIntroduced) {
+    pawnPanel(76,67,712,445);
+    fill(63,40,30); textAlign(CENTER); textStyle(BOLD); textSize(23);
+    text("NEW CHALLENGE UNLOCKED!",432,109);
+    textSize(21); text("STORAGE REORGANIZATION",432,139);
+    textStyle(NORMAL); textSize(16);
+    text("Oh boy, looks like you've run out of storage space!",110,164,644,35);
+    text("Ever wondered how you could make a little more room around here?",110,197,644,35);
+    text("Don't worry, kiddo! Head into the stockroom and clear five rows of crates before they pile up to the top.",110,230,644,55);
+    text("You'll earn three permanent storage slots if you succeed!",110,287,644,35);
+    text("But if you fail, you'll lose your entire purchase and the money you spent.",110,321,644,45);
+    text("Even if you win, only the most expensive items can stay if space runs out. No refunds, I'm afraid! Good luck, kiddo!",110,364,644,54);
+    pawnButton("LET'S GO!",194,453,210,true,color(70,115,65));
+    pawnButton("CANCEL",460,453,210,true,color(155,83,66));
+  } else {
+    pawnPanel(123,150,618,270);
+    fill(63,40,30); textAlign(CENTER); textStyle(BOLD); textSize(23);
+    text("STORAGE WARNING",432,205);
+    textStyle(NORMAL); textSize(17);
+    text("This purchase exceeds your storage capacity.",165,242,534,35);
+    text("Reorganize your storage? Failure costs you the purchase and payment.",165,285,534,60);
+    pawnButton("PROCEED",194,360,210,true,color(70,115,65));
+    pawnButton("CANCEL",460,360,210,true,color(155,83,66));
+  }
+}
+
+function storeOrOverflow(entries, source = "customer", supplierOrder = null) {
+  if (needsStorageChallenge(entries.length)) {
+    startStorageOverflow(entries, source, supplierOrder);
+  } else if (source === "supplier") {
+    pendingDeliveries.push(supplierOrder);
+  } else {
+    for (let entry of entries) inventory.push(entry);
+  }
 }
 
 function drawCompletedVase() {
@@ -1143,14 +1196,18 @@ function handleCustomerClick() {
     if(pawnHit(312,489,152,36)) {
       let total=bundleTotal();
       if(total>money){pawnMessage='NOT ENOUGH MONEY';return;}
-      money-=total;
-      let bought=[];
-      for(let idx of currentTrade.items) {
-        bought.push({product:idx,boughtFor:products[idx].value});
-        dailyLog.push({type:'BUY',name:products[idx].name,amount:products[idx].value});
-      }
-      storeOrOverflow(bought);
-      pawnChangeScore(2);finishTrade();return;
+      let bought = currentTrade.items.map(idx => ({
+        product:idx, boughtFor:products[idx].value
+      }));
+      const commit = () => {
+        money -= total;
+        for (let item of bought) dailyLog.push({type:'BUY', name:products[item.product].name, amount:item.boughtFor});
+        storeOrOverflow(bought);
+        pawnChangeScore(2); finishTrade();
+      };
+      if (needsStorageChallenge(bought.length)) requestStorageChallenge("customer", commit);
+      else commit();
+      return;
     }
   } else {
     for(let row of pawnRows) {
@@ -1182,13 +1239,11 @@ function handleCustomerClick() {
 
 let shopMenu = "";             // "people", "upgrades", or ""
 let shopMenuPaused = false;
-let storageLevel = 0;
 let shelvesLevel = 0;
 let advertisingLevel = 0;
 let priceCatalogOwned = false;
 let supplierOwned = [false, false, false];
 let upgradePage = 0;
-let storagePrices = [120, 250, 500];
 let shelvesPrices = [100, 220, 450];
 let advertisingPrices = [100, 200, 400];
 let supplierNames = ["TIPSY BARREL", "FLASHBACK", "RUSTY WRENCH"];
@@ -1246,7 +1301,7 @@ function pawnScore() {
 };
 
 function shopCapacity() {
-  return bagLimit + [0, 5, 10, 20][storageLevel] + storageBonus;
+  return bagLimit + storageBonus;
 }
 
 function reservedStorage() {
@@ -1313,11 +1368,6 @@ function getUpgradeList() {
     available.push({name:"PRICE CATALOG", description:"Reveals the original value of items to help you make better deals.", price:90, type:"catalog"});
   } else owned.push({name:"PRICE CATALOG"});
 
-  let storageDescriptions = [
-    "Expand your storage with 5 additional slots.",
-    "Organize your growing inventory and gain 5 more storage slots.",
-    "Expand your shop's storage by another 10 slots."
-  ];
   let shelvesDescriptions = [
     "Better displays attract buyers willing to pay 5% more for your items.",
     "Improved displays increase your selling prices by another 5%.",
@@ -1329,11 +1379,6 @@ function getUpgradeList() {
     "A large boost of customers is attracted to your shop each day."
   ];
 
-  if (storageLevel < 3) available.push({
-    name:"STORAGE " + roman[storageLevel],
-    description:storageDescriptions[storageLevel],
-    price:storagePrices[storageLevel], type:"storage"
-  });
   if (shelvesLevel < 3) available.push({
     name:"DISPLAY SHELVES " + roman[shelvesLevel],
     description:shelvesDescriptions[shelvesLevel],
@@ -1355,7 +1400,6 @@ function getUpgradeList() {
     else available.push({name:partnerships[i][0], description:partnerships[i][1],
                          price:supplierPrices[i], type:"supplier", supplier:i});
   }
-  for (let i = 0; i < storageLevel; i++) owned.push({name:"STORAGE " + roman[i]});
   for (let i = 0; i < shelvesLevel; i++) owned.push({name:"DISPLAY SHELVES " + roman[i]});
   for (let i = 0; i < advertisingLevel; i++) owned.push({name:"ADVERTISING " + roman[i]});
   return available.concat(owned);
@@ -1404,7 +1448,6 @@ function shopBuyUpgrade(i) {
   if (!upgrade || upgrade.price === undefined || money < upgrade.price) return;
   money -= upgrade.price;
   if (upgrade.type === "catalog") priceCatalogOwned = true;
-  else if (upgrade.type === "storage") storageLevel++;
   else if (upgrade.type === "shelves") shelvesLevel++;
   else if (upgrade.type === "advertising") advertisingLevel++;
   else if (upgrade.type === "supplier") supplierOwned[upgrade.supplier] = true;
@@ -1465,6 +1508,10 @@ function handleShopClick() {
       const cost = sellerSelectedTotal();
       if (!items.length) { pawnMessage = 'SELECT AN ITEM FIRST'; return; }
       if (cost > money) { pawnMessage = 'NOT ENOUGH MONEY'; return; }
+      if (inventory.length + reservedStorage() + items.length > shopCapacity()) {
+        pawnMessage = 'BUYING PAST STORAGE CAPACITY FROM WHOLESALER IS NOT ALLOWED';
+        return;
+      }
       money -= cost;
       const bought = [];
       for (const index of items) {
@@ -1472,7 +1519,7 @@ function handleShopClick() {
         bought.push({product:index, boughtFor:paid});
         dailyLog.push({type:'BUY', name:products[index].name, amount:paid});
       }
-      storeOrOverflow(bought);
+      for (const entry of bought) inventory.push(entry);
       customerDialogueOutcome = 'accepted';
       finishTrade();
       return;
@@ -1483,18 +1530,22 @@ function handleShopClick() {
       !gamePaused && !showBag && pawnHit(312, 489, 152, 36)) {
     let cost = bundleTotal();
     if (cost > money) { pawnMessage = "NOT ENOUGH MONEY"; return; }
-    money -= cost;
     let boughtItems = [];
     for (let idx of currentTrade.items) {
       let bought = Number((products[idx].value * shopTradeMultiplier).toFixed(2));
       boughtItems.push({product:idx, boughtFor:bought});
-      dailyLog.push({type:"BUY", name:products[idx].name, amount:bought});
     }
-    storeOrOverflow(boughtItems);
-    pawnChangeScore(2);
-    suspiciousTradeConsequence();
-    customerDialogueOutcome = 'accepted';
-    finishTrade();
+    const commit = () => {
+      money -= cost;
+      for (let entry of boughtItems) dailyLog.push({type:"BUY", name:products[entry.product].name, amount:entry.boughtFor});
+      storeOrOverflow(boughtItems);
+      pawnChangeScore(2);
+      suspiciousTradeConsequence();
+      customerDialogueOutcome = 'accepted';
+      finishTrade();
+    };
+    if (needsStorageChallenge(boughtItems.length)) requestStorageChallenge("customer", commit);
+    else commit();
     return;
   }
   handleCustomerClick();
@@ -2050,75 +2101,40 @@ function buySupplierItems(quantity, confirmed = false) {
   let productIndex = 12 + selectedSupplier;
   let unitPrices = [20, 35, 30];
   let unitPrice = unitPrices[selectedSupplier];
-
-  let discount = 0;
-
-  if (quantity === 3) discount = 0.15;
-  if (quantity === 6) discount = 0.25;
-
+  let discount = quantity === 3 ? 0.15 : quantity === 6 ? 0.25 : 0;
   let total = round(quantity * unitPrice * (1 - discount));
+  if (money < total) { supplierMessage = "NOT ENOUGH MONEY"; return; }
 
-  // Count storage space reserved for deliveries
-  let reservedSpace = reservedStorage();
-
-  if (money < total) {
-    supplierMessage = "NOT ENOUGH MONEY";
-    return;
-  }
-
-  let futureStorage = inventory.length + reservedSpace + quantity;
-
-  // Full or overflowing orders get a warning first; overflowing ones lead to Storage Tetris.
-  if (futureStorage >= shopCapacity() && !confirmed) {
-    pendingQuantity = quantity;
-    phoneCall = "storageWarning";
-    return;
-  }
-
-  // Pay now
-  money -= total;
-
-  // Deliver tomorrow
-  let order = {
-    product: productIndex,
-    quantity: quantity,
-    boughtFor: total / quantity,
-    deliveryDay: dayNumber + 1
+  const completeOrder = () => {
+    money -= total;
+    let order = {product:productIndex, quantity:quantity,
+                 boughtFor:total / quantity, deliveryDay:dayNumber + 1};
+    let items = Array.from({length:quantity},
+                           () => ({product:productIndex, boughtFor:total / quantity}));
+    for (let item of items) dailyLog.push({type:"BUY",
+      name:products[item.product].name, amount:item.boughtFor});
+    if (needsStorageChallenge(quantity)) {
+      phoneEndCall();
+      startStorageOverflow(items, "supplier", order);
+      return;
+    }
+    pendingDeliveries.push(order);
+    let productName = products[productIndex].name.toLowerCase();
+    if (selectedSupplier === 0) productName = quantity === 1 ? "bottle of wine" : "bottles of wine";
+    else if (quantity > 1) productName += "s";
+    orderConfirmation = quantity + " " + productName;
+    orderConfirmationUntil = millis() + 3000;
+    pendingQuantity = 0;
+    supplierMessage = "";
+    phoneCall = "orderConfirmed";
   };
 
-  if (futureStorage > shopCapacity()) {
-    for (let i = 0; i < quantity; i++) {
-      dailyLog.push({type: "BUY", name: products[productIndex].name, amount: total / quantity});
-    }
-    phoneEndCall();
-    startStorageOverflow(() => pendingDeliveries.push(order));
-    return;
-  }
-
-  pendingDeliveries.push(order);
-
-  // Record the payment in today's receipt
-  for (let i = 0; i < quantity; i++) {
-    dailyLog.push({
-      type: "BUY",
-      name: products[productIndex].name,
-      amount: total / quantity
-    });
-  }
-
-  let productName = products[productIndex].name.toLowerCase();
-
-  if (selectedSupplier === 0) {
-    productName = quantity === 1 ? "bottle of wine" : "bottles of wine";
-  } else if (quantity > 1) {
-    productName += "s";
-  }
-
-  orderConfirmation = quantity + " " + productName;
-  orderConfirmationUntil = millis() + 3000;
-  pendingQuantity = 0;
-  supplierMessage = "";
-  phoneCall = "orderConfirmed";
+  if (needsStorageChallenge(quantity) && !tetrisIntroduced) {
+    requestStorageChallenge("supplier", completeOrder);
+  } else if (needsStorageChallenge(quantity) && !confirmed) {
+    pendingQuantity = quantity;
+    phoneCall = "storageWarning";
+  } else completeOrder();
 }
 
 function deliverOrders() {
@@ -2251,10 +2267,11 @@ function drawSupplierPhone() {
     text("STORAGE WARNING", x + 122, y + 48);
     textStyle(NORMAL);
     textSize(14);
-    let overflowing = inventory.length + reservedStorage() + pendingQuantity > shopCapacity();
-    text(overflowing ? "This order won't fit" : "This order will fill", x + 122, y + 91);
-    text(overflowing ? "in your storage!" : "your storage completely.", x + 122, y + 115);
-    text("Still want to purchase?", x + 122, y + 139);
+    let extraStillMissing = inventory.length + reservedStorage() + pendingQuantity > shopCapacity() + 3;
+    text(extraStillMissing ? "Some items won't fit" : "This order exceeds", x + 122, y + 84);
+    text(extraStillMissing ? "even if you succeed." : "your storage space.", x + 122, y + 105);
+    text("Failure loses the order", x + 122, y + 129);
+    text("and payment. Proceed?", x + 122, y + 149);
 
     drawButton("CONFIRM", x + 9, y + 160, 227,
                true, color(73, 120, 72));
@@ -2417,9 +2434,11 @@ function phoneSellSelection() {
 
 
 function mousePressed() {
-  // Storage Tetris is mandatory: block everything else until it is played.
+  // Player must choose to accept the risk before money is taken.
   if (tetrisPromptActive) {
-    if (pawnHit(312, 360, 240, 36)) openStorageTetris();
+    const y = tetrisIntroduced ? 360 : 453;
+    if (pawnHit(194, y, 210, 36)) acceptStorageChallenge();
+    else if (pawnHit(460, y, 210, 36)) cancelStorageChallenge();
     return;
   }
   if (tetrisOverlay && !tetrisOverlay.hidden) return;
@@ -2933,8 +2952,11 @@ function restartGame() {
   
   shopMenu = "";
   shopMenuPaused = false;
-  storageLevel = 0;
   storageBonus = 0;
+  tetrisIntroduced = false;
+  tetrisPurchase = null;
+  tetrisAcceptPurchase = null;
+  tetrisPromptActive = false;
   shelvesLevel = 0;
   advertisingLevel = 0;
   priceCatalogOwned = false;
