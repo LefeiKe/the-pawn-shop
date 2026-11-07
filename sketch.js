@@ -267,6 +267,8 @@ let customerNumber = 0;
 let dailyCustomerLimit = 5;
 let customersLeft = 5;
 let dayNumber = 1;
+let tutorialTradesServed = 0;
+let tutorialBagSeen = false;
 
 // Inspector visits are separate from the daily customer quota.
 let nextInspectionDay = 3;
@@ -618,6 +620,48 @@ function togglePause() {
 
       gamePaused = false;
   }
+}
+
+// Day 1 contextual walkthrough. It never pauses play or captures input.
+function drawDayOneTutorial() {
+  if (dayNumber !== 1 || showIntro || gameOver || phonePending || phoneCall ||
+      pawnIntroType || poshOfferActive || (poshGameOverlay && !poshGameOverlay.hidden) ||
+      (tetrisOverlay && !tetrisOverlay.hidden) || tetrisPromptActive || shopMenu ||
+      inspectorPhase || bankruptcyNotice) return;
+
+  if (showBag) tutorialBagSeen = true;
+
+  let hint = "";
+  if (showReceipt) {
+    hint = "DAY COMPLETE! Review your purchases and sales, then click CLOSE.";
+  } else if (showBag) {
+    hint = "YOUR BAG shows what you own and what you paid. Click outside to close.";
+  } else if (closing) {
+    hint = "That's today's customers! Your daily receipt is coming up.";
+  } else if (pawnTradeActive()) {
+    if (tutorialTradesServed === 0) {
+      hint = "Read the offer. Choose BUY or SELL, try BARGAIN, or REJECT the deal.";
+    } else if (!tutorialBagSeen) {
+      hint = "Try clicking BAG to check your inventory before your next trade.";
+    } else {
+      hint = "Compare the offer with your stock, then choose how to respond.";
+    }
+  } else if (tutorialTradesServed === 0) {
+    hint = "Welcome aboard! Customers arrive automatically. Watch for your first visitor.";
+  } else if (!tutorialBagSeen) {
+    hint = "Nice work! Open BAG during a customer trade to inspect your stock.";
+  } else {
+    hint = "Keep serving customers. The customer counter shows who's left today.";
+  }
+
+  if (!hint) return;
+  push();
+  noStroke(); fill(40,29,25,225);
+  rect(94,530,676,39,7);
+  fill(255); textFont("Pixelify Sans");
+  textAlign(CENTER); textStyle(NORMAL); textSize(15);
+  text(hint,110,542,644,27);
+  pop();
 }
 
 // Inventory bag icon
@@ -2780,6 +2824,10 @@ function testJumpToDay(day) {
   selectedItems = [];
   pawnVisitor = null;
   dayNumber = day;
+  if (day === 1) {
+    tutorialTradesServed = 0;
+    tutorialBagSeen = false;
+  }
   nextInspectionDay = day >= 3 ? day : 3;
   inspectorPhase = '';
   inspectorActor = null;
@@ -3078,6 +3126,7 @@ function draw() {
   if (tetrisPromptActive) drawStorageTetrisPrompt();
   drawBankruptcyNotice();
   drawAchievementToast();
+  drawDayOneTutorial();
 }
 
 
@@ -3165,6 +3214,8 @@ function restartGame() {
   supplierMessage = "";
   dailyCustomerLimit = 5;
   customersLeft = 5;
+  tutorialTradesServed = 0;
+  tutorialBagSeen = false;
   shopMessage = "";
   shopBargained = false;
   shopTradeMultiplier = 1;
@@ -3778,6 +3829,7 @@ function shopTryBargain() {
 }
 
 function finishTrade() {
+  if (dayNumber === 1) tutorialTradesServed++;
 
   if (pawnVisitor) {
     customerReaction = chooseCustomerLine(customerDialogueOutcome);
