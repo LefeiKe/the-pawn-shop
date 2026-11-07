@@ -215,17 +215,17 @@ function unlockedUpgradeCount() {
 
 function chooseFinalEnding() {
   const upgrades = unlockedUpgradeCount();
-  if (money < 0) return {title:"BANKRUPT", message:"Your shop could not cover its final debts.", won:false};
+  if (money < 0) return {title:"SHOP CLOSED", message:"Bankruptcy: your shop could not cover its final debts.", won:false};
   if (upgrades >= 8 && totalSalesEarned >= 7500) {
     return {title:"LEGENDARY SHOPKEEPER!", message:"A thriving pawn shop and a remarkable fortune!", won:true};
   }
   if (upgrades <= 2 && totalSalesEarned < 1000) {
-    return {title:"THE QUIET SHOP", message:"You made it four weeks, but the shop never found its feet.", won:false};
+    return {title:"THE QUIET SHOP", message:"You survived four weeks! A humble beginning for your shop.", won:true};
   }
   if (upgrades >= 5 && totalSalesEarned >= 2500) {
     return {title:"YOU WIN!", message:"Your pawn shop has become a neighborhood success!", won:true};
   }
-  return {title:"SHOP CLOSED", message:"Four weeks are over. More upgrades and sales were needed.", won:false};
+  return {title:"YOU MADE IT!", message:"You kept the shop alive for 28 days. Well done, kiddo!", won:true};
 }
 
 function finishGame(result) {
@@ -239,7 +239,7 @@ function finishGame(result) {
 function settleDay() {
   if (recoveryDeadline && money >= 0) recoveryDeadline = 0;
   if (recoveryDeadline && dayNumber >= recoveryDeadline && money < 0) {
-    finishGame({title:"BANKRUPT", message:"The three-day recovery period has ended.", won:false});
+    finishGame({title:"SHOP CLOSED", message:"Bankruptcy: the three-day recovery period has ended.", won:false});
     return;
   }
   if (dayNumber === FINAL_DAY) {
@@ -656,17 +656,19 @@ function drawBankruptcyNotice() {
 function drawGameOver() {
   noStroke(); fill(0,0,0,180); rect(0,0,width,height);
   pixelBoard(125,96,614,385);
-  const result = ending || {title:"BANKRUPT", message:"Your shop has closed.", won:false};
+  const result = ending || {title:"SHOP CLOSED", message:"Your shop has closed.", won:false};
   fill(result.won ? color(70,115,65) : color(160,70,60));
   textAlign(CENTER); textStyle(BOLD); textSize(25);
   text(result.title,432,150);
   fill(65,40,28); textStyle(NORMAL); textSize(15);
   text(result.message,165,182,534,52);
-  text("DAYS COMPLETED: " + dayNumber + " / " + FINAL_DAY,432,252);
-  text("UPGRADES UNLOCKED: " + unlockedUpgradeCount(),432,281);
-  text("TOTAL SALES: $" + totalSalesEarned.toFixed(2),432,310);
-  text("FINAL BALANCE: $" + money.toFixed(2),432,339);
-  drawButton("RESTART GAME",307,408,250,true,color(70,115,65));
+  text("DAYS COMPLETED: " + dayNumber + " / " + FINAL_DAY,432,240);
+  text("UPGRADES UNLOCKED: " + unlockedUpgradeCount(),432,269);
+  text("TOTAL SALES: $" + totalSalesEarned.toFixed(2),432,298);
+  text("FINAL BALANCE: $" + money.toFixed(2),432,327);
+  text("FINAL STORAGE CAPACITY: " + shopCapacity() + " SLOTS",432,356);
+  drawButton("RETRY GAME",194,418,210,true,color(70,115,65));
+  drawButton("RETURN TO HOME",460,418,210,true,color(98,67,46));
 }
 
 
@@ -839,15 +841,14 @@ function selectedTotal() {
 // Handle mouse clicks
 
 function handleBasicClick() {
-  // Game over restart button
+  // Retry starts a fresh run; Home returns to the introduction screen.
   if (gameOver) {
-
-    if (mouseX >= 307 && mouseX <= 557 &&
-        mouseY >= 408 && mouseY <= 440) {
-
-        restartGame();
+    if (pawnHit(194,418,210,32)) {
+      restartGame();
+      showIntro = false;
+    } else if (pawnHit(460,418,210,32)) {
+      restartGame();
     }
-
     return;
   }
   // Introduction screen
