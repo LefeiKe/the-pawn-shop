@@ -37,7 +37,7 @@ let clickOffsetY = 0;
 let shuffleX, shuffleY, shuffleW;
 
 async function setup() {
-    createCanvas(864, 600);
+    createCanvas(864, 576);
     noSmooth();
     angleMode(DEGREES); 
     textFont("Press Start 2P")
@@ -139,16 +139,19 @@ function drawPlayScreen() {
     textSize(9);
     text("FINISHED PRODUCT", referenceX * 1.14, boardOffsetY * 1.6);
 
+    const controlsX = referenceX - referenceSize * 0.15;
+    const controlsTop = boardOffsetY + 275;
+    fill(65, 40, 28);
     textAlign(LEFT);
     textSize(9);
-    text("CONTROLS", referenceX - referenceSize * 0.15, boardOffsetY * 4);
+    text("CONTROLS", controlsX, controlsTop);
     textSize(8);
-    text("CLICK and DRAG: MOVE PIECE", referenceX - referenceSize * 0.15, boardOffsetY * 4.3);
-    text(`ONLY PIECES ADJACENT TO THE ${"\n"} EMPTY SQUARE CAN BE MOVED`, referenceX - referenceSize * 0.15, boardOffsetY * 4.6);
-    text("SINGLE CLICK: ROTATE PIECE", referenceX - referenceSize * 0.15, boardOffsetY * 5);
+    text("CLICK and DRAG: MOVE PIECE", controlsX, controlsTop + 30);
+    text(`ONLY PIECES ADJACENT TO THE ${"\n"} EMPTY SQUARE CAN BE MOVED`, controlsX, controlsTop + 60);
+    text("SINGLE CLICK: ROTATE PIECE", controlsX, controlsTop + 100);
 
     shuffleX = referenceX - referenceSize * 0.125;
-    shuffleY = boardOffsetY * 5.25;
+    shuffleY = controlsTop + 125;
     shuffleW = referenceSize * 1.25;
     drawButton("SHUFFLE BOARD", shuffleX, shuffleY, shuffleW, color(160, 70, 60));
 
