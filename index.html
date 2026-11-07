@@ -9,12 +9,14 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.11.11/p5.min.js"></script>
     <style>
         #posh-game-overlay[hidden],
-        #tetris-game-overlay[hidden] {
+        #tetris-game-overlay[hidden],
+        #memory-game-overlay[hidden] {
             display: none;
         }
 
         #posh-game-overlay,
-        #tetris-game-overlay {
+        #tetris-game-overlay,
+        #memory-game-overlay {
             align-items: center;
             background: rgba(0, 0, 0, 0.78);
             display: flex;
@@ -28,7 +30,8 @@
         }
 
         #posh-game-window,
-        #tetris-game-window {
+        #tetris-game-window,
+        #memory-game-window {
             background: #ead0a1;
             border: 8px solid #3c261c;
             box-shadow: 0 0 0 4px #8c5b38;
@@ -37,7 +40,8 @@
         }
 
         #posh-game-frame,
-        #tetris-game-frame {
+        #tetris-game-frame,
+        #memory-game-frame {
             border: 0;
             display: block;
             height: min(600px, 80vh);
@@ -79,6 +83,17 @@
         </div>
     </div>
 
+    <!-- Inspector Memory Game -->
+    <div id="memory-game-overlay" hidden>
+        <div id="memory-game-window">
+            <iframe
+                id="memory-game-frame"
+                data-src="memory-mini-game/memory-index.html"
+                title="Inspector Memory Game">
+            </iframe>
+        </div>
+    </div>
+    
     <script src="sketch.js"></script>
 
 </body>
