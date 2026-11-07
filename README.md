@@ -43,9 +43,9 @@ Most menus and trading actions use **mouse clicks**. Use the on-screen pause but
 - A daily in-game schedule, with each day lasting about 3 real minutes.
 - An animated shopkeeper who opens and closes the shop.
 - End-of-day receipts listing purchases, sales, rent, and net profit.
-- Telephone calls from **Mr. Pennyworth**, the landlord, introducing important events.
+- Telephone calls from **Pixel Pat**, the elderly shop owner and mentor, introducing important events.
 - A free first week; rent is due every seven days starting on **Day 14**, beginning at $10 and increasing by 20% each week (rounded to whole dollars).
-- An option on rent days to sell selected inventory items to the landlord for 80% of their original value.
+- An option on rent days to sell selected inventory items to Pat for 80% of their original value.
 - A game-over screen and restart option if the shop runs out of money.
 
 ## Mini-Games
