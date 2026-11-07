@@ -241,7 +241,7 @@ function finishGame(result) {
 function settleDay() {
   if (recoveryDeadline && money >= 0) recoveryDeadline = 0;
   if (recoveryDeadline && dayNumber >= recoveryDeadline && money < 0) {
-    finishGame({title:"SHOP CLOSED", message:"The three-day recovery period has ended.", won:false, achievement:"Shop Closed", announcement:"The Pawn Shop has closed its doors."});
+    finishGame({title:"SHOP CLOSED", message:"The Pawn Shop has closed its doors.", won:false, achievement:"Shop Closed", announcement:"The Pawn Shop has closed its doors."});
     return;
   }
   if (dayNumber === FINAL_DAY) {
