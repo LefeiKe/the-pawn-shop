@@ -442,15 +442,15 @@ function drawSidePanel() {
 
   fill(65, 40, 28);
   textAlign(CENTER);
-  textSize(12);
-  text("STORAGE TETRIS", centerX, 58);
+  textSize(9);
+  text("STORAGE REORGANIZATION", centerX, 58);
 
   textSize(9);
   text("NEXT", centerX, 92);
   drawNextBox();
 
   fill(65, 40, 28);
-  text("LINES CLEARED " + linesCleared + " / " + TARGET_LINES, centerX, 262);
+  text("ROWS CLEARED " + linesCleared + " / " + TARGET_LINES, centerX, 262);
 
   textAlign(LEFT);
   text("CONTROLS", leftX, 305);
@@ -498,7 +498,7 @@ function drawStartScreen() {
   fill(65, 40, 28);
   textAlign(CENTER);
   textSize(20);
-  text("STORAGE TETRIS", 432, 265);
+  text("STORAGE REORGANIZATION", 432, 265);
 
   textSize(9);
   text("CLICK TO START", 432, 330);
@@ -528,7 +528,7 @@ function drawEndPanel() {
 
   fill(65, 40, 28);
   textSize(9);
-  text("LINES CLEARED: " + linesCleared, 432, 290);
+  text("ROWS CLEARED: " + linesCleared, 432, 290);
 
   drawButton(EMBEDDED ? "RETURN TO SHOP" : "NEW ROUND", NEW_ROUND_X, NEW_ROUND_Y, NEW_ROUND_W, color(70, 115, 65));
 }
