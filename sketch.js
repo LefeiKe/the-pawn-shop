@@ -278,8 +278,7 @@ async function setup() {
 
   // Each customer has a walking sprite sheet and a trading portrait.
   for (let customer of pawnProfiles) {
-    // Morgan temporarily uses Noah's artwork until a Wholesaler portrait is added.
-    let file = (customer.name === "Morgan" ? "noah" : customer.name.toLowerCase()) + ".png";
+    let file = customer.name.toLowerCase() + ".png";
     pawnSprites[customer.name] = await loadImage("images/customer_spritesheets/" + file);
     pawnPortraits[customer.name] = await loadImage("images/customer_portraits/" + file);
   }
