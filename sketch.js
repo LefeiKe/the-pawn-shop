@@ -203,6 +203,7 @@ let pauseStart = 0;
 let gameOver = false;
 let ending = null;
 let recoveryDeadline = 0;
+let bankruptcyNotice = false;
 let totalSalesEarned = 0;
 const FINAL_DAY = 28;
 
@@ -247,6 +248,7 @@ function settleDay() {
   }
   if (dayNumber % 7 === 0 && money < 0 && !recoveryDeadline) {
     recoveryDeadline = dayNumber + 3;
+    bankruptcyNotice = true;
   }
   showReceipt = true;
 }
@@ -633,6 +635,23 @@ function drawBagIcon() {
 }
 
 // Inventory window
+
+function drawBankruptcyNotice() {
+  if (!bankruptcyNotice || phoneCall || phonePending || gameOver) return;
+  noStroke(); fill(0,0,0,190); rect(0,0,width,height);
+  pixelBoard(108,92,648,390);
+  fill(160,70,60); textAlign(CENTER); textStyle(BOLD); textSize(24);
+  text("YOUR SHOP IS IN TROUBLE!",432,148);
+  fill(65,40,28); textStyle(NORMAL); textSize(17);
+  text("Whoa there, kiddo! The books are in the red.",145,192,574,35);
+  text("But don't pack up the shop just yet!",145,227,574,35);
+  textStyle(BOLD);
+  text("YOU HAVE 3 DAYS TO SAVE YOUR BUSINESS!",432,286);
+  textStyle(NORMAL); textSize(16);
+  text("Get your balance back to $0 or more by the end of Day " + recoveryDeadline + ".",145,315,574,55);
+  text("Make every trade count, pal. I'm rooting for ya!",145,372,574,40);
+  drawButton("I'VE GOT THIS!",312,425,240,true,color(70,115,65));
+}
 
 function drawGameOver() {
   noStroke(); fill(0,0,0,180); rect(0,0,width,height);
@@ -2470,6 +2489,10 @@ function phoneSellSelection() {
 
 
 function mousePressed() {
+  if (bankruptcyNotice && !phoneCall && !phonePending) {
+    if (pawnHit(312,425,240,32)) bankruptcyNotice = false;
+    return;
+  }
   // Player must choose to accept the risk before money is taken.
   if (tetrisPromptActive) {
     const y = tetrisIntroduced ? 360 : 453;
@@ -2623,6 +2646,7 @@ function testJumpToDay(day) {
   gameOver = false;
   ending = null;
   recoveryDeadline = 0;
+  bankruptcyNotice = false;
   closing = false;
   currentCustomer.state = 'gone';
   currentTrade = undefined;
@@ -2925,6 +2949,7 @@ function draw() {
   drawTestPanel();
   drawInspectorNotice();
   if (tetrisPromptActive) drawStorageTetrisPrompt();
+  drawBankruptcyNotice();
 }
 
 
@@ -2977,6 +3002,7 @@ function restartGame() {
   gameOver = false;
   ending = null;
   recoveryDeadline = 0;
+  bankruptcyNotice = false;
   totalSalesEarned = 0;
 
   // Return to introduction screen
