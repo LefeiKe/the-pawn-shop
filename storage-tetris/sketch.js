@@ -56,6 +56,9 @@ let lastFallTime = 0;
 
 let gameState = "loading";
 
+// true when the main shop game opens this inside its iframe
+const EMBEDDED = window.parent !== window;
+
 async function setup() {
   let canvas = createCanvas(864, 576);
   canvas.parent("game");
@@ -357,13 +360,15 @@ function keyPressed() {
       hardDrop();
     }
   }
-
-  // stop the arrow keys and space from scrolling the page
-  if (keyCode === LEFT_ARROW || keyCode === RIGHT_ARROW || keyCode === UP_ARROW ||
-      keyCode === DOWN_ARROW || key === " ") {
-    return false;
-  }
 }
+
+// stop the arrow keys and space from scrolling the page. p5 skips keyPressed for
+// held-down (repeating) keys, so returning false there missed held soft drops.
+window.addEventListener("keydown", function (event) {
+  if (["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", " "].includes(event.key)) {
+    event.preventDefault();
+  }
+});
 
 function mouseOverButton(x, y, w) {
   return mouseX >= x && mouseX <= x + w && mouseY >= y && mouseY <= y + 32;
@@ -378,7 +383,12 @@ function mouseClicked() {
     }
   } else if (gameState === "won" || gameState === "lost" || gameState === "quit") {
     if (mouseOverButton(NEW_ROUND_X, NEW_ROUND_Y, NEW_ROUND_W)) {
-      startRound();
+      if (EMBEDDED) {
+        // report back to the main shop game, which closes this iframe
+        window.parent.postMessage({ type: "storageTetrisResult", won: gameState === "won" }, window.location.origin);
+      } else {
+        startRound();
+      }
     }
   }
 }
@@ -520,7 +530,7 @@ function drawEndPanel() {
   textSize(9);
   text("LINES CLEARED: " + linesCleared, 432, 290);
 
-  drawButton("NEW ROUND", NEW_ROUND_X, NEW_ROUND_Y, NEW_ROUND_W, color(70, 115, 65));
+  drawButton(EMBEDDED ? "RETURN TO SHOP" : "NEW ROUND", NEW_ROUND_X, NEW_ROUND_Y, NEW_ROUND_W, color(70, 115, 65));
 }
 
 // same panel as the main game
