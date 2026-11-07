@@ -299,6 +299,10 @@ let tetrisPausedShop = false;
 let tetrisOverlay;
 let tetrisFrame;
 
+// Inspector Memory Game iframe
+let memoryGameOverlay;
+let memoryGameFrame;
+
 // Each day ends after its customer quota is served.
 const bagLimit = 6;
 
@@ -326,6 +330,11 @@ async function setup() {
   tetrisFrame = document.getElementById("tetris-game-frame");
   window.addEventListener("message", handleStorageTetrisMessage);
 
+  // Connect Inspector Memory Game iframe
+  memoryGameOverlay = document.getElementById("memory-game-overlay");
+  memoryGameFrame = document.getElementById("memory-game-frame");
+  window.addEventListener("message", handleMemoryGameMessage);
+
   shopBg = await loadImage("images/shop.png");
   vaseSpriteSheet = await loadImage("vasePuzzle/images/vases.png");
   shopkeeper = await loadImage("images/shopkeeper.png");
@@ -341,6 +350,40 @@ async function setup() {
     pawnPortraits[customer.name] = await loadImage("images/customer_portraits/" + file);
   }
   pawnReady = true;
+}
+
+// Open Inspector Memory Game
+function showMemoryGame() {
+    if (!memoryGameOverlay || !memoryGameFrame) return;
+
+    memoryGameFrame.src = memoryGameFrame.dataset.src;
+    memoryGameOverlay.hidden = false;
+    memoryGameFrame.onload = () => memoryGameFrame.focus();
+}
+
+// Receive the result from Inspector Memory Game
+function handleMemoryGameMessage(event) {
+
+    if (!memoryGameFrame ||
+        event.source !== memoryGameFrame.contentWindow) return;
+
+    if (event.origin !== window.location.origin) return;
+
+    if (event.data?.type !== "memoryGameComplete") return;
+
+    if (memoryGameOverlay.hidden || inspectorPhase !== "awaiting") return;
+
+    let receivedScore = event.data.score;
+
+    if (!Number.isInteger(receivedScore) ||
+        receivedScore < 0 || receivedScore > 5) return;
+
+    // Close the iframe
+    memoryGameOverlay.hidden = true;
+    memoryGameFrame.src = "";
+
+    // Give the result to Coco's existing Inspector system
+    recordInspectionResult(receivedScore);
 }
 
 function handleVasePuzzleMessage(event) {
@@ -2250,7 +2293,8 @@ function drawInspectorNotice() {
 function advanceInspectorNotice() {
   if (inspectorPhase === 'intro') {
     inspectorHasIntroduced = true;
-    inspectorPhase = 'awaiting'; // Replace with Sara's iframe launch later.
+    inspectorPhase = 'awaiting';
+    showMemoryGame();
     return;
   }
   if (inspectorPhase !== 'awaiting' && inspectorPhase !== 'result') return;
