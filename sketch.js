@@ -203,6 +203,7 @@ let pauseStart = 0;
 let gameOver = false;
 let ending = null;
 let endingShownAt = 0;
+let endingScroll = 0;
 let recoveryDeadline = 0;
 let bankruptcyNotice = false;
 let totalSalesEarned = 0;
@@ -232,6 +233,7 @@ function chooseFinalEnding() {
 function finishGame(result) {
   ending = result;
   endingShownAt = millis();
+  endingScroll = 0;
   gameOver = true;
   showReceipt = false;
   nextMorning = 0;
@@ -690,23 +692,91 @@ function drawAchievementToast() {
   pop();
 }
 
-function drawGameOver() {
-  noStroke(); fill(0,0,0,180); rect(0,0,width,height);
-  pixelBoard(125,96,614,385);
-  const result = ending || {title:"SHOP CLOSED", message:"Your shop has closed.", won:false};
-  fill(result.won ? color(70,115,65) : color(160,70,60));
-  textAlign(CENTER); textStyle(BOLD); textSize(result.title.startsWith("SPECIAL ENDING:") ? 20 : 25);
-  text(result.title,432,150);
-  fill(65,40,28); textStyle(NORMAL); textSize(15);
-  text(result.message,165,182,534,52);
-  text("DAYS COMPLETED: " + dayNumber + " / " + FINAL_DAY,432,240);
-  text("UPGRADES UNLOCKED: " + unlockedUpgradeCount(),432,269);
-  text("TOTAL SALES: $" + totalSalesEarned.toFixed(2),432,298);
-  text("FINAL BALANCE: $" + money.toFixed(2),432,327);
-  text("FINAL STORAGE CAPACITY: " + shopCapacity() + " SLOTS",432,356);
-  drawButton("RETRY GAME",194,418,210,true,color(70,115,65));
-  drawButton("RETURN TO HOME",460,418,210,true,color(98,67,46));
+const endingSpeeches = {
+  "The New Owner": [
+    "Well, I'll be! In all my years running this shop, I've never seen anything quite like this!",
+    "You've turned my humble little business into something truly extraordinary, kiddo.",
+    "And you know what? I think it's time I finally hung up my hat.",
+    "The shop's yours now. Every last bit of it. You've earned it!",
+    "Take good care of her for me, will ya?"
+  ],
+  "A Trusted Successor": [
+    "Well done, kiddo! I knew there was something special about you!",
+    "The shop's doing better than ever, and I couldn't be prouder.",
+    "How about sticking around? I'd say you've earned yourself a permanent spot behind that counter!",
+    "Here's to many more good days ahead!"
+  ],
+  "A Promising Start": [
+    "Would you look at that! Four whole weeks already!",
+    "Running a shop ain't easy, kiddo, but you've managed to keep this old place going.",
+    "There's still plenty of room to grow, of course.",
+    "But hey, every great business has to start somewhere!"
+  ],
+  "The Quiet Shop": [
+    "Well, kiddo... We didn't exactly strike gold, did we?",
+    "Business has been a little quiet, and there's still plenty of work to be done.",
+    "But you know what? You kept the lights on, and that's more than some folks can say!",
+    "Keep your chin up. Tomorrow's another day!"
+  ],
+  "Shop Closed": [
+    "Ah, kiddo... I'm afraid we've run out of chances.",
+    "I've kept this old shop going for years, but I guess even good things have to come to an end.",
+    "Don't be too hard on yourself. You gave it your best shot.",
+    "Now, chin up! There's always another adventure waiting around the corner."
+  ]
+};
+function endingDialogue() {
+  return endingSpeeches[ending?.achievement] || endingSpeeches["Shop Closed"];
 }
+function endingButtonsY() { return 210 + endingDialogue().length * 68 + 250; }
+function endingMaxScroll() { return max(0, endingButtonsY() + 44 - 508); }
+
+function drawGameOver() {
+  noStroke(); fill(0,0,0,185); rect(0,0,width,height);
+  pixelBoard(80,40,704,496);
+  const result = ending || {title:"SHOP CLOSED", won:false};
+  const dialogue = endingDialogue();
+  const statsY = 210 + dialogue.length * 68;
+
+  push();
+  drawingContext.save();
+  drawingContext.beginPath();
+  drawingContext.rect(104,68,646,440);
+  drawingContext.clip();
+  translate(0,-endingScroll);
+
+  textAlign(CENTER); textStyle(BOLD);
+  fill(result.won ? color(70,115,65) : color(160,70,60));
+  textSize(result.title.startsWith("SPECIAL ENDING:") ? 20 : 25);
+  text(result.title,432,111);
+  fill(65,40,28); textSize(21);
+  text("PIXEL PAT'S FINAL CALL",432,155);
+  textStyle(NORMAL); textSize(17);
+  for (let i=0; i<dialogue.length; i++) text(dialogue[i],140,187+i*68,584,58);
+  stroke(174,130,85); strokeWeight(2);
+  line(150,statsY-30,714,statsY-30);
+  noStroke(); fill(65,40,28); textStyle(BOLD); textSize(21);
+  text("FINAL RESULTS",432,statsY);
+  textStyle(NORMAL); textSize(16);
+  text("DAYS COMPLETED: " + dayNumber + " / " + FINAL_DAY,432,statsY+43);
+  text("UPGRADES UNLOCKED: " + unlockedUpgradeCount(),432,statsY+75);
+  text("TOTAL SALES: $" + totalSalesEarned.toFixed(2),432,statsY+107);
+  text("FINAL BALANCE: $" + money.toFixed(2),432,statsY+139);
+  text("FINAL STORAGE CAPACITY: " + shopCapacity() + " SLOTS",432,statsY+171);
+  drawButton("RETRY GAME",194,endingButtonsY(),210,true,color(70,115,65));
+  drawButton("RETURN TO HOME",460,endingButtonsY(),210,true,color(98,67,46));
+  drawingContext.restore();
+  pop();
+
+  noStroke(); fill(190,162,124); rect(756,82,6,410);
+  const maxScroll = endingMaxScroll();
+  const thumbH = max(55,410*410/(410+maxScroll));
+  fill(98,67,46);
+  rect(756,82+(410-thumbH)*(maxScroll ? endingScroll/maxScroll : 0),6,thumbH);
+  fill(65,40,28); textAlign(CENTER); textStyle(NORMAL); textSize(12);
+  text(endingScroll < maxScroll-2 ? "SCROLL DOWN TO SEE YOUR RESULTS" : "END OF RESULTS",432,524);
+}
+
 
 
 
@@ -880,10 +950,10 @@ function selectedTotal() {
 function handleBasicClick() {
   // Retry starts a fresh run; Home returns to the introduction screen.
   if (gameOver) {
-    if (pawnHit(194,418,210,32)) {
+    if (pawnHit(194,endingButtonsY()-endingScroll,210,32)) {
       restartGame();
       showIntro = false;
-    } else if (pawnHit(460,418,210,32)) {
+    } else if (pawnHit(460,endingButtonsY()-endingScroll,210,32)) {
       restartGame();
     }
     return;
@@ -2684,6 +2754,7 @@ function testJumpToDay(day) {
   gameOver = false;
   ending = null;
   endingShownAt = 0;
+  endingScroll = 0;
   recoveryDeadline = 0;
   bankruptcyNotice = false;
   closing = false;
@@ -3042,6 +3113,7 @@ function restartGame() {
   gameOver = false;
   ending = null;
   endingShownAt = 0;
+  endingScroll = 0;
   recoveryDeadline = 0;
   bankruptcyNotice = false;
   totalSalesEarned = 0;
@@ -3704,5 +3776,12 @@ function shopDrawTabs() {
   drawButton('REPUTATION', 328, 12, 150, true, color(98, 67, 46));
   if (dayNumber >= 3 && phoneSeen.upgrades && !phonePending && !phoneCall) {
     drawButton('UPGRADES', 488, 12, 140, true, color(98, 67, 46));
+  }
+}
+
+function mouseWheel(event) {
+  if (gameOver) {
+    endingScroll = constrain(endingScroll + event.delta, 0, endingMaxScroll());
+    return false;
   }
 }
