@@ -669,6 +669,11 @@ function togglePause() {
 // Day 1 contextual walkthrough. It never pauses play or captures input.
 function dayOneTutorialHint() {
   if (showReceipt || showBag) return "";
+  if (tutorialTradesServed === 0 && tutorialWelcomeStartedAt > 0) {
+    const welcome = "Welcome to your first day as shopkeeper. I'll walk you through the basics.";
+    const typingTime = welcome.length * 23;
+    if (millis() - tutorialWelcomeStartedAt < typingTime + 3000) return welcome;
+  }
   const step = tutorialTradesServed;
   if (pawnTradeActive()) {
     if (step === 0) return "Our first seller! Buying costs cash, but you can resell the item for a profit.";
@@ -694,6 +699,7 @@ function dayOneTutorialHint() {
 // Subtitles follow the five scripted customers without pausing or intercepting play.
 let tutorialTypedText = "";
 let tutorialTextStartedAt = 0;
+let tutorialWelcomeStartedAt = 0;
 function drawDayOneTutorial() {
   if (dayNumber !== 1 || showIntro || gameOver || phonePending || phoneCall ||
       pawnIntroType || poshOfferActive || (poshGameOverlay && !poshGameOverlay.hidden) ||
@@ -2232,7 +2238,10 @@ function phoneCheckEvents() {
 }
 
 function phoneEndCall() {
-  if (phoneCall === 'hello') welcomeCallCompleted = true;
+  if (phoneCall === 'hello') {
+    welcomeCallCompleted = true;
+    tutorialWelcomeStartedAt = millis();
+  }
   phonePending = '';
   phoneCall = '';
   phoneSelected = [];
@@ -2934,6 +2943,7 @@ function testJumpToDay(day) {
     tutorialBagSeen = false;
     tutorialTypedText = "";
     tutorialTextStartedAt = 0;
+    tutorialWelcomeStartedAt = millis();
   }
   nextInspectionDay = day >= 3 ? day : 3;
   inspectorPhase = '';
@@ -3313,6 +3323,7 @@ function restartGame() {
   tutorialBagSeen = false;
   tutorialTypedText = "";
   tutorialTextStartedAt = 0;
+  tutorialWelcomeStartedAt = 0;
   shopMessage = "";
   shopBargained = false;
   shopTradeMultiplier = 1;
