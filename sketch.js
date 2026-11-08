@@ -633,7 +633,7 @@ function dayOneTutorialHint() {
     if (step === 3) return "Only $5 to spend? Some deals aren't worth it. Hit REJECT.";
     if (step === 4) return shopBargained
       ? "No worries if your reputation drops. Successful trades help you earn it back."
-      : "One more BARGAIN, kiddo. Give it another try and see what happens.";
+      : "One more BARGAIN! Give it another try and see what happens.";
     return "";
   }
   if (step === 0) return "See the customer count at the top right? We'll close up once everyone's served.";
@@ -641,7 +641,7 @@ function dayOneTutorialHint() {
   if (step === 2) return "That's the trick, kiddo. Buy low, sell high!";
   if (step === 3) return "Check REPUTATION to see how folks feel about you. Good relationships help with bargains.";
   if (step === 4) return "Keep an eye on your cash, kiddo. Clear weekly debt within three days to keep the shop open.";
-  if (step === 5) return "You've got the basics down! Now see what else this little shop has in store.";
+  if (step === 5) return "You've learned the basics, kiddo! Now let's see how you handle the shop on your own.";
   return "";
 }
 
