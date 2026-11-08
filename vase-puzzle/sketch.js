@@ -1,4 +1,5 @@
 let vaseSpriteSheet;
+let shopBg;
 let vaseChoice;
 let pieces = [];
 let emptySquare = {col: 2, row: 2};
@@ -40,9 +41,10 @@ async function setup() {
     createCanvas(864, 576);
     noSmooth();
     angleMode(DEGREES); 
-    textFont("Press Start 2P")
+    textFont("Pixelify Sans")
 
     vaseSpriteSheet = await loadImage('images/vases.png');
+    shopBg = await loadImage('../images/shop.png');
 
     gameState = "start";
 
@@ -52,7 +54,12 @@ async function setup() {
 }
 
 function draw() {
-    background(65, 40, 28);
+    background(0);
+    if (shopBg) image(shopBg, 0, 0, width, height);
+    // Match the main shop start screen dimming.
+    noStroke();
+    fill(0, 0, 0, 180);
+    rect(0, 0, width, height);
 
     if (gameState === "start") {
         drawStartScreen();
@@ -94,7 +101,7 @@ function drawStartScreen() {
   textSize(20);
   text("PAWNBROKEN!", 432, 265);
 
-  textSize(9);
+  textSize(16);
   text("CLICK TO START", 432, 330);
 }
 
@@ -123,7 +130,7 @@ function drawPlayScreen() {
     
     pixelBoard(referenceX * 0.89, boardOffsetY * 0.64, referenceSize * 1.82, referenceSize * 3.07);
 
-    textSize(12);
+    textSize(17);
     fill(65, 40, 28);
     noStroke();
     textAlign(CENTER);
@@ -136,16 +143,16 @@ function drawPlayScreen() {
     text(`TIME ${formatTime(timeRemaining)}`, 95, 48);
 
     textAlign(CENTER);
-    textSize(9);
+    textSize(16);
     text("FINISHED PRODUCT", referenceX * 1.14, boardOffsetY * 1.6);
 
     const controlsX = referenceX - referenceSize * 0.15;
     const controlsTop = boardOffsetY + 275;
     fill(65, 40, 28);
     textAlign(LEFT);
-    textSize(9);
+    textSize(17);
     text("CONTROLS", controlsX, controlsTop);
-    textSize(8);
+    textSize(15);
     text("CLICK and DRAG: MOVE PIECE", controlsX, controlsTop + 30);
     text(`ONLY PIECES ADJACENT TO THE ${"\n"} EMPTY SQUARE CAN BE MOVED`, controlsX, controlsTop + 60);
     text("SINGLE CLICK: ROTATE PIECE", controlsX, controlsTop + 100);
@@ -232,7 +239,7 @@ function drawWinScreen() {
     textAlign(CENTER);
     text("YOU DID IT!", width / 2, height / 2 - 60);
     text("IT'S AS GOOD AS NEW.", width / 2, height / 2 - 20);
-    textSize(12);
+    textSize(17);
     text("CLICK FOR A REWARD", width / 2, height / 2 + 10);
 }
 
@@ -243,7 +250,7 @@ function drawTimeoutScreen() {
     textAlign(CENTER);
     textSize(22);
     text("TIME'S UP!", width / 2, height / 2 - 20);
-    textSize(10);
+    textSize(16);
     text("OH WELL, BETTER LUCK NEXT TIME!", width / 2, height / 2 + 30);
 }
 
@@ -369,7 +376,7 @@ function drawButton(label, x, y, w, colorValue) {
 
   fill(255);
   textAlign(CENTER);
-  textSize(9);
+  textSize(16);
 
   text(label, x + w / 2, y + 21);
 }

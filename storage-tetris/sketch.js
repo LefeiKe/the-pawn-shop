@@ -55,6 +55,7 @@ let nextId;
 let lastFallTime = 0;
 
 let gameState = "loading";
+let shopBg;
 
 // true when the main shop game opens this inside its iframe
 const EMBEDDED = window.parent !== window;
@@ -64,7 +65,8 @@ async function setup() {
   canvas.parent("game");
 
   noSmooth();
-  textFont("Press Start 2P"); // from the overarching main game
+  textFont("Pixelify Sans"); // from the overarching main game
+  shopBg = await loadImage("../images/shop.png");
 
   // keep each image next to its item in the PIECES list, or null to use the fallback color
   for (let piece of PIECES) {
@@ -101,6 +103,11 @@ function imageMatchesGrid(img, piece) { // shouldn't be an issue because i desgi
 
 function draw() {
   background(0);
+  if (shopBg) image(shopBg, 0, 0, width, height);
+  // Match the main shop start screen dimming.
+  noStroke();
+  fill(0, 0, 0, 180);
+  rect(0, 0, width, height);
 
   if (gameState === "loading") {
     return;
@@ -442,10 +449,10 @@ function drawSidePanel() {
 
   fill(65, 40, 28);
   textAlign(CENTER);
-  textSize(9);
+  textSize(17);
   text("STORAGE REORGANIZATION", centerX, 58);
 
-  textSize(9);
+  textSize(17);
   text("NEXT", centerX, 92);
   drawNextBox();
 
@@ -453,10 +460,11 @@ function drawSidePanel() {
   text("ROWS CLEARED " + linesCleared + " / " + TARGET_LINES, centerX, 262);
 
   textAlign(LEFT);
+  textSize(17);
   text("CONTROLS", leftX, 305);
-  textSize(8);
+  textSize(15);
   text("LEFT/RIGHT or A/D: MOVE", leftX, 332);
-  text("UP or W: ROTATE", leftX, 356);
+  text("UP or W: ROTATE CLOCKWISE", leftX, 356);
   text("DOWN or S: SOFT DROP", leftX, 380);
   text("SPACE: HARD DROP", leftX, 404);
   text("P: PAUSE", leftX, 428);
@@ -497,11 +505,19 @@ function drawStartScreen() {
 
   fill(65, 40, 28);
   textAlign(CENTER);
-  textSize(20);
-  text("STORAGE REORGANIZATION", 432, 265);
+  textSize(27);
+  text("STORAGE REORGANIZATION", 432, 189);
 
-  textSize(9);
-  text("CLICK TO START", 432, 330);
+  textSize(19);
+  text("CLEAR 5 ROWS TO WIN!", 432, 229);
+  textSize(16);
+  text("LEFT/RIGHT OR A/D: MOVE", 432, 272);
+  text("UP OR W: ROTATE CLOCKWISE", 432, 299);
+  text("DOWN OR S: SOFT DROP", 432, 326);
+  text("SPACE: HARD DROP  |  P: PAUSE", 432, 353);
+
+  textSize(19);
+  text("CLICK TO START", 432, 415);
 }
 
 function drawEndPanel() {
@@ -527,7 +543,7 @@ function drawEndPanel() {
   text(title, 432, 215);
 
   fill(65, 40, 28);
-  textSize(9);
+  textSize(16);
   text("ROWS CLEARED: " + linesCleared, 432, 290);
 
   drawButton(EMBEDDED ? "RETURN TO SHOP" : "NEW ROUND", NEW_ROUND_X, NEW_ROUND_Y, NEW_ROUND_W, color(70, 115, 65));
@@ -556,7 +572,7 @@ function drawButton(label, x, y, w, colorValue) {
 
   fill(255);
   textAlign(CENTER);
-  textSize(9);
+  textSize(16);
 
   text(label, x + w / 2, y + 21);
 }
