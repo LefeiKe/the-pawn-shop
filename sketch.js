@@ -1303,44 +1303,48 @@ let pawnRows = []; // [{index,x,y,w,h}] - current clickable buyer rows
 // can continue visiting without a limit.
 // Inspector is reserved for Sara's future mini-game.
 let pawnUnlockedTypes = {Regular:true, Bargain:false, Collector:false, Suspicious:false, Wholesaler:false};
-let pawnNewTypeDay = -1;
+// Introduce exactly one new customer type on each of Days 2–5.
+const pawnTypeSchedule = {2:'Bargain', 3:'Suspicious', 4:'Collector', 5:'Wholesaler'};
 function pawnPickVisitor(forcedType) {
-  let types = ['Regular', 'Bargain', 'Collector', 'Suspicious', 'Wholesaler'];
+  const types = ['Regular', 'Bargain', 'Collector', 'Suspicious', 'Wholesaler'];
   if (forcedType) {
-    let choices = pawnProfiles.filter(p => p.type === forcedType);
+    const choices = pawnProfiles.filter(p => p.type === forcedType);
     if (choices.length) return random(choices);
   }
-  let weights = [60, 20, 12, 8, 12];
-  let allowed = [];
+
+  // Keep earlier types available even when jumping directly to a day in dev mode.
+  for (const [unlockDay, type] of Object.entries(pawnTypeSchedule)) {
+    if (dayNumber > Number(unlockDay)) pawnUnlockedTypes[type] = true;
+  }
+
+  // The first ordinary visitor on the introduction day must be the new type.
+  const newType = pawnTypeSchedule[dayNumber];
+  if (newType && !pawnUnlockedTypes[newType]) {
+    pawnUnlockedTypes[newType] = true;
+    const choices = pawnProfiles.filter(p => p.type === newType);
+    return random(choices);
+  }
+
+  const weights = [60, 20, 12, 8, 12];
+  const allowed = [];
   let total = 0;
   for (let i = 0; i < types.length; i++) {
-    let type = types[i];
-    let canVisit = (type !== 'Wholesaler' || dayNumber >= 5) &&
-      (pawnUnlockedTypes[type] ||
-       (dayNumber > 1 && pawnNewTypeDay !== dayNumber));
-    if (canVisit) {
-      allowed.push({type:type, weight:weights[i]});
+    if (pawnUnlockedTypes[types[i]]) {
+      allowed.push({type:types[i], weight:weights[i]});
       total += weights[i];
     }
   }
 
   let roll = random(total);
   let selected = 'Regular';
-  for (let entry of allowed) {
+  for (const entry of allowed) {
     if (roll < entry.weight) {
       selected = entry.type;
       break;
     }
     roll -= entry.weight;
   }
-
-  // Lock out OTHER unseen types for the rest of this day.
-  if (!pawnUnlockedTypes[selected]) {
-    pawnUnlockedTypes[selected] = true;
-    pawnNewTypeDay = dayNumber;
-  }
-  let choices = pawnProfiles.filter(p => p.type === selected);
-  return random(choices);
+  return random(pawnProfiles.filter(p => p.type === selected));
 }
 function pawnHit(x,y,w,h) {
   return mouseX >= x && mouseX <= x+w && mouseY >= y && mouseY <= y+h;
