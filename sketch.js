@@ -3175,7 +3175,7 @@ function draw() {
   }
   if (pawnIntroType) pawnDrawIntro();
 
-  if (!showIntro && welcomeCallCompleted && !showReceipt && !gameOver && !pawnIntroType) {
+  if (!showIntro && welcomeCallCompleted && !gameOver && !pawnIntroType) {
     shopDrawTabs();
       if (shopMenu === "people") shopDrawPeople();
       if (shopMenu === "upgrades") shopDrawUpgrades();
@@ -3251,7 +3251,7 @@ function draw() {
   drawInspectorArrivalNotice();
   // Show the grade as soon as Alex's result dialogue is dismissed.
   // Keep it behind every popup, but allow it while Alex is walking out.
-  const gradeBlocked = showIntro || showReceipt || gameOver || showBudgetWarning ||
+  const gradeBlocked = showIntro || gameOver || showBudgetWarning ||
     showBag || shopMenu || phonePending || phoneCall ||
     pawnTradeActive() || pawnIntroType || poshOfferActive ||
     (inspectorPhase && inspectorPhase !== 'leaving') ||
@@ -4046,7 +4046,7 @@ function finishTrade() {
 
 function shopDrawTabs() {
 
-  if (showIntro || showReceipt || gameOver) return;
+  if (showIntro || gameOver) return;
   drawButton('REPUTATION', 328, 12, 128, true, color(98, 67, 46));
   if (dayNumber >= 3 && phoneSeen.upgrades && !phonePending && !phoneCall) {
     drawButton('UPGRADES', 466, 12, 128, true, color(98, 67, 46));
