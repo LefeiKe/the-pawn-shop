@@ -936,7 +936,8 @@ function drawCharacters() {
   drawingContext.beginPath();
   drawingContext.rect(0, 0, width, 250);
   drawingContext.clip();
-  shopkeeperActor.display();
+  // Keep the shopkeeper hidden until Pat finishes the welcome call.
+  if (welcomeCallCompleted) shopkeeperActor.display();
   drawingContext.restore();
   currentCustomer.display();
   if (inspectorActor) inspectorActor.display();
