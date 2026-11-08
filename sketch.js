@@ -670,7 +670,7 @@ function togglePause() {
 function dayOneTutorialHint() {
   if (showReceipt || showBag) return "";
   if (tutorialTradesServed === 0 && tutorialWelcomeStartedAt > 0) {
-    const welcome = "Welcome to your first day as shopkeeper. I'll walk you through the basics.";
+    const welcome = "Welcome to your first day at the shop! Let's learn the ropes together, then it's your turn to take charge!";
     const typingTime = welcome.length * 23;
     if (millis() - tutorialWelcomeStartedAt < typingTime + 3000) return welcome;
   }
