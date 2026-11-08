@@ -666,7 +666,7 @@ function dayOneTutorialHint() {
   if (step === 0) return "The daily customer count is at the top right. The shop closes after everyone is served.";
   if (step === 1) return "Click BAG to review your purchases. Keep an eye on your storage capacity.";
   if (step === 2) return "Buy low and sell high to make a profit.";
-  if (step === 3) return "REPUTATION shows your relationships. Stronger relationships improve bargaining chances.";
+  if (step === 3) return "REPUTATION tracks your relationships. Stronger relationships improve bargaining chances.";
   if (step === 4) return "Watch your balance. Weekly debt gives you three days to recover before the shop closes.";
   return "";
 }
