@@ -104,7 +104,7 @@ function draw() {
     }
 
     // Inspection panel
-    pixelBoard(100, 100, 600, 320);
+    pixelBoard(70, 50, 660, 430);
 
     // title
     textAlign(CENTER);
@@ -112,7 +112,7 @@ function draw() {
     textSize(22);
 
     if (gameState !== "final") {
-        text("INSPECTION MEMORY TEST", width / 2, 145);
+        text("INSPECTION MEMORY TEST", width / 2, 110);
     }
 
     // Begin on the memory cards; Alex already introduced the inspection.
@@ -121,16 +121,16 @@ function draw() {
 
         fill(50);
         textSize(12);
-        text("Let's see how familiar you are with your merchandise!", width / 2, 170);
+        text("Let's see how familiar you are with your merchandise!", width / 2, 150);
 
         textSize(12);
-        text("Click a card to hide or reveal its price.", width / 2, 195);
+        text("Click a card to hide or reveal its price.", width / 2, 178);
 
         // display six flipping item cards
         for (let i = 0; i < items.length; i++) {
 
             let x = 220 + (i % 3) * 180;
-            let y = 255 + floor(i / 3) * 95;
+            let y = 245 + floor(i / 3) * 95;
 
             // target: front = 0, back = 1
             let target = priceHidden[i] ? 1 : 0;
@@ -191,11 +191,11 @@ function draw() {
 
         // READY button
         fill(70, 115, 65);
-        rect(330, 395, 140, 35);
+        rect(330, 415, 140, 40);
 
         fill(255);
         textSize(14);
-        text("READY", 400, 419);
+        text("READY", 400, 442);
     }
 
     // ask memory questions
@@ -213,7 +213,7 @@ function draw() {
         // show question number
         fill(50);
         textSize(18);
-        text("Question " + questionNumber + " / " + totalQuestions, width / 2, 190);
+        text("Question " + questionNumber + " / " + totalQuestions, width / 2, 150);
 
         // show question
         textSize(18);
@@ -221,13 +221,13 @@ function draw() {
 
             fill(50);
             textSize(15);
-            text("Which item is missing?", width / 2, 215);
+            text("Which item is missing?", width / 2, 188);
 
             // Display five item images and one missing item
             for (let i = 0; i < items.length; i++) {
 
                 let x = 220 + (i % 3) * 180;
-                let y = 270 + floor(i / 3) * 50;
+                let y = 295 + floor(i / 3) * 55;
 
                 // Card background
                 stroke(110, 80, 50);
@@ -256,7 +256,7 @@ function draw() {
             fill(50);
             textSize(12);
             textAlign(CENTER, CENTER);
-            text(questionText, 145, 200, 510, 50);
+            text(questionText, 120, 185, 560, 55);
             textAlign(CENTER, BASELINE);
         }
         
@@ -265,10 +265,10 @@ function draw() {
         fill(50);
         textSize(14);
         if (questionNumber === 1) {
-            text("Time left: " + timeLeft, width / 2, 235);
+            text("Time left: " + timeLeft, width / 2, 245);
         }
         else {
-            text("Time left: " + timeLeft, width / 2, 260);
+            text("Time left: " + timeLeft, width / 2, 272);
         }
 
 
@@ -280,13 +280,13 @@ function draw() {
 
             if (questionNumber === 1) {
                 x = 190 + i * 140;
-                y = 350;
+                y = 410;
                 buttonWidth = 110;
-                buttonHeight = 45;
+                buttonHeight = 44;
             }
             else {
                 x = 280 + (i % 2) * 240;
-                y = 300 + floor(i / 2) * 58;
+                y = 320 + floor(i / 2) * 64;
                 buttonWidth = 210;
                 buttonHeight = 48;
             }
@@ -385,7 +385,7 @@ function draw() {
 
         fill(50);
         textSize(24);
-        text("INSPECTION COMPLETE!", width / 2, 145);
+        text("INSPECTION COMPLETE!", width / 2, 160);
 
         textSize(22);
         text("Your score: " + score + " / " + totalQuestions, width / 2, 260);
@@ -406,7 +406,7 @@ function mousePressed() {
 
         // click READY to begin questions
         if (mouseX > 330 && mouseX < 470 &&
-            mouseY > 395 && mouseY < 430) {
+            mouseY > 415 && mouseY < 455) {
 
             questionStartTime = millis();
             gameState = "question";
@@ -417,7 +417,7 @@ function mousePressed() {
             for (let i = 0; i < items.length; i++) {
 
                 let x = 220 + (i % 3) * 180;
-                let y = 255 + floor(i / 3) * 95;
+                let y = 245 + floor(i / 3) * 95;
 
                 if (mouseX > x - 65 && mouseX < x + 65 &&
                     mouseY > y - 45 && mouseY < y + 40) {
@@ -438,13 +438,13 @@ function mousePressed() {
 
             if (questionNumber === 1) {
                 x = 190 + i * 140;
-                y = 350;
+                y = 410;
                 buttonWidth = 110;
-                buttonHeight = 45;
+                buttonHeight = 44;
             }
             else {
                 x = 280 + (i % 2) * 240;
-                y = 300 + floor(i / 2) * 58;
+                y = 320 + floor(i / 2) * 64;
                 buttonWidth = 210;
                 buttonHeight = 48;
             }
@@ -869,8 +869,11 @@ function makeItemAnswers(correctName) {
 function randomizePrices() {
 
     for (let i = 0; i < items.length; i++) {
-
-        items[i].price = floor (random(2, 21)) * 5;
+        items[i].price = floor(random(2, 21)) * 5;
+    }
+    // Comparisons and differences require at least two distinct prices.
+    if (items.every(item => item.price === items[0].price)) {
+        items[items.length - 1].price = items[0].price === 100 ? 95 : items[0].price + 5;
     }
 }
 
