@@ -744,7 +744,7 @@ function drawDayOneTutorial() {
   // Keep larger subtitles centered in the bottom bar, below the trade controls.
   rect(94,525,676,47,7);
   fill(255); textFont("Pixelify Sans");
-  textAlign(CENTER, CENTER); textStyle(NORMAL); textSize(18); textLeading(20);
+  textAlign(CENTER, CENTER); textStyle(NORMAL); textSize(16); textLeading(19);
   text(hint.slice(0,characters),110,525,644,47);
   pop();
 }
