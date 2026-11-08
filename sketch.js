@@ -2,6 +2,55 @@
 // MAIN GAME
 // ============================================================
 
+// Main shop audio. Browser playback begins only after the player's first click.
+const shopAudio = {
+  bgm: new Audio("sounds/bgm1.mp3"),
+  click: new Audio("sounds/click.mp3"),
+  page: new Audio("sounds/pop up.mp3"),
+  typing: new Audio("sounds/typing.mp3"),
+  ring: new Audio("sounds/ring.mp3")
+};
+shopAudio.bgm.loop = true;
+shopAudio.bgm.volume = 0.22;
+shopAudio.click.volume = 0.45;
+shopAudio.page.volume = 0.65;
+shopAudio.typing.volume = 0.16;
+shopAudio.ring.volume = 0.6;
+shopAudio.ring.loop = true;
+let shopAudioUnlocked = false;
+let lastTypingSoundAt = 0;
+const typingProgress = new Map();
+
+function playShopSound(name) {
+  if (!shopAudioUnlocked) return;
+  const sound = shopAudio[name];
+  if (!sound) return;
+  sound.currentTime = 0;
+  sound.play().catch(() => {}); // Autoplay may be unavailable until a user gesture.
+}
+
+function unlockShopAudio() {
+  if (shopAudioUnlocked) return;
+  shopAudioUnlocked = true;
+  shopAudio.bgm.play().catch(() => {});
+  if (phonePending && !phoneCall) playShopSound("ring");
+}
+
+function stopPhoneRing() {
+  shopAudio.ring.pause();
+  shopAudio.ring.currentTime = 0;
+}
+
+function soundTypingTick(id, count) {
+  const previous = typingProgress.get(id) || 0;
+  if (count > previous && count > 0 && millis() - lastTypingSoundAt >= 90) {
+    playShopSound("typing");
+    lastTypingSoundAt = millis();
+  }
+  typingProgress.set(id, count);
+  if (typingProgress.size > 40) typingProgress.clear();
+}
+
 let customerRoute = [
   { x: 170, y: 510 },  // 0: Enter through left door
   { x: 170, y: 410 },  // 1: Walk up
@@ -427,6 +476,7 @@ function showPoshGame() {
 function showPoshOffer() {
   if (poshOfferActive) return;
   poshOfferActive = true;
+  playShopSound("page");
   poshOfferPausedShop = !gamePaused;
   if (poshOfferPausedShop) togglePause();
 }
@@ -478,6 +528,7 @@ function needsStorageChallenge(quantity) {
 }
 
 function requestStorageChallenge(source, purchase) {
+  playShopSound("page");
   tetrisAcceptPurchase = purchase;
   tetrisPromptActive = true;
 }
@@ -716,6 +767,7 @@ function drawDayOneTutorial() {
     tutorialTextStartedAt = millis();
   }
   const characters = min(hint.length, floor((millis() - tutorialTextStartedAt) / 23));
+  soundTypingTick("tutorial:" + tutorialTextStartedAt, characters);
   push();
   noStroke(); fill(40,29,25,225);
   // Keep larger subtitles centered in the bottom bar, below the trade controls.
@@ -1346,6 +1398,7 @@ function pawnStartIntroIfNeeded() {
   if (pawnIntroSeen[t] === false) {
     pawnIntroSeen[t] = true;
     pawnIntroType = t;
+    playShopSound("page");
     pawnIntroPausedGame = !gamePaused;
     if (pawnIntroPausedGame) togglePause();
   }
@@ -1599,6 +1652,7 @@ function suspiciousTradeConsequence() {
 // Reuse the tutorial's letter-by-letter reveal for brief notices.
 function typedNotice(message, startedAt) {
   const letters = constrain(floor((millis() - startedAt) / 23) + 1, 0, message.length);
+  soundTypingTick(startedAt + ":" + message, letters);
   return message.slice(0, letters);
 }
 
@@ -2228,6 +2282,7 @@ function phoneRentAmount(day) {
 
 function phoneStart(eventName) {
   phonePending = eventName;
+  playShopSound("ring");
   phoneSelected = [];
   if (eventName === 'hello') helloPage = 0;
   phoneSavedPause = !gamePaused;
@@ -2251,6 +2306,7 @@ function phoneCheckEvents() {
 }
 
 function phoneEndCall() {
+  stopPhoneRing();
   if (phoneCall === 'hello') {
     welcomeCallCompleted = true;
     tutorialWelcomeStartedAt = millis();
@@ -2370,6 +2426,7 @@ function moveInspector() {
   inspectorActor.move();
   if (inspectorPhase === 'entering' && inspectorActor.state === 'waiting') {
     inspectorPhase = 'intro';
+    playShopSound("page");
     inspectorNoticePausedGame = !gamePaused;
     if (inspectorNoticePausedGame) togglePause();
   } else if (inspectorPhase === 'leaving' && inspectorActor.state === 'gone') {
@@ -2818,6 +2875,8 @@ function phoneSellSelection() {
 
 
 function mousePressed() {
+  unlockShopAudio();
+  playShopSound("click");
   if (bankruptcyNotice && !phoneCall && !phonePending) {
     if (pawnHit(312,425,240,32)) bankruptcyNotice = false;
     return;
@@ -2857,6 +2916,8 @@ function mousePressed() {
     if (pawnHit(phoneX,phoneY,phoneW,phoneH)) {
       phoneCall = phonePending;
       phonePending = '';
+      stopPhoneRing();
+      if (phoneCall === 'upgrades') playShopSound("page");
     }
     return;
   }
