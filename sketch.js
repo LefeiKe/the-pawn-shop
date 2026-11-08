@@ -734,10 +734,11 @@ function drawDayOneTutorial() {
   const characters = min(hint.length, floor((millis() - tutorialTextStartedAt) / 23));
   push();
   noStroke(); fill(40,29,25,225);
-  rect(94,529,676,43,7);
+  // Fit two readable lines below the trade buttons; center text in both axes.
+  rect(94,525,676,47,7);
   fill(255); textFont("Pixelify Sans");
-  textAlign(CENTER); textStyle(NORMAL); textSize(14);
-  text(hint.slice(0,characters),110,536,644,34);
+  textAlign(CENTER, CENTER); textStyle(NORMAL); textSize(18); textLeading(20);
+  text(hint.slice(0,characters),110,525,644,47);
   pop();
 }
 
