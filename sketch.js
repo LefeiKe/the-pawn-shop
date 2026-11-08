@@ -273,6 +273,7 @@ let tutorialBagSeen = false;
 // Inspector visits are separate from the daily customer quota.
 let nextInspectionDay = 3;
 let latestInspectionGrade = '';
+let inspectorGradeAcknowledged = false;
 let inspectorPhase = ''; // entering, intro, awaiting minigame, result, leaving
 let inspectorActor = null;
 let inspectorArrivalNoticeUntil = 0;
@@ -343,7 +344,7 @@ async function setup() {
   window.addEventListener("message", handleStorageTetrisMessage);
 
   shopBg = await loadImage("images/shop.png");
-  vaseSpriteSheet = await loadImage("vasePuzzle/images/vases.png");
+  vaseSpriteSheet = await loadImage("vase-puzzle/images/vases.png");
   shopkeeper = await loadImage("images/shopkeeper.png");
   shopkeeperActor = new Shopkeeper(shopkeeper);
   currentCustomer = new Customer("", "", null, null);
@@ -465,7 +466,7 @@ function resolvePoshGame(won) {
   finishTrade();
   if (won) {
     customerReaction = "You're a marvel! I've left a nice bonus for you.";
-    customerReactionUntil = millis() + 2200;
+    customerReactionUntil = millis() + 3000;
     rewardHighlightUntil = customerReactionUntil;
   }
 }
@@ -513,7 +514,7 @@ function finishStorageChallenge(won) {
   } else {
     reputationNotice = "The purchase and payment were lost in the stockroom...";
   }
-  reputationNoticeUntil = millis() + 3000;
+  reputationNoticeUntil = millis() + 4000;
   tetrisPurchase = null;
   if (tetrisPausedShop) togglePause();
   tetrisPausedShop = false;
@@ -549,22 +550,20 @@ function drawStorageTetrisPrompt() {
     fill(63,40,30); textAlign(CENTER); textStyle(BOLD); textSize(23);
     text("NEW CHALLENGE UNLOCKED!",432,109);
     textSize(21); text("STORAGE REORGANIZATION",432,139);
-    textStyle(NORMAL); textSize(16);
-    text("Oh boy, looks like you've run out of storage space!",110,164,644,35);
-    text("Ever wondered how you could make a little more room around here?",110,197,644,35);
-    text("Don't worry, kiddo! Head into the stockroom and clear five rows of crates before they pile up to the top.",110,230,644,55);
-    text("You'll earn three permanent storage slots if you succeed!",110,287,644,35);
-    text("But if you fail, you'll lose your entire purchase and the money you spent.",110,321,644,45);
-    text("Even if you win, only the most expensive items can stay if space runs out. No refunds, I'm afraid! Good luck, kiddo!",110,364,644,54);
+    // Match Pat's call: left-aligned 19px paragraphs with readable line lengths.
+    fill(66,43,29); textAlign(LEFT); textStyle(NORMAL); textSize(19); textLeading(27);
+    text("Oh boy, storage is full! Let's make some room in the stockroom.",145,160,565,77);
+    text("Clear five rows of crates before they reach the top to earn three permanent storage slots.",145,239,565,95);
+    text("If you fail, you lose the purchase and payment. Even if you win, only the most expensive items can stay. No refunds, I'm afraid!",145,342,565,85);
     pawnButton("LET'S GO!",194,453,210,true,color(70,115,65));
     pawnButton("CANCEL",460,453,210,true,color(155,83,66));
   } else {
     pawnPanel(123,150,618,270);
     fill(63,40,30); textAlign(CENTER); textStyle(BOLD); textSize(23);
     text("STORAGE WARNING",432,205);
-    textStyle(NORMAL); textSize(17);
+    fill(66,43,29); textAlign(LEFT); textStyle(NORMAL); textSize(19); textLeading(28);
     text("This purchase exceeds your storage capacity.",165,242,534,35);
-    text("Reorganize your storage? Failure costs you the purchase and payment.",165,285,534,60);
+    text("Reorganize your storage? If you fail, you'll lose the purchase and payment.",165,285,534,70);
     pawnButton("PROCEED",194,360,210,true,color(70,115,65));
     pawnButton("CANCEL",460,360,210,true,color(155,83,66));
   }
@@ -612,61 +611,29 @@ function pixelBoard(x, y, w, h) {
 
 
 function drawIntro() {
-    noStroke();
-    fill(0, 0, 0, 180);
-    rect(0, 0, width, height);
-    pixelBoard(90, 55, 684, 470);
-  
-    textFont("Pixelify Sans");
-    fill(65, 40, 28);
-    textAlign(CENTER);
-    textStyle(BOLD);
-    textSize(29);
-    text("WELCOME TO PIXEL PAT'S PAWNS AND PARCELS", width / 2, 102);
-  
-    textStyle(NORMAL);
-    textSize(18);
-    text("Be prudent and profitable to help your little shop prosper!", width / 2, 133);
-  
-    // How to play
-    fill(65, 40, 28);
-    textAlign(LEFT);
-    textStyle(BOLD);
-    textSize(21);
-    text("HOW TO PLAY", 142, 183);
-  
-    textStyle(NORMAL);
-    textSize(17);
-    text("Buy items from customers.", 142, 213);
-    text("Sell items that match the buyer's category.", 142, 242);
-    text("Use your earnings to unlock shop upgrades.", 142, 271);
-    text("Explore new mechanisms as the game moves on!", 142, 300);
-  
-    // Tips for making smart deals
-    fill(237, 218, 188);
-    noStroke();
-    rect(123, 312, 620, 123);
-  
-    fill(65, 40, 28);
-    textAlign(LEFT);
-    textStyle(BOLD);
-    textSize(21);
-    text("BEFORE YOU MAKE A DEAL...", 142, 343);
-  
-    textStyle(NORMAL);
-    textSize(16);
-    text("Look at the price, your budget, and available bag space.", 142, 369);
-    text("Not every offer is a good deal.", 142, 393);
-    text("Don't spend all your money!", 142, 417);
-  
-    // Daily rules
-    fill(86, 61, 42);
-    textAlign(CENTER);
-    textSize(15);
-  
-    drawButton("START GAME", 317, 474, 220, true, color(70, 115, 65));
-  }
-  
+  noStroke();
+  fill(0, 0, 0, 180);
+  rect(0, 0, width, height);
+  pixelBoard(112, 152, 640, 268);
+
+  textFont("Pixelify Sans");
+  fill(65, 40, 28);
+  textAlign(CENTER);
+  textStyle(BOLD);
+  textSize(31);
+  text("PIXEL PAT'S PAWNS AND PARCELS", width / 2, 227);
+
+  textStyle(NORMAL);
+  textSize(18);
+  text("Be prudent and profitable to help the little shop prosper!", width / 2, 274);
+
+  const hoveringStart = pawnHit(292, 327, 280, 44);
+  fill(hoveringStart ? color(85, 137, 79) : color(70, 115, 65));
+  rect(292, 327, 280, 44);
+  fill(255);
+  textSize(20);
+  text("START GAME", width / 2, 356);
+}
 
 // Day and money
 
@@ -701,12 +668,19 @@ function togglePause() {
 // Day 1 contextual walkthrough. It never pauses play or captures input.
 function dayOneTutorialHint() {
   if (showReceipt || showBag) return "";
+  if (tutorialTradesServed === 0 && tutorialWelcomeStartedAt > 0) {
+    const welcome = "Welcome to your first day at the shop! Let's learn the ropes together!";
+    const typingTime = welcome.length * 23;
+    if (millis() - tutorialWelcomeStartedAt < typingTime + 3000) return welcome;
+  }
   const step = tutorialTradesServed;
   if (pawnTradeActive()) {
     if (step === 0) return "Our first seller! Buying costs cash, but you can resell the item for a profit.";
     if (step === 1) return "Here comes a buyer! Check their budget and category, then pick an item to sell.";
-    if (step === 2) return "Time to BARGAIN! You might get a better price, but it won't always work.";
-    if (step === 3) return "Only $5 to spend? Some deals aren't worth it. Hit REJECT.";
+    if (step === 2) return "Only $5 to spend? Some deals aren't worth it. Hit REJECT.";
+    if (step === 3) return shopBargained
+      ? "Nice work! Your bargain was accepted. Now make the trade."
+      : "Time to BARGAIN! Give it a try and see if you can get a better deal.";
     if (step === 4) return shopBargained
       ? "No worries if your reputation drops. Successful trades help you earn it back."
       : "One more BARGAIN! Give it another try and see what happens.";
@@ -715,8 +689,8 @@ function dayOneTutorialHint() {
   if (step === 0) return "See the customer count at the top right? We'll close up once everyone's served.";
   if (step === 1) return tutorialBagSeen ? "" : "Take a peek at BAG to see your purchase. Watch that storage space!";
   if (step === 2) return "That's the trick, kiddo. Buy low, sell high!";
-  if (step === 3) return "Check REPUTATION to see how folks feel about you. Good relationships help with bargains.";
-  if (step === 4) return "Keep an eye on your cash, kiddo. Clear weekly debt within three days to keep the shop open.";
+  if (step === 3) return "Keep an eye on your cash, kiddo. Clear weekly debt within three days to keep the shop open.";
+  if (step === 4) return "Check REPUTATION to see how folks feel about you. Good relationships help with bargains.";
   if (step === 5) return "You've learned the basics, kiddo! Now let's see how you handle the shop on your own.";
   return "";
 }
@@ -724,6 +698,7 @@ function dayOneTutorialHint() {
 // Subtitles follow the five scripted customers without pausing or intercepting play.
 let tutorialTypedText = "";
 let tutorialTextStartedAt = 0;
+let tutorialWelcomeStartedAt = 0;
 function drawDayOneTutorial() {
   if (dayNumber !== 1 || showIntro || gameOver || phonePending || phoneCall ||
       pawnIntroType || poshOfferActive || (poshGameOverlay && !poshGameOverlay.hidden) ||
@@ -739,10 +714,11 @@ function drawDayOneTutorial() {
   const characters = min(hint.length, floor((millis() - tutorialTextStartedAt) / 23));
   push();
   noStroke(); fill(40,29,25,225);
-  rect(94,529,676,43,7);
+  // Keep larger subtitles centered in the bottom bar, below the trade controls.
+  rect(94,525,676,47,7);
   fill(255); textFont("Pixelify Sans");
-  textAlign(CENTER); textStyle(NORMAL); textSize(14);
-  text(hint.slice(0,characters),110,536,644,34);
+  textAlign(CENTER, CENTER); textStyle(NORMAL); textSize(16); textLeading(19);
+  text(hint.slice(0,characters),110,525,644,47);
   pop();
 }
 
@@ -774,14 +750,13 @@ function drawBankruptcyNotice() {
   pixelBoard(108,92,648,390);
   fill(160,70,60); textAlign(CENTER); textStyle(BOLD); textSize(24);
   text("YOUR SHOP IS IN TROUBLE!",432,148);
-  fill(65,40,28); textStyle(NORMAL); textSize(17);
-  text("Whoa there, kiddo! The books are in the red.",145,192,574,35);
-  text("But don't pack up the shop just yet!",145,227,574,35);
+  fill(66,43,29); textAlign(LEFT); textStyle(NORMAL); textSize(19); textLeading(28);
+  text("Whoa there, kiddo! The books are in the red. But don't pack up the shop just yet!",155,190,554,70);
   textStyle(BOLD);
   text("YOU HAVE 3 DAYS TO SAVE YOUR BUSINESS!",432,286);
-  textStyle(NORMAL); textSize(16);
-  text("Get your balance back to $0 or more by the end of Day " + recoveryDeadline + ".",145,315,574,55);
-  text("Make every trade count, pal. I'm rooting for ya!",145,372,574,40);
+  textAlign(LEFT); textStyle(NORMAL); textSize(19); textLeading(28);
+  text("Get your balance back to $0 or more by the end of Day " + recoveryDeadline + ".",155,315,554,70);
+  text("Make every trade count, pal. I'm rooting for ya!",155,390,554,30);
   drawButton("I'VE GOT THIS!",312,425,240,true,color(70,115,65));
 }
 
@@ -857,7 +832,7 @@ function endingDialogue() {
   return endingSpeeches[ending?.achievement] || endingSpeeches["Shop Closed"];
 }
 function endingMaxScroll() {
-  return max(0, 430 + 260 - 410);
+  return max(0, 445 + 260 - 410);
 }
 
 function finalItemCounts() {
@@ -872,7 +847,7 @@ function drawGameOver() {
   pixelBoard(80,40,704,496);
   const result = ending || {title:"SHOP CLOSED", won:false};
   const dialogue = endingDialogue();
-  const statsY = 430;
+  const statsY = 445;
   const itemCounts = finalItemCounts();
 
   push();
@@ -889,8 +864,8 @@ function drawGameOver() {
   fill(65,40,28); textSize(21);
   text("PIXEL PAT'S FINAL CALL",432,155);
   // Match Pat's original call: left-aligned, continuous text with normal leading.
-  textAlign(LEFT); textStyle(NORMAL); textSize(17); textLeading(28);
-  text(dialogue.join(" "),140,190,584,212);
+  textAlign(LEFT); textStyle(NORMAL); textSize(19); textLeading(29);
+  text(dialogue.join(" "),140,190,584,230);
   textAlign(CENTER);
   stroke(174,130,85); strokeWeight(2);
   line(150,statsY-30,714,statsY-30);
@@ -947,11 +922,9 @@ function moveCustomer() {
   currentCustomer.move();
   if (previousState === "leaving" && currentCustomer.state === "gone") {
     if (!closing) {
-      customersLeft--;
-      if (customersLeft <= 0) {
-        customersLeft = 0;
-        finishCustomerDay();
-      } else scheduleCustomer();
+      // The counter tracks customers who have not yet entered.
+      if (customersLeft <= 0) finishCustomerDay();
+      else scheduleCustomer();
     } else shopkeeperActor.leave();
   }
 }
@@ -965,7 +938,8 @@ function drawCharacters() {
   drawingContext.beginPath();
   drawingContext.rect(0, 0, width, 250);
   drawingContext.clip();
-  shopkeeperActor.display();
+  // Keep the shopkeeper hidden until Pat finishes the welcome call.
+  if (welcomeCallCompleted) shopkeeperActor.display();
   drawingContext.restore();
   currentCustomer.display();
   if (inspectorActor) inspectorActor.display();
@@ -1104,8 +1078,7 @@ function handleBasicClick() {
   // Introduction screen
   if (showIntro) {
 
-    if (mouseX >= 317 && mouseX <= 547 &&
-        mouseY >= 474 && mouseY <= 506) {
+    if (pawnHit(292, 327, 280, 44)) {
 
       showIntro = false;
 
@@ -1327,16 +1300,17 @@ const pawnDialogue = {
 // pawnNewConversation is defined by its final game-specific implementation below.
 function pawnDrawIntro() {
   noStroke(); fill(0,0,0,190); rect(0,0,width,height);
-  pawnPanel(123,116,618,341);
+  // Use the full Pat-style dialogue panel so longer type descriptions never clip.
+  pawnPanel(105,65,654,455);
   let lines = pawnTypeExplanations[pawnIntroType];
   if (!lines) return;
-  { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(23); text('NEW CUSTOMER TYPE!', 165, 171, 540, 28); };
-  { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(22); text(lines[0], 165, 220, 540, 28); };
-  fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL);
-  textSize(16); text(lines[1], 165, 255, 530, 66);
-  textStyle(BOLD); textSize(15); text(lines[2], 165, 344, 530, 48);
+  fill(63,40,30); textAlign(LEFT); textStyle(NORMAL);
+  textSize(23); text('NEW CUSTOMER TYPE!', 150, 118, 564, 32);
+  textSize(22); text(lines[0], 150, 170, 564, 32);
+  textSize(19); textLeading(29); text(lines[1], 150, 215, 564, 110);
+  textStyle(BOLD); textSize(19); text(lines[2], 150, 345, 564, 88);
   textStyle(NORMAL);
-  pawnButton('CONTINUE',333,412,198,true,color(70,115,65));
+  pawnButton('CONTINUE',333,454,198,true,color(70,115,65));
 }
 function pawnDrawPoshOffer() {
   pawnPanel(280,95,562,458);
@@ -1344,13 +1318,11 @@ function pawnDrawPoshOffer() {
   textAlign(CENTER);
   textSize(22);
   text("NEW CHALLENGE UNLOCKED", 310, 140, 502, 28);
-  textStyle(NORMAL);
-  textSize(18);
-  text(`My antique vase shattered! I bought a new one,`, 310, 195, 502, 28);
-  text(`but thought I'd donate this old one to the shop.`, 310, 240, 502, 28);
-  text(`Would you like to try your hand at restoring it?`, 310, 285, 502, 28);
-  text(`If you can fix it, it's yours! I bet some`, 310, 330, 502, 28);
-  text(`repair skills would boost the shop's reputation.`, 310, 375, 502, 28);
+  textAlign(LEFT); textStyle(NORMAL);
+  textSize(19); textLeading(29);
+  text("My antique vase shattered! I bought a new one, but thought I'd donate this old one to the shop.", 310, 190, 502, 65);
+  text("Would you like to try restoring it?", 310, 285, 502, 30);
+  text("If you can fix it, it's yours! I bet those repair skills would boost the shop's reputation.", 310, 332, 502, 65);
   pawnButton("I'll take a stab at it", 312, 489, 152, true, color(70,120,65));
   pawnButton('Not today', 651, 489, 152, true, color(156,63,52));
 }
@@ -1488,7 +1460,7 @@ function pawnPortrait() {
 // New trade board interactions; all unrelated input still uses existing handler.
 function handleCustomerClick() {
   if (pawnIntroType) {
-    if (pawnHit(333,412,198,36)) pawnCloseIntro();
+    if (pawnHit(333,454,198,36)) pawnCloseIntro();
     return;
   }
   if (poshOfferActive) {
@@ -1609,7 +1581,13 @@ function suspiciousTradeConsequence() {
   const group = random(groups);
   pawnRelationship[group.type] = constrain(pawnRelationship[group.type] - 5, 0, 100);
   reputationNotice = 'Your reputation among the ' + group.name + ' has declined...';
-  reputationNoticeUntil = millis() + 3000;
+  reputationNoticeUntil = millis() + 4000;
+}
+
+// Reuse the tutorial's letter-by-letter reveal for brief notices.
+function typedNotice(message, startedAt) {
+  const letters = constrain(floor((millis() - startedAt) / 23) + 1, 0, message.length);
+  return message.slice(0, letters);
 }
 
 function drawReputationNotice() {
@@ -1621,7 +1599,7 @@ function drawReputationNotice() {
   textAlign(CENTER);
   textStyle(NORMAL);
   textSize(16);
-  text(reputationNotice, 432, 145);
+  text(typedNotice(reputationNotice, reputationNoticeUntil - 4000), 432, 145);
   pop();
 }
 
@@ -1806,9 +1784,9 @@ function handleShopClick() {
     const step = tutorialTradesServed;
     // Keep the required trade buttons genuinely inactive, not merely gray.
     if (step <= 1 && (pawnHit(481,489,152,36) || pawnHit(651,489,152,36))) return;
-    if (step === 2 && (pawnHit(651,489,152,36) ||
-        (!shopBargained && pawnHit(312,489,152,36)))) return;
-    if (step === 3 && !pawnHit(651,489,152,36)) return;
+    if (step === 2 && !pawnHit(651,489,152,36)) return;
+    if (step === 3 && !shopBargained &&
+        (pawnHit(312,489,152,36) || pawnHit(651,489,152,36))) return;
     if (step === 4 && !shopBargained &&
         (pawnHit(312,489,152,36) || pawnHit(651,489,152,36))) return;
   }
@@ -1833,8 +1811,8 @@ function handleShopClick() {
     return;
   }
   if (!showIntro && !showReceipt && !gameOver && !closing && !showBudgetWarning) {
-    if (pawnHit(328, 12, 150, 32)) { shopOpenMenu("people"); return; }
-    if (pawnHit(488, 12, 140, 32)) { shopOpenMenu("upgrades"); return; }
+    if (pawnHit(328, 12, 128, 32)) { shopOpenMenu("people"); return; }
+    if (pawnHit(466, 12, 128, 32)) { shopOpenMenu("upgrades"); return; }
   }
   if (pawnTradeActive() && !gamePaused && !showBag &&
       pawnVisitor.type !== 'Wholesaler' && !shopBargained &&
@@ -2213,6 +2191,7 @@ let phonePending = '';  // 'hello', 'upgrades', 'rentReveal', 'rent'
 let phoneCall = '';     // active call panel
 let phoneSeen = {hello:false, upgrades:false, rentReveal:false};
 let helloPage = 0;
+let welcomeCallCompleted = false;
 let phoneSelected = [];
 let phoneSavedPause = false;
 let phoneHint = '';
@@ -2260,6 +2239,10 @@ function phoneCheckEvents() {
 }
 
 function phoneEndCall() {
+  if (phoneCall === 'hello') {
+    welcomeCallCompleted = true;
+    tutorialWelcomeStartedAt = millis();
+  }
   phonePending = '';
   phoneCall = '';
   phoneSelected = [];
@@ -2344,6 +2327,7 @@ function nextInspectorResponse(grade) {
 // The latest grade changes tomorrow's customer quota, not today's.
 function recordInspectionResult(correctAnswers) {
   if (!Number.isInteger(correctAnswers) || correctAnswers < 0 || correctAnswers > 5) return;
+  inspectorGradeAcknowledged = false;
   latestInspectionGrade = correctAnswers === 5 ? 'A' :
                           correctAnswers >= 3 ? 'B' : 'C';
   if (inspectorPhase === 'awaiting') {
@@ -2393,43 +2377,73 @@ function drawInspectorArrivalNotice() {
   textAlign(CENTER);
   textStyle(NORMAL);
   textSize(17);
-  text('A SPECIAL GUEST HAS ARRIVED...', 432, 145);
+  text(typedNotice('A SPECIAL GUEST HAS ARRIVED...', inspectorArrivalNoticeUntil - 3000), 432, 145);
   pop();
 }
 
 function drawInspectorNotice() {
-  if (!inspectorPhase || inspectorPhase === 'entering' || inspectorPhase === 'leaving') return;
+  if (!inspectorPhase || inspectorPhase === 'entering' ||
+      inspectorPhase === 'leaving' || inspectorPhase === 'awaiting') return;
+
+  // Match the Posh Patron's special trade: portrait on the left, dialogue on the right.
   push();
   noStroke();
-  fill(0, 0, 0, 175);
+  fill(0, 0, 0, 158);
   rect(0, 0, width, height);
-  pixelBoard(94, 78, 676, 425);
-  fill(65, 40, 28);
+
+  pawnPanel(22, 95, 248, 458);
+  if (pawnPortraits.Alex) image(pawnPortraits.Alex, 37, 110, 218, 218);
+  fill(63, 40, 30);
+  textAlign(LEFT);
+  textStyle(NORMAL);
+  textSize(23);
+  text("ALEX", 43, 358);
+  textSize(17);
+  text("PAWN SHOP PATROLLER", 43, 388, 205, 62);
+
+  pawnPanel(280, 95, 562, 458);
+  fill(63, 40, 30);
   textAlign(CENTER);
   textStyle(BOLD);
-  textSize(23);
-  text('PAWN SHOP PATROLLER', 432, 133);
+  textSize(22);
+  const inspectionTitle = inspectorPhase === 'result'
+    ? "INSPECTION RESULTS" : "TIME FOR AN INSPECTION";
+  text(inspectionTitle, 310, 142, 502, 34);
+  textAlign(LEFT);
   textStyle(NORMAL);
-  textSize(16);
+  textSize(19);
+  textLeading(28);
 
   if (inspectorPhase === 'intro') {
-    const greeting = !inspectorHasIntroduced ?
-      "Good day! I'm Alex, the local shop inspector. I'll be stopping by from time to time to make sure everything is in order. Inspection ratings are very important for businesses like yours. A good rating attracts more customers, while a poor one might drive them away. Now then, let's see how well you've been running this little shop!" :
-      "Well, well! It's time for another inspection. Let's see if you've been keeping this place in good shape!";
-    text(greeting, 146, 185, 572, 212);
-    drawButton('BEGIN INSPECTION', 302, 439, 260, true, color(70, 115, 65));
-  } else if (inspectorPhase === 'awaiting') {
-    text("The inspector is ready.", 146, 227, 572, 30);
-    text("Memory game coming soon.", 146, 276, 572, 35);
-    textSize(13);
-    text("For now, continue without a grade.", 146, 338, 572, 30);
-    drawButton('CONTINUE', 302, 439, 260, true, color(70, 115, 65));
+    if (!inspectorHasIntroduced) {
+      text("Good day! I'm Alex, the local shop inspector. I'll stop by from time to time to make sure everything is in order.", 310, 187, 502, 92);
+      text("Inspection ratings matter for shops like this. A good rating attracts more customers, while a poor one might drive them away.", 310, 284, 502, 96);
+      text("Now, let's see how you've been running this shop!", 310, 390, 502, 64);
+    } else {
+      text("Well, well! It's time for another inspection.", 310, 205, 502, 70);
+      text("Let's see if you've been keeping this place in good shape!", 310, 292, 502, 100);
+    }
+    pawnButton("BEGIN INSPECTION", 431, 489, 260, true, color(70, 115, 65));
   } else if (inspectorPhase === 'result') {
-    textStyle(BOLD); textSize(22);
-    text('INSPECTION GRADE: ' + latestInspectionGrade, 432, 189);
-    textStyle(NORMAL); textSize(16);
-    text(inspectorResultText, 146, 225, 572, 205);
-    drawButton('CONTINUE', 302, 439, 260, true, color(70, 115, 65));
+    textAlign(CENTER);
+    textStyle(BOLD);
+    textSize(22);
+    text("INSPECTION GRADE: " + latestInspectionGrade, 310, 197, 502, 34);
+    textAlign(LEFT);
+    textStyle(NORMAL);
+    textSize(19);
+    textLeading(27);
+    const sentences = inspectorResultText.match(/[^.!?]+[.!?]+|[^.!?]+$/g) || [inspectorResultText];
+    let firstParagraph = "";
+    let remainingSentences = sentences.slice();
+    while (remainingSentences.length && firstParagraph.length < 45) {
+      firstParagraph += remainingSentences.shift();
+    }
+    const spacedResponse = remainingSentences.length
+      ? firstParagraph.trim() + "\n\n" + remainingSentences.join("").trim()
+      : inspectorResultText;
+    text(spacedResponse, 310, 248, 502, 218);
+    pawnButton("CONTINUE", 431, 489, 260, true, color(70, 115, 65));
   }
   pop();
 }
@@ -2441,7 +2455,9 @@ function advanceInspectorNotice() {
     showMemoryGame();
     return;
   }
-  if (inspectorPhase !== 'awaiting' && inspectorPhase !== 'result') return;
+  // Complete the memory game before allowing Alex to leave.
+  if (inspectorPhase !== 'result') return;
+  inspectorGradeAcknowledged = true;
   inspectorPhase = 'leaving';
   inspectorResultText = '';
   if (inspectorNoticePausedGame && gamePaused) togglePause();
@@ -2682,9 +2698,10 @@ function phoneDrawCall() {
       text(`It's been my pride and joy for 70 years.`, 190, 205);
       text(`Boy oh boy, if I could withstand those long hours, ${"\n"}you bet I would.`, 190, 240);
       text(`But that's a job for a spry young whippersnapper ${"\n"}like yourself.`, 190, 295);
-      text(`I'll be checking in from time to time!`, 190, 375);
+      text("How about you run the shop for a month—28 days?", 190, 360);
+      text("I'll be checking in from time to time!", 190, 394);
     }
-    drawButton('CONTINUE', 330, 443, 204, true, color(70, 115, 65));
+    drawButton('CONTINUE', 330, 433, 204, true, color(70, 115, 65));
 
   } else if (phoneCall === 'upgrades') {
     fill(66, 43, 29);
@@ -2704,7 +2721,7 @@ function phoneDrawCall() {
     textSize(21);
     text('SHOP UPGRADES', width / 2, 374);
     textStyle(NORMAL);
-    drawButton('CONTINUE', 330, 443, 204, true, color(70, 115, 65));
+    drawButton('CONTINUE', 330, 433, 204, true, color(70, 115, 65));
 
   
   } else if (phoneCall === 'rentReveal') {
@@ -2732,7 +2749,7 @@ function phoneDrawCall() {
 
     textStyle(NORMAL);
 
-    drawButton("CONTINUE", 330, 443, 204,
+    drawButton("CONTINUE", 330, 433, 204,
               true, color(70, 115, 65));
   } else if (phoneCall === 'rent') {
     let rent = phoneRentAmount(dayNumber);
@@ -2803,7 +2820,7 @@ function mousePressed() {
   if (tetrisOverlay && !tetrisOverlay.hidden) return;
   if (inspectorPhase) {
     if (inspectorPhase === 'intro' || inspectorPhase === 'awaiting' || inspectorPhase === 'result') {
-      if (pawnHit(302, 439, 260, 32)) advanceInspectorNotice();
+      if (pawnHit(431, 489, 260, 36)) advanceInspectorNotice();
     }
     return;
   }
@@ -2886,10 +2903,10 @@ function mousePressed() {
         phoneCall = "supplierOrder";
         return;
       }
-    } else if (pawnHit(330, 443, 204, 32) && phoneCall === "hello" && helloPage === 0) {
+    } else if (pawnHit(330, 433, 204, 32) && phoneCall === "hello" && helloPage === 0) {
       helloPage = 1;
       return;
-    } else if (pawnHit(330, 443, 204, 32) && phoneCall !== "orderConfirmed") {
+    } else if (pawnHit(330, 433, 204, 32) && phoneCall !== "orderConfirmed") {
       phoneEndCall();
       return;
     }
@@ -2960,6 +2977,7 @@ function testJumpToDay(day) {
     tutorialBagSeen = false;
     tutorialTypedText = "";
     tutorialTextStartedAt = 0;
+    tutorialWelcomeStartedAt = millis();
   }
   nextInspectionDay = day >= 3 ? day : 3;
   inspectorPhase = '';
@@ -2978,7 +2996,10 @@ function testJumpToDay(day) {
   phonePaidToday = false;
   dailyLog = [];
   // Prior announcements are logically unlocked when jumping beyond them.
-  if (day > 1) phoneSeen.hello = true;
+  if (day > 1) {
+    phoneSeen.hello = true;
+    welcomeCallCompleted = true;
+  }
   if (day > 3) phoneSeen.upgrades = true;
   if (day > 7) phoneSeen.rentReveal = true;
   if (day === 3) phoneSeen.upgrades = false; // Test the unlock call.
@@ -3113,9 +3134,12 @@ function draw() {
     
     drawCharacters();
     
-    drawInfo();
-    drawClock();
-    drawBagIcon();
+    // Show gameplay HUD only after Pat's first welcome call has ended.
+    if (!showIntro && welcomeCallCompleted) {
+      drawInfo();
+      drawClock();
+      drawBagIcon();
+    }
 
     if (closing) {
         fill(255);
@@ -3141,7 +3165,7 @@ function draw() {
     }
   if(pawnTradeActive()) pawnTradeBoard();
   // Keep the bag icon visible above the customer trading panel.
-  if (pawnTradeActive() && !showBag && !shopMenu) drawBagIcon();
+  if (welcomeCallCompleted && pawnTradeActive() && !showBag && !shopMenu) drawBagIcon();
     pawnStartIntroIfNeeded();
   if (poshGamePending && pawnTradeActive() && !pawnIntroType) {
     showPoshOffer();
@@ -3151,7 +3175,7 @@ function draw() {
   }
   if (pawnIntroType) pawnDrawIntro();
 
-  if (!showIntro && !showReceipt && !gameOver && !pawnIntroType) {
+  if (!showIntro && welcomeCallCompleted && !gameOver && !pawnIntroType) {
     shopDrawTabs();
       if (shopMenu === "people") shopDrawPeople();
       if (shopMenu === "upgrades") shopDrawUpgrades();
@@ -3166,7 +3190,7 @@ function draw() {
       stroke(30, 20, 15);
       strokeWeight(3);
       fill(255);
-      text(customerReaction, width / 2, height - 75);
+      text(typedNotice(customerReaction, customerReactionUntil - 3000), width / 2, height - 75);
       pop();
     }
 
@@ -3206,7 +3230,7 @@ function draw() {
       if (phoneCall) phoneDrawCall();
       if (phoneHint && millis() < phoneHintUntil && !phoneCall && !phonePending) {
         fill(65,40,28); rect(540,351,310,34);
-        fill(255); textAlign(CENTER); textSize(14); text(phoneHint,695,373);
+        fill(255); textAlign(CENTER); textSize(14); text(typedNotice(phoneHint, phoneHintUntil - 2200),695,373);
       }
   }
 
@@ -3217,7 +3241,7 @@ function draw() {
     textAlign(CENTER);
     textStyle(BOLD);
     textSize(19);
-    text("DELIVERY ARRIVED!", 432, 121);
+    text(typedNotice("DELIVERY ARRIVED!", deliveryNoticeUntil - 3000), 432, 121);
     textStyle(NORMAL);
   }
 
@@ -3225,10 +3249,22 @@ function draw() {
   if (showBag) drawBag();
   drawReputationNotice();
   drawInspectorArrivalNotice();
-  if (latestInspectionGrade) {
+  // Show the grade as soon as Alex's result dialogue is dismissed.
+  // Keep it behind every popup, but allow it while Alex is walking out.
+  const gradeBlocked = showIntro || gameOver || showBudgetWarning ||
+    showBag || shopMenu || phonePending || phoneCall ||
+    pawnTradeActive() || pawnIntroType || poshOfferActive ||
+    (inspectorPhase && inspectorPhase !== 'leaving') ||
+    tetrisPromptActive || bankruptcyNotice;
+  if (latestInspectionGrade && inspectorGradeAcknowledged && !gradeBlocked) {
     push();
-    fill(65, 40, 28); textSize(12); textAlign(CENTER);
-    text('INSPECTION: ' + latestInspectionGrade, 763, 83);
+    pixelBoard(607, 10, 55, 55);
+    fill(65, 40, 28);
+    textFont("Pixelify Sans");
+    textAlign(CENTER);
+    textStyle(BOLD);
+    textSize(29);
+    text(latestInspectionGrade, 634.5, 48);
     pop();
   }
   drawTestPanel();
@@ -3257,6 +3293,7 @@ function restartGame() {
   nextMorning = 0;
   nextInspectionDay = 3;
   latestInspectionGrade = '';
+  inspectorGradeAcknowledged = false;
   inspectorPhase = '';
   inspectorActor = null;
   inspectorArrivalNoticeUntil = 0;
@@ -3329,6 +3366,7 @@ function restartGame() {
   tutorialBagSeen = false;
   tutorialTypedText = "";
   tutorialTextStartedAt = 0;
+  tutorialWelcomeStartedAt = 0;
   shopMessage = "";
   shopBargained = false;
   shopTradeMultiplier = 1;
@@ -3351,6 +3389,7 @@ function restartGame() {
   
   phonePending='';phoneCall='';phoneSelected=[];
   phoneSeen={hello:false, upgrades:false, rentReveal:false};
+  welcomeCallCompleted = false;
   phoneSavedPause=false;phonePaidToday=false;
 }
 
@@ -3397,7 +3436,7 @@ function generateCustomer(forcedVisitorType) {
 
   // Day 1 uses guaranteed trades so every basic action can be learned in order.
   const tutorialStep = dayNumber === 1 && !forcedVisitorType ? tutorialTradesServed : -1;
-  const tutorialNames = ["Mia", "Noah", "Emma", "Leo", "Rose"];
+  const tutorialNames = ["Mia", "Noah", "Leo", "Emma", "Rose"];
   pawnVisitor = tutorialStep >= 0 && tutorialStep < 5
     ? pawnProfiles.find(profile => profile.name === tutorialNames[tutorialStep])
     : pawnPickVisitor(forcedVisitorType);
@@ -3405,8 +3444,8 @@ function generateCustomer(forcedVisitorType) {
     const scriptedTrades = [
       {type:"sell", items:[0], category:"Daily", budget:100, markup:1},
       {type:"category", items:[], category:"Daily", budget:100, markup:1.15},
-      {type:"sell", items:[4,5], category:"Tools", budget:100, markup:1},
       {type:"category", items:[], category:"Tools", budget:5, markup:1},
+      {type:"sell", items:[4,5], category:"Tools", budget:100, markup:1},
       {type:"sell", items:[1], category:"Daily", budget:100, markup:1}
     ];
     currentTrade = {...scriptedTrades[tutorialStep], items:[...scriptedTrades[tutorialStep].items]};
@@ -3479,6 +3518,8 @@ function generateCustomer(forcedVisitorType) {
     // Small, predictable relationship discount/bonus for sales.
     currentTrade.markup *= 1 + (score - 50) * 0.002;
   }
+  // Count down as a customer enters, while still allowing their trade to finish.
+  if (customersLeft > 0) customersLeft--;
 }
 
 
@@ -3893,7 +3934,7 @@ function pawnTradeBoard() {
     }
     let selectedCount = wholesale ? selectedWholesaleItems.length : items.length;
     let canBuy = selectedCount > 0 && money >= total;
-    if (dayNumber === 1 && (tutorialTradesServed === 2 || tutorialTradesServed === 4) && !shopBargained) canBuy = false;
+    if (dayNumber === 1 && (tutorialTradesServed === 3 || tutorialTradesServed === 4) && !shopBargained) canBuy = false;
     pawnButton(wholesale ? 'BUY SELECTED' : 'BUY ALL',312,489,152,canBuy,color(60,112,67));
   } else {
     const unlimitedBuyer = pawnVisitor.type === 'Wholesaler';
@@ -3938,15 +3979,15 @@ function pawnTradeBoard() {
       pawnButton('>', 710, 442, 55, buyerItemPage < buyerPages - 1, color(98,67,46));
     }
     pawnButton('SELL',312,489,152,selectedItems.length>0 &&
-      !(dayNumber === 1 && tutorialTradesServed === 3),color(60,112,67));
+      !(dayNumber === 1 && tutorialTradesServed === 2),color(60,112,67));
   }
   const dayOneStep = dayNumber === 1 ? tutorialTradesServed : -1;
-  const bargainVisible = dayOneStep < 0 || dayOneStep >= 2;
+  const bargainVisible = dayOneStep < 0 || dayOneStep >= 3;
   if (bargainVisible) pawnButton('BARGAIN',481,489,152,
-    !shopBargained && pawnVisitor.type !== 'Wholesaler' && dayOneStep !== 3,
+    !shopBargained && pawnVisitor.type !== 'Wholesaler',
     color(98,67,46));
-  pawnButton('REJECT',651,489,152,(dayOneStep < 0 || dayOneStep >= 3) &&
-    !(dayOneStep === 4 && !shopBargained),color(156,63,52));
+  pawnButton('REJECT',651,489,152,(dayOneStep < 0 || dayOneStep >= 2) &&
+    !((dayOneStep === 3 || dayOneStep === 4) && !shopBargained),color(156,63,52));
   { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(pawnVisitor.type === 'Wholesaler' ? 10 : 12); text(pawnMessage, 310, 468); };
 
 
@@ -3970,8 +4011,9 @@ function shopTryBargain() {
     (score >= 85 ? 0.70 : score >= 65 ? 0.50 : score >= 35 ? 0.35 : score >= 15 ? 0.20 : 0.05) :
     constrain(chance + (adjustments[pawnVisitor.type] || 0), 0, 1);
 
-  // Day 1's fifth visitor demonstrates a failed bargain before free choice resumes.
-  let succeeded = dayNumber === 1 && tutorialTradesServed === 4 ? false : random() < chance;
+  // Day 1 demonstrates both outcomes: success with the fourth customer, failure with the fifth.
+  let succeeded = dayNumber === 1 && tutorialTradesServed === 3 ? true :
+                  dayNumber === 1 && tutorialTradesServed === 4 ? false : random() < chance;
   if (succeeded) {
     const improvement = pawnVisitor.type === 'Bargain' ? 0.20 : 0.10;
     if (currentTrade.type === "sell") shopTradeMultiplier *= 1 - improvement;
@@ -3980,7 +4022,7 @@ function shopTryBargain() {
     pawnChangeScore(-3);
     reputationNotice = 'Your reputation among the ' +
       reputationGroupName(pawnVisitor.type) + ' has declined...';
-    reputationNoticeUntil = millis() + 3000;
+    reputationNoticeUntil = millis() + 4000;
   }
   pawnConversation = chooseCustomerLine(succeeded ? 'bargainYes' : 'bargainNo');
   pawnMessage = succeeded ? 'BARGAIN ACCEPTED' : 'BARGAIN REJECTED';
@@ -3991,7 +4033,7 @@ function finishTrade() {
 
   if (pawnVisitor) {
     customerReaction = chooseCustomerLine(customerDialogueOutcome);
-    customerReactionUntil = millis() + 2200;
+    customerReactionUntil = millis() + 3000;
   }
   customerDialogueOutcome = 'rejected';
 
@@ -4004,10 +4046,10 @@ function finishTrade() {
 
 function shopDrawTabs() {
 
-  if (showIntro || showReceipt || gameOver || closing) return;
-  drawButton('REPUTATION', 328, 12, 150, true, color(98, 67, 46));
+  if (showIntro || gameOver) return;
+  drawButton('REPUTATION', 328, 12, 128, true, color(98, 67, 46));
   if (dayNumber >= 3 && phoneSeen.upgrades && !phonePending && !phoneCall) {
-    drawButton('UPGRADES', 488, 12, 140, true, color(98, 67, 46));
+    drawButton('UPGRADES', 466, 12, 128, true, color(98, 67, 46));
   }
 }
 

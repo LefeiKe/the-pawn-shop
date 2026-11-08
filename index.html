@@ -58,10 +58,33 @@
             width: 100%;
         }
 
-        /* Memory Game uses an 800 x 500 canvas */
+        /* Memory game covers the shop; its 800 x 500 canvas is centered inside. */
+        #memory-game-window {
+            width: 100%;
+            height: 100%;
+            padding: 0;
+            border: 0;
+            box-shadow: none;
+            background: #000;
+        }
+
         #memory-game-frame {
-            width: 800px;
-            height: 500px;
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Abdullah's 864 x 576 canvas already fills the shop viewport. */
+        #tetris-game-window {
+            width: 864px;
+            height: 576px;
+            padding: 0;
+            border: 0;
+            box-shadow: none;
+        }
+
+        #tetris-game-frame {
+            width: 864px;
+            height: 576px;
         }
 
         #close-posh-game {
@@ -96,7 +119,7 @@
         <div id="posh-game-overlay" hidden>
             <div id="posh-game-window">
                 <button id="close-posh-game" type="button">CLOSE GAME</button>
-                <iframe id="posh-game-frame" data-src="vasePuzzle/index.html"
+                <iframe id="posh-game-frame" data-src="vase-puzzle/index.html"
                     title="Posh patron vase puzzle game"></iframe>
             </div>
         </div>
@@ -108,16 +131,16 @@
                     title="Storage Reorganization challenge"></iframe>
             </div>
         </div>
-    </div>
 
-    <!-- Inspector Memory Game -->
-    <div id="memory-game-overlay" hidden>
-        <div id="memory-game-window">
-            <iframe
-                id="memory-game-frame"
-                data-src="memory-mini-game/memory-index.html"
-                title="Inspector Memory Game">
-            </iframe>
+        <!-- Inspector Memory Game: anchored to the shop canvas. -->
+        <div id="memory-game-overlay" hidden>
+            <div id="memory-game-window">
+                <iframe
+                    id="memory-game-frame"
+                    data-src="memory-mini-game/memory-index.html"
+                    title="Inspector Memory Game">
+                </iframe>
+            </div>
         </div>
     </div>
     
