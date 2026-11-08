@@ -211,10 +211,10 @@ let pastItemsBought = 0;
 let pastItemsSold = 0;
 const FINAL_DAY = 28;
 
-// Count purchased upgrades and up to three storage reorganization milestones.
+// Count only upgrades purchased from the shop; Tetris capacity rewards are separate.
 function unlockedUpgradeCount() {
   return Number(priceCatalogOwned) + shelvesLevel + advertisingLevel +
-    supplierOwned.filter(Boolean).length + min(3, floor(storageBonus / 3));
+    wealthyClienteleLevel + supplierOwned.filter(Boolean).length;
 }
 
 function chooseFinalEnding() {
@@ -336,6 +336,11 @@ async function setup() {
   memoryGameOverlay = document.getElementById("memory-game-overlay");
   memoryGameFrame = document.getElementById("memory-game-frame");
   window.addEventListener("message", handleMemoryGameMessage);
+
+  // Connect Storage Tetris iframe
+  tetrisOverlay = document.getElementById("tetris-game-overlay");
+  tetrisFrame = document.getElementById("tetris-game-frame");
+  window.addEventListener("message", handleStorageTetrisMessage);
 
   shopBg = await loadImage("images/shop.png");
   vaseSpriteSheet = await loadImage("vasePuzzle/images/vases.png");
@@ -695,9 +700,7 @@ function togglePause() {
 
 // Day 1 contextual walkthrough. It never pauses play or captures input.
 function dayOneTutorialHint() {
-  if (showReceipt) return "DAY COMPLETE. Review your purchases and sales, then close the receipt.";
-  if (showBag) return "Your BAG shows your stock and purchase prices. Click outside to close.";
-  if (closing) return "All customers are served. Your daily receipt is coming.";
+  if (showReceipt || showBag) return "";
   const step = tutorialTradesServed;
   if (pawnTradeActive()) {
     if (step === 0) return "This customer wants to sell an item. Buying costs money, but you can resell it for profit.";
@@ -722,6 +725,7 @@ function drawDayOneTutorial() {
       pawnIntroType || poshOfferActive || (poshGameOverlay && !poshGameOverlay.hidden) ||
       (tetrisOverlay && !tetrisOverlay.hidden) || tetrisPromptActive || shopMenu ||
       inspectorPhase || bankruptcyNotice) return;
+  if (showBag) tutorialBagSeen = true;
   const hint = dayOneTutorialHint();
   if (!hint) return;
   if (hint !== tutorialTypedText) {
@@ -1050,7 +1054,7 @@ function availableItems() {
       let item = products[inventory[i].product];
 
       // Only show items from the requested category
-      if (item.category === currentTrade.category) {
+      if (pawnVisitor?.type === 'Wholesaler' || item.category === currentTrade.category) {
           result.push(i);
       }
   }
@@ -1282,17 +1286,12 @@ let pawnVisitor = null;
 let pawnMessage = '';
 let pawnRelationship = {Regular:50,Bargain:50,Collector:50,Suspicious:50};
 let pawnReady = false;
-let pawnIntroSeen = {Regular:false,Bargain:false,Collector:false,Suspicious:false,Wholesaler:false};
+let pawnIntroSeen = {Bargain:false,Collector:false,Suspicious:false,Wholesaler:false};
 let pawnIntroType = '';
 let pawnIntroPausedGame = false;
 let pawnConversation = '';
 const pawnTypeNames = {Regular:"PAL OF PAT'S",Bargain:'PENNY PINCHER',Collector:'POSH PATRON',Suspicious:'PRECARIOUS PURVEYORS',Wholesaler:'PALLET PEDDLER',Inspector:'PAWN SHOP PATROLLER'};
 const pawnTypeExplanations = {
-  Regular: [
-    "PALS OF PAT'S",
-    "Friendly faces who stop by for everyday treasures. They appreciate a fair deal and a shopkeeper they can trust.",
-    "Their offers vary, but a good reputation makes trading with them easier."
-  ],
   Bargain: [
     "PENNY PINCHERS",
     "Every penny counts for these sharp-eyed shoppers. Winning them over might take a little extra charm.",
@@ -1354,6 +1353,8 @@ function pawnDrawPoshOffer() {
 function pawnStartIntroIfNeeded() {
   if (!pawnTradeActive() || pawnIntroType || !pawnVisitor) return;
   let t=pawnVisitor.type;
+  // Only special customer types have introduction screens.
+  if (t === 'Regular') return;
   if (pawnIntroSeen[t] === false) {
     pawnIntroSeen[t] = true;
     pawnIntroType = t;
@@ -1374,44 +1375,48 @@ let pawnRows = []; // [{index,x,y,w,h}] - current clickable buyer rows
 // can continue visiting without a limit.
 // Inspector is reserved for Sara's future mini-game.
 let pawnUnlockedTypes = {Regular:true, Bargain:false, Collector:false, Suspicious:false, Wholesaler:false};
-let pawnNewTypeDay = -1;
+// Introduce exactly one new customer type on each of Days 2–5.
+const pawnTypeSchedule = {2:'Bargain', 3:'Suspicious', 4:'Collector', 5:'Wholesaler'};
 function pawnPickVisitor(forcedType) {
-  let types = ['Regular', 'Bargain', 'Collector', 'Suspicious', 'Wholesaler'];
+  const types = ['Regular', 'Bargain', 'Collector', 'Suspicious', 'Wholesaler'];
   if (forcedType) {
-    let choices = pawnProfiles.filter(p => p.type === forcedType);
+    const choices = pawnProfiles.filter(p => p.type === forcedType);
     if (choices.length) return random(choices);
   }
-  let weights = [60, 20, 12, 8, 12];
-  let allowed = [];
+
+  // Keep earlier types available even when jumping directly to a day in dev mode.
+  for (const [unlockDay, type] of Object.entries(pawnTypeSchedule)) {
+    if (dayNumber > Number(unlockDay)) pawnUnlockedTypes[type] = true;
+  }
+
+  // The first ordinary visitor on the introduction day must be the new type.
+  const newType = pawnTypeSchedule[dayNumber];
+  if (newType && !pawnUnlockedTypes[newType]) {
+    pawnUnlockedTypes[newType] = true;
+    const choices = pawnProfiles.filter(p => p.type === newType);
+    return random(choices);
+  }
+
+  const weights = [60, 20, 12, 8, 12];
+  const allowed = [];
   let total = 0;
   for (let i = 0; i < types.length; i++) {
-    let type = types[i];
-    let canVisit = (type !== 'Wholesaler' || dayNumber >= 5) &&
-      (pawnUnlockedTypes[type] ||
-       (dayNumber > 1 && pawnNewTypeDay !== dayNumber));
-    if (canVisit) {
-      allowed.push({type:type, weight:weights[i]});
+    if (pawnUnlockedTypes[types[i]]) {
+      allowed.push({type:types[i], weight:weights[i]});
       total += weights[i];
     }
   }
 
   let roll = random(total);
   let selected = 'Regular';
-  for (let entry of allowed) {
+  for (const entry of allowed) {
     if (roll < entry.weight) {
       selected = entry.type;
       break;
     }
     roll -= entry.weight;
   }
-
-  // Lock out OTHER unseen types for the rest of this day.
-  if (!pawnUnlockedTypes[selected]) {
-    pawnUnlockedTypes[selected] = true;
-    pawnNewTypeDay = dayNumber;
-  }
-  let choices = pawnProfiles.filter(p => p.type === selected);
-  return random(choices);
+  return random(pawnProfiles.filter(p => p.type === selected));
 }
 function pawnHit(x,y,w,h) {
   return mouseX >= x && mouseX <= x+w && mouseY >= y && mouseY <= y+h;
@@ -1511,6 +1516,15 @@ function handleCustomerClick() {
       return;
     }
   } else {
+    let buyerPages = max(1, ceil(availableItems().length / 4));
+    if (buyerPages > 1 && pawnHit(540,442,55,36) && buyerItemPage > 0) {
+      buyerItemPage--;
+      return;
+    }
+    if (buyerPages > 1 && pawnHit(710,442,55,36) && buyerItemPage < buyerPages - 1) {
+      buyerItemPage++;
+      return;
+    }
     for(let row of pawnRows) {
       if(pawnHit(row.x,row.y,row.w,row.h)) {
         let pos=selectedItems.indexOf(row.index);
@@ -1521,7 +1535,7 @@ function handleCustomerClick() {
     }
     if(pawnHit(312,489,152,36)) {
       if(!selectedItems.length){pawnMessage='SELECT AN ITEM FIRST';return;}
-      if(selectedTotal()>currentTrade.budget)showBudgetWarning=true;
+      if(pawnVisitor.type !== 'Wholesaler' && selectedTotal()>currentTrade.budget)showBudgetWarning=true;
       else completeBuyerSale();
       return;
     }
@@ -1542,11 +1556,13 @@ let shopMenu = "";             // "people", "upgrades", or ""
 let shopMenuPaused = false;
 let shelvesLevel = 0;
 let advertisingLevel = 0;
+let wealthyClienteleLevel = 0;
 let priceCatalogOwned = false;
 let supplierOwned = [false, false, false];
 let upgradePage = 0;
 let shelvesPrices = [100, 220, 450];
 let advertisingPrices = [100, 200, 400];
+let wealthyClientelePrices = [120, 260, 480];
 let supplierNames = ["TIPSY BARREL", "FLASHBACK", "RUSTY WRENCH"];
 let supplierProducts = ["Wine", "Camera", "Drill"];
 let supplierPrices = [150, 220, 180];
@@ -1554,6 +1570,7 @@ let shopMessage = "";
 let shopBargained = false;
 let shopTradeMultiplier = 1;
 let selectedWholesaleItems = []; // Positions within the Wholesaler's five offered items.
+let buyerItemPage = 0;
 let reputationNotice = '';
 let reputationNoticeUntil = 0;
 
@@ -1568,6 +1585,16 @@ function sellerSelectedTotal() {
 }
 
 // Only successful Suspicious trades harm a random OTHER customer group's trust.
+function reputationGroupName(type) {
+  const names = {
+    Regular: "Pals of Pat's",
+    Bargain: "Penny Pinchers",
+    Suspicious: "Precarious Purveyors",
+    Collector: "Posh Patrons"
+  };
+  return names[type] || "customers";
+}
+
 function suspiciousTradeConsequence() {
   if (!pawnVisitor || pawnVisitor.type !== 'Suspicious') return;
   const groups = [
@@ -1583,7 +1610,7 @@ function suspiciousTradeConsequence() {
 
 function drawReputationNotice() {
   if (!reputationNotice || millis() >= reputationNoticeUntil ||
-      pawnTradeActive() || showIntro || showReceipt || gameOver) return;
+      showIntro || showReceipt || gameOver) return;
   push();
   pixelBoard(123, 106, 618, 62);
   fill(166, 93, 88);
@@ -1642,7 +1669,7 @@ function shopMenuCard(x, y, w, h) {
 function shopDrawPeople() {
   noStroke(); fill(0, 0, 0, 175); rect(0, 0, width, height);
   pixelBoard(116, 57, 632, 462);
-  { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(22); text("CUSTOMER REPUTATION", 145, 102); };
+  { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(22); text("REPUTATION AMONG CUSTOMERS", 145, 102); };
   { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(14); text("A better reputation increases bargaining success rates.", 145, 131); };
 
   let groups = ["Regular", "Bargain", "Collector", "Suspicious"];
@@ -1679,6 +1706,11 @@ function getUpgradeList() {
     "A moderate boost of customers is attracted to your shop each day.",
     "A large boost of customers is attracted to your shop each day."
   ];
+  let wealthyDescriptions = [
+    "Attract wealthier customers with slightly higher budgets.",
+    "Attract wealthier customers with moderately increased budgets.",
+    "Attract wealthy customers with significantly higher budgets."
+  ];
 
   if (shelvesLevel < 3) available.push({
     name:"DISPLAY SHELVES " + roman[shelvesLevel],
@@ -1689,6 +1721,12 @@ function getUpgradeList() {
     name:"ADVERTISING " + roman[advertisingLevel],
     description:advertisingDescriptions[advertisingLevel],
     price:advertisingPrices[advertisingLevel], type:"advertising"
+  });
+
+  if (dayNumber >= 6 && wealthyClienteleLevel < 3) available.push({
+    name:"WEALTHY CLIENTELE " + roman[wealthyClienteleLevel],
+    description:wealthyDescriptions[wealthyClienteleLevel],
+    price:wealthyClientelePrices[wealthyClienteleLevel], type:"wealthy"
   });
 
   let partnerships = [
@@ -1703,6 +1741,7 @@ function getUpgradeList() {
   }
   for (let i = 0; i < shelvesLevel; i++) owned.push({name:"DISPLAY SHELVES " + roman[i]});
   for (let i = 0; i < advertisingLevel; i++) owned.push({name:"ADVERTISING " + roman[i]});
+  for (let i = 0; i < wealthyClienteleLevel; i++) owned.push({name:"WEALTHY CLIENTELE " + roman[i]});
   return available.concat(owned);
 }
 
@@ -1751,6 +1790,7 @@ function shopBuyUpgrade(i) {
   if (upgrade.type === "catalog") priceCatalogOwned = true;
   else if (upgrade.type === "shelves") shelvesLevel++;
   else if (upgrade.type === "advertising") advertisingLevel++;
+  else if (upgrade.type === "wealthy") wealthyClienteleLevel++;
   else if (upgrade.type === "supplier") supplierOwned[upgrade.supplier] = true;
   shopMessage = upgrade.name + " UNLOCKED";
   upgradePage = 0;
@@ -1765,6 +1805,8 @@ function handleShopClick() {
     if (step === 2 && (pawnHit(651,489,152,36) ||
         (!shopBargained && pawnHit(312,489,152,36)))) return;
     if (step === 3 && !pawnHit(651,489,152,36)) return;
+    if (step === 4 && !shopBargained &&
+        (pawnHit(312,489,152,36) || pawnHit(651,489,152,36))) return;
   }
   if (shopMenu !== "") {
     if (shopMenu === "people") {
@@ -3260,14 +3302,14 @@ function restartGame() {
   
   pawnRelationship = {Regular:50,Bargain:50,Collector:50,Suspicious:50};
   pawnVisitor=null;pawnMessage='';pawnRows=[];
-  pawnIntroSeen={Regular:false,Bargain:false,Collector:false,Suspicious:false,Wholesaler:false};
+  pawnIntroSeen={Bargain:false,Collector:false,Suspicious:false,Wholesaler:false};
   pawnIntroType='';pawnIntroPausedGame=false;pawnConversation='';
   pawnUnlockedTypes={Regular:true,Bargain:false,Collector:false,Suspicious:false,Wholesaler:false};
-  pawnNewTypeDay=-1;
 
   
   shopMenu = "";
   shopMenuPaused = false;
+  buyerItemPage = 0;
   storageBonus = 0;
   tetrisIntroduced = false;
   tetrisPurchase = null;
@@ -3275,6 +3317,7 @@ function restartGame() {
   tetrisPromptActive = false;
   shelvesLevel = 0;
   advertisingLevel = 0;
+  wealthyClienteleLevel = 0;
   priceCatalogOwned = false;
   supplierOwned = [false, false, false];
   upgradePage = 0;
@@ -3354,19 +3397,19 @@ function generateCustomer(forcedVisitorType) {
 
   // Day 1 uses guaranteed trades so every basic action can be learned in order.
   const tutorialStep = dayNumber === 1 && !forcedVisitorType ? tutorialTradesServed : -1;
-  const tutorialNames = ["Mia", "Noah", "Emma", "Leo"];
-  pawnVisitor = tutorialStep >= 0 && tutorialStep < 4
+  const tutorialNames = ["Mia", "Noah", "Emma", "Leo", "Rose"];
+  pawnVisitor = tutorialStep >= 0 && tutorialStep < 5
     ? pawnProfiles.find(profile => profile.name === tutorialNames[tutorialStep])
     : pawnPickVisitor(forcedVisitorType);
-  if (tutorialStep >= 0 && tutorialStep < 4) {
+  if (tutorialStep >= 0 && tutorialStep < 5) {
     const scriptedTrades = [
       {type:"sell", items:[0], category:"Daily", budget:100, markup:1},
       {type:"category", items:[], category:"Daily", budget:100, markup:1.15},
       {type:"sell", items:[4,5], category:"Tools", budget:100, markup:1},
-      {type:"category", items:[], category:"Tools", budget:5, markup:1}
+      {type:"category", items:[], category:"Tools", budget:5, markup:1},
+      {type:"sell", items:[1], category:"Daily", budget:100, markup:1}
     ];
     currentTrade = {...scriptedTrades[tutorialStep], items:[...scriptedTrades[tutorialStep].items]};
-    pawnIntroSeen.Regular = true;
   }
   currentCustomer = new Customer(
     pawnVisitor.name, pawnVisitor.type,
@@ -3413,14 +3456,20 @@ function generateCustomer(forcedVisitorType) {
   }
   if (pawnVisitor.type === 'Wholesaler') {
     currentTrade.markup = 0.90;
-    currentTrade.budget = max(250, floor(random(300, 651)));
+    currentTrade.budget = Infinity;
     if (type === 'sell') {
       currentTrade.items = [];
       for (let i = 0; i < 5; i++) currentTrade.items.push(floor(random(12)));
     }
   }
+  // Apply the current Wealthy Clientele tier to buyer budgets only.
+  // Pallet Peddlers have no budget cap and are excluded.
+  if (currentTrade.type === 'category' && pawnVisitor.type !== 'Wholesaler') {
+    currentTrade.budget = floor(currentTrade.budget * [1, 1.15, 1.30, 1.50][wealthyClienteleLevel]);
+  }
   selectedItems = [];
   selectedWholesaleItems = [];
+  buyerItemPage = 0;
 
   shopBargained = false;
   shopTradeMultiplier = pawnVisitor.type === 'Suspicious' ? random(0.80, 0.90) :
@@ -3438,7 +3487,7 @@ function completeBuyerSale() {
 
 
   let expected = selectedTotal();
-  let actual = min(expected, currentTrade.budget);
+  let actual = pawnVisitor?.type === 'Wholesaler' ? expected : min(expected, currentTrade.budget);
 
   // Record each sold item
   for (let index of selectedItems) {
@@ -3844,14 +3893,18 @@ function pawnTradeBoard() {
     }
     let selectedCount = wholesale ? selectedWholesaleItems.length : items.length;
     let canBuy = selectedCount > 0 && money >= total;
-    if (dayNumber === 1 && tutorialTradesServed === 2 && !shopBargained) canBuy = false;
+    if (dayNumber === 1 && (tutorialTradesServed === 2 || tutorialTradesServed === 4) && !shopBargained) canBuy = false;
     pawnButton(wholesale ? 'BUY SELECTED' : 'BUY ALL',312,489,152,canBuy,color(60,112,67));
   } else {
-    { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(16); text('WANTS: ' + currentTrade.category.toUpperCase(), 310, 207); };
-    { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(15); text('BUDGET $'+currentTrade.budget+' | SELECTED $'+selectedTotal().toFixed(2), 310, 220, 480, 28); };
+    const unlimitedBuyer = pawnVisitor.type === 'Wholesaler';
+    { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(16); text(unlimitedBuyer ? 'WANTS: ANY ITEM' : 'WANTS: ' + currentTrade.category.toUpperCase(), 310, 207); };
+    { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(15); text('BUDGET ' + (unlimitedBuyer ? 'UNLIMITED' : '$'+currentTrade.budget) + ' | SELECTED $'+selectedTotal().toFixed(2), 310, 220, 480, 28); };
     let entries = availableItems();
-    for(let i=0; i<entries.length && i<4; i++) {
-      let idx=entries[i];let item=products[inventory[idx].product];
+    let buyerPages = max(1, ceil(entries.length / 4));
+    buyerItemPage = constrain(buyerItemPage, 0, buyerPages - 1);
+    let visibleEntries = entries.slice(buyerItemPage * 4, buyerItemPage * 4 + 4);
+    for(let i=0; i<visibleEntries.length; i++) {
+      let idx=visibleEntries[i];let item=products[inventory[idx].product];
       let y=242+i*47;
       pawnPanel(306,y,504,44);
       let checked=selectedItems.includes(idx);
@@ -3878,7 +3931,12 @@ function pawnTradeBoard() {
       pawnRows.push({index:idx,x:306,y:y,w:504,h:44});
     }
     if(entries.length===0) { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(14); text('NO MATCHING ITEMS IN BAG', 324, 275); };
-    if(entries.length>4) { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(12); text('SHOWING FIRST 4 MATCHING ITEMS', 324, 455); };
+    if(entries.length>4) {
+      fill(63, 40, 30); textAlign(CENTER); textStyle(NORMAL); textSize(12);
+      text('PAGE ' + (buyerItemPage + 1) + '/' + buyerPages, 650, 461);
+      pawnButton('<', 540, 442, 55, buyerItemPage > 0, color(98,67,46));
+      pawnButton('>', 710, 442, 55, buyerItemPage < buyerPages - 1, color(98,67,46));
+    }
     pawnButton('SELL',312,489,152,selectedItems.length>0 &&
       !(dayNumber === 1 && tutorialTradesServed === 3),color(60,112,67));
   }
@@ -3887,7 +3945,8 @@ function pawnTradeBoard() {
   if (bargainVisible) pawnButton('BARGAIN',481,489,152,
     !shopBargained && pawnVisitor.type !== 'Wholesaler' && dayOneStep !== 3,
     color(98,67,46));
-  pawnButton('REJECT',651,489,152,dayOneStep < 0 || dayOneStep >= 3,color(156,63,52));
+  pawnButton('REJECT',651,489,152,(dayOneStep < 0 || dayOneStep >= 3) &&
+    !(dayOneStep === 4 && !shopBargained),color(156,63,52));
   { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(pawnVisitor.type === 'Wholesaler' ? 10 : 12); text(pawnMessage, 310, 468); };
 
 
@@ -3911,13 +3970,17 @@ function shopTryBargain() {
     (score >= 85 ? 0.70 : score >= 65 ? 0.50 : score >= 35 ? 0.35 : score >= 15 ? 0.20 : 0.05) :
     constrain(chance + (adjustments[pawnVisitor.type] || 0), 0, 1);
 
-  let succeeded = random() < chance;
+  // Day 1's fifth visitor demonstrates a failed bargain before free choice resumes.
+  let succeeded = dayNumber === 1 && tutorialTradesServed === 4 ? false : random() < chance;
   if (succeeded) {
     const improvement = pawnVisitor.type === 'Bargain' ? 0.20 : 0.10;
     if (currentTrade.type === "sell") shopTradeMultiplier *= 1 - improvement;
     else currentTrade.markup *= 1 + improvement;
   } else {
     pawnChangeScore(-3);
+    reputationNotice = 'Your reputation among the ' +
+      reputationGroupName(pawnVisitor.type) + ' has declined...';
+    reputationNoticeUntil = millis() + 3000;
   }
   pawnConversation = chooseCustomerLine(succeeded ? 'bargainYes' : 'bargainNo');
   pawnMessage = succeeded ? 'BARGAIN ACCEPTED' : 'BARGAIN REJECTED';
