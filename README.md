@@ -1,88 +1,84 @@
 # The Pawn Shop
 
-The Pawn Shop is a shop-management game made with **p5.js** for NYU's Interactive Computing course. You start with **$150** and run a small pawn shop: buy items from customers, sell them for a profit, build relationships, and keep enough money for rent.
+**The Pawn Shop** is a pixel-art shop-management game built with **p5.js** for NYU's Interactive Computing course. Take over the counter for 28 days, starting with **$150**. Buy low, sell high, build a reputation around town, expand your business, and keep up with the rent. Pixel Pat, the shop's longtime owner, is there to guide you.
 
-## How to Play
+## Play
 
-1. Start the game and open your shop for the day.
-2. When a customer arrives, read their offer or request.
-3. **Buy** items from sellers if you have enough money and bag space, or **sell** matching items to buyers.
-4. Check your bag, relationships, and available upgrades as you play.
-5. Review your daily receipt after the shop closes. Plan ahead for weekly rent!
+1. Open the shop and serve the day's customers. The shop closes after the customer quota is met—not after a timer.
+2. **BUY** items customers bring in, or select matching inventory items from **BAG** to **SELL** to buyers. Buyers have budgets and may request specific item categories.
+3. Try **BARGAIN** to improve a deal. A failed bargain lowers your reputation with that customer group; successful trades help restore it.
+4. Use **REPUTATION**, **UPGRADES**, **BAG**, and the telephone to manage the business.
+5. Review the end-of-day receipt and prepare for the next day.
 
-Most menus and trading actions use **mouse clicks**. Use the on-screen pause button to pause or resume the game.
+Day 1 is a guided, five-customer walkthrough with short, typewriter-style subtitles. Later days let you trade freely. Controls are primarily mouse-based.
 
-## Features
+## Customer Types
 
-### Customers and Trading
+New types are introduced in a fixed sequence; previously introduced types keep visiting.
 
-- 12 named customers with custom sprite-sheet animations and portraits.
-- Regular customers, bargain hunters, collectors, and suspicious sellers, with different trading behavior.
-- New customer types introduced gradually, with an introduction screen for each type.
-- Randomized conversations and responses to trades and bargaining.
-- Buying, selling by item category, customer budgets, and warnings for insufficient money or storage.
-- Relationship scores that change through interactions; bargaining unlocks at a relationship score of 60.
+| First appears | Customer type | Behavior |
+| --- | --- | --- |
+| Day 1 | **Pals of Pat's** | Regular customers with everyday offers and requests; Day 1 includes the tutorial. |
+| Day 2 | **Penny Pinchers** | Bargain hunters with tighter budgets who are harder to negotiate with. |
+| Day 3 | **Precarious Purveyors** | Suspicious traders whose tempting deals can damage other customer relationships. |
+| Day 4 | **Posh Patrons** | Wealthy collectors seeking valuable items; some offer a broken-vase challenge. |
+| Day 5 | **Pallet Peddlers** | Wholesale traders with fixed prices. As buyers, they accept any category, have no budget limit, and pay 90% of original value. |
 
-### Shop Management
+Each special type receives an introduction when first encountered. The Pals of Pat's introduction pop-up is intentionally omitted. The shop tracks reputation by customer group; reputation influences bargaining outcomes.
 
-- Starting cash of $150 and a limited inventory bag (6 items initially).
-- A bag screen showing item name, category, and purchase price.
-- A **People** menu for relationship information.
-- Five purchasable upgrades, unlocked on Day 3:
+## Shop Upgrades
 
-| Upgrade | Cost | Effect |
-| --- | ---: | --- |
-| Price Catalog | $90 | Show original item values while trading |
-| Storage +2 | $130 | Increase bag capacity to 8 items |
-| Display Shelves | $120 | Earn 5% more on sales |
-| Advertising | $100 | Bring customers in more frequently |
-| Ordering Hotline | $160 | Order an Apple for $8 when space is available |
+Upgrades appear from Day 3, except **Wealthy Clientele**, which becomes available on Day 6. Each level must be bought in order.
 
-### Days, Rent, and Events
+| Upgrade | Price(s) | Effect |
+| --- | --- | --- |
+| **Price Catalog** | $90 | Reveals original item values during trades and in BAG. |
+| **Display Shelves I–III** | $100 / $220 / $450 | Raises buyers' selling prices by 5% per level (up to 15%). |
+| **Advertising I–III** | $100 / $200 / $400 | Raises the daily base customer quota from 5 to 7, 10, or 13. |
+| **Wealthy Clientele I–III** | $120 / $260 / $480 | Raises regular buyers' budgets by 15%, 30%, or 50% total; Pallet Peddlers are excluded. |
+| **Tipsy Barrel Partnership** | $150 | Unlocks wholesale wine orders by telephone. |
+| **Flashback Partnership** | $220 | Unlocks wholesale camera orders by telephone. |
+| **Rusty Wrench Partnership** | $180 | Unlocks wholesale drill orders by telephone. |
 
-- A daily in-game schedule, with each day lasting about 3 real minutes.
-- An animated shopkeeper who opens and closes the shop.
-- End-of-day receipts listing purchases, sales, rent, and net profit.
-- Telephone calls from **Pixel Pat**, the elderly shop owner and mentor, introducing important events.
-- A free first week; rent is due every seven days starting on **Day 14**, beginning at $10 and increasing by 20% each week (rounded to whole dollars).
-- An option on rent days to sell selected inventory items to Pat for 80% of their original value.
-- A game-over screen and restart option if the shop runs out of money.
+Supplier orders can contain **1, 3, or 6 items**, with bulk discounts for larger orders. Deliveries arrive the next morning and reserve inventory space while pending.
 
-## Mini-Games
+There are **no purchasable Storage upgrades**. The bag starts with **6 slots**, and successful Storage Reorganization (Tetris) challenges grant **3 additional permanent slots** each.
 
-### Broken Vase Repair Puzzle
-- **Trigger:** Special customers bring broken items to the shop and ask for repairs.
-- **Gameplay:** Put the broken pieces together to repair the item.
-- **Reward:** If successful, the customer thanks the player and gives them the repaired item as a gift, which can be added to inventory and sold for profit.
+## Days, Rent, and Endings
 
-### Storage Tetris Puzzle
-- **Trigger:** The player wants to purchase an item, but the bag has reached its storage limit.
-- **Gameplay:** Complete a Tetris-style puzzle to make room for the new item.
-- **Reward:** Winning grants the extra storage space needed to keep the purchased item.
+- Customer quota is based on Advertising, with inspection grades potentially changing it by **+2** (A), **0** (B), or **−2** (C), to a minimum of three customers.
+- The first week is rent-free. Pat explains rent on Day 7; payments begin on **Day 14**, recur every seven days, and increase by 20% each week (rounded to whole dollars).
+- If the balance is negative at the end of a week, the player has **three days** to recover. Remaining in debt at the end of that period closes the shop.
+- The run concludes at the end of **Day 28**. Endings depend on money earned and upgrades unlocked, with special outcomes for exceptional success or very limited progress.
+- The final results screen includes ending dialogue, money, upgrades, final storage capacity, and items bought and sold. An achievement-style notification appears afterward.
+
+## Integrated Mini-Games
+
+The three mini-games run in embedded iframes and communicate their results back to the main game.
+
+### Broken Vase Repair — Posh Patrons
+
+Certain collectors offer a shattered antique vase. Complete the repair puzzle to earn a repaired item and bonus value to sell later.
+
+### Storage Reorganization — Tetris
+
+When a purchase would exceed storage capacity, the player can attempt a Tetris-style challenge. Winning adds **3 permanent storage slots**; failing risks losing the purchase and payment.
 
 ### Inspector Memory Game
-- **Trigger:** An inspector visits the shop, and the player chooses to buy from or sell to them.
-- **Gameplay:** Flip cards and find matching pairs in a memory game.
-- **Risk:** Losing the game results in a negative consequence for the player.
 
-These mini-games are being developed by our team and will introduce additional challenges, rewards, and risks to the main gameplay.
+Inspector Alex visits separately from the normal customer quota. The player plays a card-matching memory game; the result produces an **A, B, or C** grade that affects subsequent customer traffic.
 
-## Built With
+## Running Locally
 
-- **p5.js** for drawing, animation, mouse and keyboard input, and game logic.
-- **JavaScript** with object-oriented classes (`Customer`, `Shopkeeper`, `Product`, and `CustomerProfile`).
-- **HTML** to load the sketch and p5.js library.
-- Custom character art and sprite sheets, plus pixel-art assets.
-
-## Running the Game
-
-1. Download or clone this repository.
+1. Clone or download this repository.
 2. Open the project folder in VS Code.
-3. Open `index.html` with **Live Server** (or another local web server).
-4. Play in your browser.
+3. Serve the folder using the **Live Server** extension or another local HTTP server.
+4. Open `index.html` in a browser.
 
-The main game code is in `sketch.js`, and the artwork is in `images/` and the included asset folders. No build step is required.
+The game uses `sketch.js` for its main logic, `index.html` for the canvas and iframe overlays, and the `images/`, `sounds/`, `vasePuzzle/`, `storage-tetris/`, and `memory-mini-game/` folders for assets and mini-games. No build step is needed. A local server is recommended so iframe and asset paths work reliably.
 
-## Development Notes
+## Development and Testing
 
-The current development version includes a keyboard test panel for jumping to days and testing game events. **Developer Test Mode should be disabled before the final release** by changing `DEV_TEST_MODE` to `false` in `sketch.js`.
+The main sketch currently has `DEV_TEST_MODE = true`, which enables shortcuts for jumping between days and testing customer encounters and endings without playing a full 28-day run. Set it to `false` before a public release.
+
+Built with **JavaScript**, **p5.js**, pixel-art assets, and object-oriented classes including `Customer`, `Shopkeeper`, `Product`, and `CustomerProfile`.
