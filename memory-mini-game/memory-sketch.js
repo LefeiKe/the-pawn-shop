@@ -121,7 +121,7 @@ function draw() {
 
         fill(50);
         textSize(12);
-        text("Memorize the items and their prices!", width / 2, 170);
+        text("Let's see how familiar you are with your merchandise!", width / 2, 170);
 
         textSize(12);
         text("Click a card to hide or reveal its price.", width / 2, 195);
