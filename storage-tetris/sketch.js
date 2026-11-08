@@ -55,6 +55,7 @@ let nextId;
 let lastFallTime = 0;
 
 let gameState = "loading";
+let shopBg;
 
 // true when the main shop game opens this inside its iframe
 const EMBEDDED = window.parent !== window;
@@ -65,6 +66,7 @@ async function setup() {
 
   noSmooth();
   textFont("Pixelify Sans"); // from the overarching main game
+  shopBg = await loadImage("../images/shop.png");
 
   // keep each image next to its item in the PIECES list, or null to use the fallback color
   for (let piece of PIECES) {
@@ -101,6 +103,11 @@ function imageMatchesGrid(img, piece) { // shouldn't be an issue because i desgi
 
 function draw() {
   background(0);
+  if (shopBg) image(shopBg, 0, 0, width, height);
+  // Match the main shop start screen dimming.
+  noStroke();
+  fill(0, 0, 0, 180);
+  rect(0, 0, width, height);
 
   if (gameState === "loading") {
     return;
@@ -457,7 +464,7 @@ function drawSidePanel() {
   text("CONTROLS", leftX, 305);
   textSize(15);
   text("LEFT/RIGHT or A/D: MOVE", leftX, 332);
-  text("UP or W: ROTATE", leftX, 356);
+  text("UP or W: ROTATE CLOCKWISE", leftX, 356);
   text("DOWN or S: SOFT DROP", leftX, 380);
   text("SPACE: HARD DROP", leftX, 404);
   text("P: PAUSE", leftX, 428);
@@ -505,7 +512,7 @@ function drawStartScreen() {
   text("CLEAR 5 ROWS TO WIN!", 432, 229);
   textSize(16);
   text("LEFT/RIGHT OR A/D: MOVE", 432, 272);
-  text("UP OR W: ROTATE", 432, 299);
+  text("UP OR W: ROTATE CLOCKWISE", 432, 299);
   text("DOWN OR S: SOFT DROP", 432, 326);
   text("SPACE: HARD DROP  |  P: PAUSE", 432, 353);
 
