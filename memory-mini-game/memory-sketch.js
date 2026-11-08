@@ -1,5 +1,7 @@
 // shop background
 let shopBg;
+const MEMORY_OFFSET_X = 32;
+const MEMORY_OFFSET_Y = 38;
 
 // item images
 let itemImages = {};
@@ -60,10 +62,10 @@ let totalQuestions = 5;
 let score = 0;
 
 async function setup() {
-    createCanvas(800, 500);
+    createCanvas(864, 576);
 
     // Load background
-    shopBg = await loadImage("memory images/shop.png");
+    shopBg = await loadImage("../images/shop.png");
 
     // Load item images
     itemImages.Watch = await loadImage("memory images/watch.png");
@@ -103,6 +105,15 @@ function draw() {
         image(shopBg, 0, 0, width, height);
     }
 
+    // Match the main shop start screen dimming (180 / 255 opacity).
+    noStroke();
+    fill(0, 0, 0, 180);
+    rect(0, 0, width, height);
+
+    // Keep the original 800 x 500 game interface centered in 864 x 576.
+    push();
+    translate(MEMORY_OFFSET_X, MEMORY_OFFSET_Y);
+
     // Inspection panel
     pixelBoard(70, 50, 660, 430);
 
@@ -112,7 +123,7 @@ function draw() {
     textSize(22);
 
     if (gameState !== "final") {
-        text("INSPECTION MEMORY TEST", width / 2, 110);
+        text("INSPECTION MEMORY TEST", 400, 110);
     }
 
     // Begin on the memory cards; Alex already introduced the inspection.
@@ -121,10 +132,10 @@ function draw() {
 
         fill(50);
         textSize(14);
-        text("Let's see how familiar you are with your merchandise!", width / 2, 150);
+        text("Let's see how familiar you are with your merchandise!", 400, 150);
 
         textSize(14);
-        text("Click a card to hide or reveal its price.", width / 2, 178);
+        text("Click a card to hide or reveal its price.", 400, 178);
 
         // display six flipping item cards
         for (let i = 0; i < items.length; i++) {
@@ -213,7 +224,7 @@ function draw() {
         // show question number
         fill(50);
         textSize(18);
-        text("Question " + questionNumber + " / " + totalQuestions, width / 2, 150);
+        text("Question " + questionNumber + " / " + totalQuestions, 400, 150);
 
         // show question
         textSize(18);
@@ -221,7 +232,7 @@ function draw() {
 
             fill(50);
             textSize(18);
-            text("Which item is missing?", width / 2, 188);
+            text("Which item is missing?", 400, 188);
 
             // Display five item images and one missing item
             for (let i = 0; i < items.length; i++) {
@@ -265,10 +276,10 @@ function draw() {
         fill(50);
         textSize(18);
         if (questionNumber === 1) {
-            text("Time left: " + timeLeft, width / 2, 245);
+            text("Time left: " + timeLeft, 400, 245);
         }
         else {
-            text("Time left: " + timeLeft, width / 2, 272);
+            text("Time left: " + timeLeft, 400, 272);
         }
 
 
@@ -322,11 +333,11 @@ function draw() {
 
         fill(50, 150, 80);
         textSize(26);
-        text("CORRECT!", width / 2, 230);
+        text("CORRECT!", 400, 230);
 
         fill(50);
         textSize(20);
-        text("You got it right!", width / 2, 280);
+        text("You got it right!", 400, 280);
 
         // restart button
         fill(70, 115, 65);
@@ -351,19 +362,19 @@ function draw() {
         fill(200, 60, 60);
         textSize(26);
         if (timeOut) {
-            text("TIME'S UP!", width / 2, 230);
+            text("TIME'S UP!", 400, 230);
         }
         else {
-            text("INCORRECT!", width / 2, 230);
+            text("INCORRECT!", 400, 230);
         }
 
         fill(50);
         textSize(18);
         if (questionType === "price" || questionType === "difference") {
-            text("Correct answer: $" + correctAnswer, width / 2, 280);
+            text("Correct answer: $" + correctAnswer, 400, 280);
         }
         else {
-            text("Correct answer: " + correctAnswer, width / 2, 280);
+            text("Correct answer: " + correctAnswer, 400, 280);
         }
 
         // restart button
@@ -388,10 +399,10 @@ function draw() {
 
         fill(50);
         textSize(24);
-        text("INSPECTION COMPLETE!", width / 2, 160);
+        text("INSPECTION COMPLETE!", 400, 160);
 
         textSize(24);
-        text("Your score: " + score + " / " + totalQuestions, width / 2, 260);
+        text("Your score: " + score + " / " + totalQuestions, 400, 260);
 
         // return to shop button
         fill(70, 115, 65);
@@ -401,15 +412,18 @@ function draw() {
         textSize(16);
         text("RETURN TO SHOP", 400, 370);
     }
+    pop();
 }
 
 function mousePressed() {
+    const localMouseX = mouseX - MEMORY_OFFSET_X;
+    const localMouseY = mouseY - MEMORY_OFFSET_Y;
 
     if (gameState === "memorize") {
 
         // click READY to begin questions
-        if (mouseX > 330 && mouseX < 470 &&
-            mouseY > 415 && mouseY < 455) {
+        if (localMouseX > 330 && localMouseX < 470 &&
+            localMouseY > 415 && localMouseY < 455) {
 
             questionStartTime = millis();
             gameState = "question";
@@ -422,8 +436,8 @@ function mousePressed() {
                 let x = 220 + (i % 3) * 180;
                 let y = 245 + floor(i / 3) * 95;
 
-                if (mouseX > x - 65 && mouseX < x + 65 &&
-                    mouseY > y - 45 && mouseY < y + 40) {
+                if (localMouseX > x - 65 && localMouseX < x + 65 &&
+                    localMouseY > y - 45 && localMouseY < y + 40) {
 
                     priceHidden[i] = !priceHidden[i];
                 }
@@ -453,10 +467,10 @@ function mousePressed() {
             }
 
             if (
-                mouseX > x - buttonWidth / 2 &&
-                mouseX < x + buttonWidth / 2 &&
-                mouseY > y &&
-                mouseY < y + buttonHeight
+                localMouseX > x - buttonWidth / 2 &&
+                localMouseX < x + buttonWidth / 2 &&
+                localMouseY > y &&
+                localMouseY < y + buttonHeight
             ) {
 
                 if (answers[i] === correctAnswer) {
@@ -477,8 +491,8 @@ function mousePressed() {
     else if (gameState === "correct" || gameState === "incorrect") {
 
         if (
-            mouseX > 300 && mouseX < 500 &&
-            mouseY > 330 && mouseY < 390
+            localMouseX > 300 && localMouseX < 500 &&
+            localMouseY > 330 && localMouseY < 390
         ) {
             questionNumber++;
 
@@ -498,8 +512,8 @@ function mousePressed() {
     else if (gameState === "final") {
 
         if (
-            mouseX > 280 && mouseX < 520 &&
-            mouseY > 330 && mouseY < 390
+            localMouseX > 280 && localMouseX < 520 &&
+            localMouseY > 330 && localMouseY < 390
         ) {
 
             let rating;
