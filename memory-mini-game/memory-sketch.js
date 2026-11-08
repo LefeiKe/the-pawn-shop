@@ -7,6 +7,12 @@ let itemImages = {};
 // track which cards have hidden prices
 let priceHidden = [false, false, false, false, false, false];
 
+// card flip animation progress (0 = front, 1 = back)
+let cardFlip = [0, 0, 0, 0, 0, 0];
+
+// animation speed
+let flipSpeed = 0.08;
+
 // four answer choices
 let answers = [];
 
@@ -37,6 +43,9 @@ let questionText = "";
 let correctAnswer;
 let usedQuestionTypes = [];
 
+// question types selected for each round
+let questionPlan = [];
+
 // the item missing from the inventory record
 let missingItem;
 
@@ -45,7 +54,7 @@ let usedItems = [];
 
 // question counter
 let questionNumber = 1;
-let totalQuestions = 3;
+let totalQuestions = 5;
 
 // Player's score
 let score = 0;
@@ -118,38 +127,67 @@ function draw() {
         textSize(12);
         text("Click a card to hide or reveal its price.", width / 2, 195);
 
-        // display six item cards
+        // display six flipping item cards
         for (let i = 0; i < items.length; i++) {
 
             let x = 220 + (i % 3) * 180;
             let y = 255 + floor(i / 3) * 95;
 
+            // target: front = 0, back = 1
+            let target = priceHidden[i] ? 1 : 0;
+
+            // animate toward the target
+            if (cardFlip[i] < target) {
+                cardFlip[i] = min(cardFlip[i] + flipSpeed, target);
+            }
+            else if (cardFlip[i] > target) {
+                cardFlip[i] = max(cardFlip[i] - flipSpeed, target);
+            }
+
+            // card becomes narrow, then expands
+            let cardScale = abs(cos(cardFlip[i] * PI));
+
+            push();
+
+            translate(x, y);
+            scale(cardScale, 1);
+
             // card background
             stroke(110, 80, 50);
             strokeWeight(2);
-            fill(250, 240, 210);
-            rect(x - 65, y - 45, 130, 85, 3);
+
+            if (cardFlip[i] < 0.5) {
+                fill(250, 240, 210);
+            }
+            else {
+                fill(225, 205, 165);
+            }
+
+            rect(-65, -45, 130, 85, 3);
 
             noStroke();
 
-            // item image
-            image(itemImages[items[i].name], x - 22, y - 42, 44, 44);
+            // front: image, name, and price
+            if (cardFlip[i] < 0.5) {
 
-            // item name
-            fill(50);
-            textSize(11);
-            text(items[i].name, x, y + 13);
+                image(itemImages[items[i].name], -22, -42, 44, 44);
 
-            // show or hide price
-            fill(150, 80, 40);
-            textSize(14);
+                fill(50);
+                textSize(11);
+                text(items[i].name, 0, 13);
 
-            if (priceHidden[i] === false) {
-                text("$" + items[i].price, x, y + 32);
+                fill(150, 80, 40);
+                textSize(14);
+                text("$" + items[i].price, 0, 32);
             }
+
+            // back: image only
             else {
-                text("???", x, y + 32);
+
+                image(itemImages[items[i].name], -30, -30, 60, 60);
             }
+
+            pop();
         }
 
         // READY button
@@ -217,8 +255,10 @@ function draw() {
         }
         else {
             fill(50);
-            textSize(18);
-            text(questionText, width / 2, 225);
+            textSize(12);
+            textAlign(CENTER, CENTER);
+            text(questionText, 145, 200, 510, 50);
+            textAlign(CENTER, BASELINE);
         }
         
 
@@ -264,7 +304,7 @@ function draw() {
             fill(30);
 
             // Display answer
-            if (questionType === "price") {
+            if (questionType === "price" || questionType === "difference") {
                 textSize(16);
                 text("$" + answers[i], x, y + 30);
             }
@@ -317,7 +357,7 @@ function draw() {
 
         fill(50);
         textSize(12);
-        if (questionType === "price") {
+        if (questionType === "price" || questionType === "difference") {
             text("Correct answer: $" + correctAnswer, width / 2, 280);
         }
         else {
@@ -351,23 +391,33 @@ function draw() {
         textSize(22);
         text("Your score: " + score + " / " + totalQuestions, width / 2, 220);
 
-        // pass or fail
-        if (score >= 2) {
+        // final rating
+        let rating;
+
+        if (score === 5) {
+            rating = "A";
             fill(50, 150, 80);
-            text("YOU PASSED!", width / 2, 280);
+        }
+        else if (score >= 3) {
+            rating = "B";
+            fill(190, 130, 40);
         }
         else {
+            rating = "C";
             fill(200, 60, 60);
-            text("YOU FAILED!", width / 2, 280);
         }
 
-        // play again button
+        textSize(26);
+        text("RATING: " + rating, width / 2, 280);
+
+
+        // return to shop button
         fill(70, 115, 65);
-        rect(300, 330, 200, 60);
+        rect(280, 330, 240, 60);
 
         fill(255);
-        textSize(18);
-        text("PLAY AGAIN", 400, 370);
+        textSize(16);
+        text("RETURN TO SHOP", 400, 370);
     }
 }
 
@@ -385,11 +435,16 @@ function mousePressed() {
             usedItems = [];
             timeOut = false;
             priceHidden = [false, false, false, false, false, false];
+            cardFlip = [0, 0, 0, 0, 0, 0];
             usedQuestionTypes = [];
 
-            // generate new prices
+            // Generate new prices
             randomizePrices();
 
+            // Select five question types
+            generateQuestionPlan();
+
+            // Generate the first question
             newQuestion();
 
             startTime = millis();
@@ -490,16 +545,135 @@ function mousePressed() {
     else if (gameState === "final") {
 
         if (
-            mouseX > 300 && mouseX < 500 &&
+            mouseX > 280 && mouseX < 520 &&
             mouseY > 330 && mouseY < 390
         ) {
-            gameState = "start";
+
+            let rating;
+
+            if (score === 5) {
+                rating = "A";
+            }
+            else if (score >= 3) {
+                rating = "B";
+            }
+            else {
+                rating = "C";
+            }
+
+            // Send the result to the main game
+            window.parent.postMessage({
+                type: "memoryGameComplete",
+                score: score,
+                rating: rating
+            }, window.location.origin);
         }
     }
 }
 
 
+// generate five question types for each round
+function generateQuestionPlan() {
+
+    // Q1 is always the missing item question
+    questionPlan = ["missing"];
+
+    // find the highest and lowest prices
+    let prices = items.map(item => item.price);
+
+    let highestPrice = Math.max(...prices);
+    let lowestPrice = Math.min(...prices);
+
+    let highestItems = items.filter(
+        item => item.price === highestPrice
+    );
+
+    let lowestItems = items.filter(
+        item => item.price === lowestPrice
+    );
+
+    // find items with the second highest distinct price
+    let sortedPrices = [...new Set(prices)].sort((a, b) => b - a);
+
+    let secondHighestItems = [];
+
+    if (sortedPrices.length >= 2) {
+        secondHighestItems = items.filter(
+            item => item.price === sortedPrices[1]
+        );
+    }
+
+    // find matching price pairs
+    let matchingPairs = [];
+
+    for (let i = 0; i < items.length; i++) {
+        for (let j = i + 1; j < items.length; j++) {
+
+            if (items[i].price === items[j].price) {
+                matchingPairs.push([items[i], items[j]]);
+            }
+        }
+    }
+
+    // available question types
+    let questionBank = [
+        "price",
+        "comparison",
+        "difference"
+    ];
+
+    if (highestItems.length === 1) {
+        questionBank.push("highest");
+    }
+
+    if (lowestItems.length === 1) {
+        questionBank.push("lowest");
+    }
+
+    if (secondHighestItems.length === 1) {
+        questionBank.push("order");
+    }
+
+    if (matchingPairs.length > 0) {
+        questionBank.push("equal");
+    }
+
+    // price Match requires exactly two items sharing a price
+    let validMatch = items.some(item =>
+        items.filter(other => other.price === item.price).length === 2
+    );
+
+    if (validMatch) {
+        questionBank.push("match");
+    }
+
+    // randomize question order
+    shuffle(questionBank, true);
+
+    // select four additional question types
+    for (let type of questionBank) {
+
+        if (questionPlan.length >= totalQuestions) {
+            break;
+        }
+
+        // avoid using Equal and Match in the same round
+        if (type === "equal" && questionPlan.includes("match")) {
+            continue;
+        }
+
+        if (type === "match" && questionPlan.includes("equal")) {
+            continue;
+        }
+
+        questionPlan.push(type);
+    }
+}
+
+
 function newQuestion() {
+
+    questionType = questionPlan[questionNumber - 1];
 
     // Q1: Missing item
     if (questionNumber === 1) {
@@ -523,14 +697,14 @@ function newQuestion() {
         return;
     }
 
-    // Find the highest and lowest prices
+    // find the highest and lowest prices
     let highestPrice = Math.max(...items.map(item => item.price));
     let lowestPrice = Math.min(...items.map(item => item.price));
 
     let highestItems = items.filter(item => item.price === highestPrice);
     let lowestItems = items.filter(item => item.price === lowestPrice);
 
-    // Find pairs with the same or different prices
+    // find pairs with the same or different prices
     let matchingPairs = [];
     let differentPairs = [];
 
@@ -548,35 +722,7 @@ function newQuestion() {
         }
     }
 
-    // Build the available question types
-    let questionBank = ["price"];
-
-    if (highestItems.length === 1) {
-        questionBank.push("highest");
-    }
-
-    if (lowestItems.length === 1) {
-        questionBank.push("lowest");
-    }
-
-    if (matchingPairs.length > 0 && differentPairs.length >= 3) {
-        questionBank.push("equal");
-    }
-
-    // Avoid repeating a question type
-    let availableTypes = questionBank.filter(
-        type => !usedQuestionTypes.includes(type)
-    );
-
-    // Fallback if no unused type is available
-    if (availableTypes.length === 0) {
-        availableTypes = questionBank;
-    }
-
-    questionType = random(availableTypes);
-    usedQuestionTypes.push(questionType);
-
-    // Price memory question
+    // price memory question
     if (questionType === "price") {
 
         questionItem = random(items);
@@ -595,7 +741,7 @@ function newQuestion() {
         }
     }
 
-    // Highest price question
+    // highest price question
     else if (questionType === "highest") {
 
         questionText = "Which item was the most expensive?";
@@ -604,7 +750,7 @@ function newQuestion() {
         makeItemAnswers(correctAnswer);
     }
 
-    // Lowest price question
+    // lowest price question
     else if (questionType === "lowest") {
 
         questionText = "Which item was the cheapest?";
@@ -613,7 +759,7 @@ function newQuestion() {
         makeItemAnswers(correctAnswer);
     }
 
-    // Same price question
+    // same price question
     else if (questionType === "equal") {
 
         questionText = "Which two items had the same price?";
@@ -631,10 +777,129 @@ function newQuestion() {
         }
     }
 
+    // price comparison question
+    else if (questionType === "comparison") {
+
+        // find two items with different prices
+        let item1 = random(items);
+        let item2 = random(items);
+
+        while (item1.price === item2.price) {
+            item2 = random(items);
+        }
+
+        questionText = "Which cost more: " + item1.name + " or " + item2.name + "?";
+
+        // find the more expensive item
+        if (item1.price > item2.price) {
+            correctAnswer = item1.name;
+        }
+        else {
+            correctAnswer = item2.name;
+        }
+
+        // include both compared items in the choices
+        answers = [item1.name, item2.name];
+
+        while (answers.length < 4) {
+            let name = random(items).name;
+
+            if (!answers.includes(name)) {
+                answers.push(name);
+            }
+        }
+    }
+
+    // price order question
+    else if (questionType === "order") {
+
+        // Sort unique prices from highest to lowest
+        let sortedPrices = [...new Set(items.map(item => item.price))]
+            .sort((a, b) => b - a);
+
+        let secondPrice = sortedPrices[1];
+
+        let secondItems = items.filter(
+            item => item.price === secondPrice
+        );
+
+        questionText = "Which item had the second highest price?";
+
+        correctAnswer = secondItems[0].name;
+
+        makeItemAnswers(correctAnswer);
+    }
+
+    // price match question
+    else if (questionType === "match") {
+
+        // find items that have exactly one price match
+        let validItems = items.filter(item => {
+
+            let samePriceItems = items.filter(
+                other => other.price === item.price
+            );
+
+            return samePriceItems.length === 2;
+        });
+
+        questionItem = random(validItems);
+
+        // find the other item with the same price
+        let matchingItem = items.find(
+            item =>
+                item.price === questionItem.price &&
+                item.name !== questionItem.name
+        );
+
+        questionText = "Which item matched " + questionItem.name + "'s price?";
+
+        correctAnswer = matchingItem.name;
+
+        answers = [correctAnswer];
+
+        while (answers.length < 4) {
+            let name = random(items).name;
+
+            if (!answers.includes(name) && name !== questionItem.name) {
+                answers.push(name);
+            }
+        }
+    }
+
+    // price difference question
+    else if (questionType === "difference") {
+
+        let item1 = random(items);
+        let item2 = random(items);
+
+        while (item1.price === item2.price) {
+            item2 = random(items);
+        }
+
+        questionText = "Price difference: " + item1.name + " & " + item2.name + "?";
+
+        correctAnswer = abs(item1.price - item2.price);
+
+        answers = [correctAnswer];
+
+        // generate three incorrect prices
+        while (answers.length < 4) {
+
+            let difference = floor(random(1, 20)) * 5;
+
+            if (!answers.includes(difference)) {
+                answers.push(difference);
+            }
+        }
+    }
+
+
+
     shuffle(answers, true);
 }
 
-// Generate four item-name choices
+// generate four item-name choices
 function makeItemAnswers(correctName) {
 
     answers = [correctName];

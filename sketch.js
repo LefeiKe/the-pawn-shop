@@ -207,6 +207,8 @@ let endingScroll = 0;
 let recoveryDeadline = 0;
 let bankruptcyNotice = false;
 let totalSalesEarned = 0;
+let pastItemsBought = 0;
+let pastItemsSold = 0;
 const FINAL_DAY = 28;
 
 // Count purchased upgrades and up to three storage reorganization milestones.
@@ -265,6 +267,8 @@ let customerNumber = 0;
 let dailyCustomerLimit = 5;
 let customersLeft = 5;
 let dayNumber = 1;
+let tutorialTradesServed = 0;
+let tutorialBagSeen = false;
 
 // Inspector visits are separate from the daily customer quota.
 let nextInspectionDay = 3;
@@ -646,6 +650,51 @@ function togglePause() {
   }
 }
 
+// Day 1 contextual walkthrough. It never pauses play or captures input.
+function dayOneTutorialHint() {
+  if (showReceipt) return "DAY COMPLETE. Review your purchases and sales, then close the receipt.";
+  if (showBag) return "Your BAG shows your stock and purchase prices. Click outside to close.";
+  if (closing) return "All customers are served. Your daily receipt is coming.";
+  const step = tutorialTradesServed;
+  if (pawnTradeActive()) {
+    if (step === 0) return "This customer wants to sell an item. Buying costs money, but you can resell it for profit.";
+    if (step === 1) return "Buyers have a budget and a target category. Select a matching item from your bag.";
+    if (step === 2) return "BARGAIN may improve the price, but negotiations can fail.";
+    if (step === 3) return "Some buyers have a small budget. Use REJECT to avoid an unprofitable trade.";
+    return "You've learned the basics. Now explore the rest of the shop at your own pace.";
+  }
+  if (step === 0) return "The daily customer count is at the top right. The shop closes after everyone is served.";
+  if (step === 1) return "Click BAG to review your purchases. Keep an eye on your storage capacity.";
+  if (step === 2) return "Buy low and sell high to make a profit.";
+  if (step === 3) return "REPUTATION shows your relationships. Stronger relationships improve bargaining chances.";
+  if (step === 4) return "Watch your balance. Weekly debt gives you three days to recover before the shop closes.";
+  return "";
+}
+
+// Subtitles follow the five scripted customers without pausing or intercepting play.
+let tutorialTypedText = "";
+let tutorialTextStartedAt = 0;
+function drawDayOneTutorial() {
+  if (dayNumber !== 1 || showIntro || gameOver || phonePending || phoneCall ||
+      pawnIntroType || poshOfferActive || (poshGameOverlay && !poshGameOverlay.hidden) ||
+      (tetrisOverlay && !tetrisOverlay.hidden) || tetrisPromptActive || shopMenu ||
+      inspectorPhase || bankruptcyNotice) return;
+  const hint = dayOneTutorialHint();
+  if (!hint) return;
+  if (hint !== tutorialTypedText) {
+    tutorialTypedText = hint;
+    tutorialTextStartedAt = millis();
+  }
+  const characters = min(hint.length, floor((millis() - tutorialTextStartedAt) / 23));
+  push();
+  noStroke(); fill(40,29,25,225);
+  rect(94,529,676,43,7);
+  fill(255); textFont("Pixelify Sans");
+  textAlign(CENTER); textStyle(NORMAL); textSize(14);
+  text(hint.slice(0,characters),110,536,644,34);
+  pop();
+}
+
 // Inventory bag icon
 function drawBagIcon() {
     pixelBoard(230, 10, 88, 76);
@@ -757,8 +806,14 @@ function endingDialogue() {
   return endingSpeeches[ending?.achievement] || endingSpeeches["Shop Closed"];
 }
 function endingMaxScroll() {
-  const statsY = 210 + endingDialogue().length * 68;
-  return max(0, statsY + 196 - 410);
+  return max(0, 430 + 260 - 410);
+}
+
+function finalItemCounts() {
+  return {
+    bought: pastItemsBought + dailyLog.filter(entry => entry.type === "BUY").length,
+    sold: pastItemsSold + dailyLog.filter(entry => entry.type === "SELL").length
+  };
 }
 
 function drawGameOver() {
@@ -766,7 +821,8 @@ function drawGameOver() {
   pixelBoard(80,40,704,496);
   const result = ending || {title:"SHOP CLOSED", won:false};
   const dialogue = endingDialogue();
-  const statsY = 210 + dialogue.length * 68;
+  const statsY = 430;
+  const itemCounts = finalItemCounts();
 
   push();
   drawingContext.save();
@@ -781,8 +837,10 @@ function drawGameOver() {
   text(result.title,432,111);
   fill(65,40,28); textSize(21);
   text("PIXEL PAT'S FINAL CALL",432,155);
-  textStyle(NORMAL); textSize(17);
-  for (let i=0; i<dialogue.length; i++) text(dialogue[i],140,187+i*68,584,58);
+  // Match Pat's original call: left-aligned, continuous text with normal leading.
+  textAlign(LEFT); textStyle(NORMAL); textSize(17); textLeading(28);
+  text(dialogue.join(" "),140,190,584,212);
+  textAlign(CENTER);
   stroke(174,130,85); strokeWeight(2);
   line(150,statsY-30,714,statsY-30);
   noStroke(); fill(65,40,28); textStyle(BOLD); textSize(21);
@@ -791,8 +849,10 @@ function drawGameOver() {
   text("DAYS COMPLETED: " + dayNumber + " / " + FINAL_DAY,432,statsY+43);
   text("UPGRADES UNLOCKED: " + unlockedUpgradeCount(),432,statsY+75);
   text("FINAL STORAGE CAPACITY: " + shopCapacity() + " SLOTS",432,statsY+107);
-  text("TOTAL SALES: $" + totalSalesEarned.toFixed(2),432,statsY+139);
-  text("FINAL BALANCE: $" + money.toFixed(2),432,statsY+171);
+  text("ITEMS BOUGHT: " + itemCounts.bought,432,statsY+139);
+  text("ITEMS SOLD: " + itemCounts.sold,432,statsY+171);
+  text("TOTAL SALES: $" + totalSalesEarned.toFixed(2),432,statsY+203);
+  text("FINAL BALANCE: $" + money.toFixed(2),432,statsY+235);
   drawingContext.restore();
   pop();
 
@@ -1655,6 +1715,14 @@ function shopBuyUpgrade(i) {
 
 function handleShopClick() {
   if (pawnIntroType) { handleCustomerClick(); return; }
+  if (dayNumber === 1 && pawnTradeActive() && !shopMenu) {
+    const step = tutorialTradesServed;
+    // Keep the required trade buttons genuinely inactive, not merely gray.
+    if (step <= 1 && (pawnHit(481,489,152,36) || pawnHit(651,489,152,36))) return;
+    if (step === 2 && (pawnHit(651,489,152,36) ||
+        (!shopBargained && pawnHit(312,489,152,36)))) return;
+    if (step === 3 && !pawnHit(651,489,152,36)) return;
+  }
   if (shopMenu !== "") {
     if (shopMenu === "people") {
       if (pawnHit(347, 462, 170, 32)) shopCloseMenu();
@@ -2797,6 +2865,12 @@ function testJumpToDay(day) {
   selectedItems = [];
   pawnVisitor = null;
   dayNumber = day;
+  if (day === 1) {
+    tutorialTradesServed = 0;
+    tutorialBagSeen = false;
+    tutorialTypedText = "";
+    tutorialTextStartedAt = 0;
+  }
   nextInspectionDay = day >= 3 ? day : 3;
   inspectorPhase = '';
   inspectorActor = null;
@@ -3072,6 +3146,7 @@ function draw() {
   if (tetrisPromptActive) drawStorageTetrisPrompt();
   drawBankruptcyNotice();
   drawAchievementToast();
+  drawDayOneTutorial();
 }
 
 
@@ -3128,6 +3203,8 @@ function restartGame() {
   recoveryDeadline = 0;
   bankruptcyNotice = false;
   totalSalesEarned = 0;
+  pastItemsBought = 0;
+  pastItemsSold = 0;
 
   // Return to introduction screen
   showIntro = true;
@@ -3157,6 +3234,10 @@ function restartGame() {
   supplierMessage = "";
   dailyCustomerLimit = 5;
   customersLeft = 5;
+  tutorialTradesServed = 0;
+  tutorialBagSeen = false;
+  tutorialTypedText = "";
+  tutorialTextStartedAt = 0;
   shopMessage = "";
   shopBargained = false;
   shopTradeMultiplier = 1;
@@ -3222,7 +3303,23 @@ function generateCustomer(forcedVisitorType) {
 
 
   if (!pawnReady) return;
-  pawnVisitor = pawnPickVisitor(forcedVisitorType);
+
+  // Day 1 uses guaranteed trades so every basic action can be learned in order.
+  const tutorialStep = dayNumber === 1 && !forcedVisitorType ? tutorialTradesServed : -1;
+  const tutorialNames = ["Mia", "Noah", "Emma", "Leo"];
+  pawnVisitor = tutorialStep >= 0 && tutorialStep < 4
+    ? pawnProfiles.find(profile => profile.name === tutorialNames[tutorialStep])
+    : pawnPickVisitor(forcedVisitorType);
+  if (tutorialStep >= 0 && tutorialStep < 4) {
+    const scriptedTrades = [
+      {type:"sell", items:[0], category:"Daily", budget:100, markup:1},
+      {type:"category", items:[], category:"Daily", budget:100, markup:1.15},
+      {type:"sell", items:[4,5], category:"Tools", budget:100, markup:1},
+      {type:"category", items:[], category:"Tools", budget:5, markup:1}
+    ];
+    currentTrade = {...scriptedTrades[tutorialStep], items:[...scriptedTrades[tutorialStep].items]};
+    pawnIntroSeen.Regular = true;
+  }
   currentCustomer = new Customer(
     pawnVisitor.name, pawnVisitor.type,
     pawnSprites[pawnVisitor.name], pawnPortraits[pawnVisitor.name]
@@ -3232,7 +3329,9 @@ function generateCustomer(forcedVisitorType) {
     pawnVisitor.type === "Collector" && (forcedVisitorType === "Collector" || random() < 0.3);
   poshOfferActive = false;
   pawnMessage = '';
-  pawnConversation = pawnNewConversation();
+  pawnConversation = tutorialStep === 0
+    ? "Pat said I should stop by and say hello."
+    : pawnNewConversation();
   // Collector has more to spend; bargain hunters have less.
   if (pawnVisitor.type === 'Collector') {
     if (type === 'sell') {
@@ -3615,6 +3714,9 @@ function moveShopkeeper() {
     !showReceipt &&
     nextMorning > 0 &&
     millis() >= nextMorning) {
+    // Archive the completed day's item counts before clearing its receipt.
+    pastItemsBought += dailyLog.filter(entry => entry.type === "BUY").length;
+    pastItemsSold += dailyLog.filter(entry => entry.type === "SELL").length;
     dayNumber++;
     dayStarted = false;
     closing = false;
@@ -3694,6 +3796,7 @@ function pawnTradeBoard() {
     }
     let selectedCount = wholesale ? selectedWholesaleItems.length : items.length;
     let canBuy = selectedCount > 0 && money >= total;
+    if (dayNumber === 1 && tutorialTradesServed === 2 && !shopBargained) canBuy = false;
     pawnButton(wholesale ? 'BUY SELECTED' : 'BUY ALL',312,489,152,canBuy,color(60,112,67));
   } else {
     { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(16); text('WANTS: ' + currentTrade.category.toUpperCase(), 310, 207); };
@@ -3728,10 +3831,15 @@ function pawnTradeBoard() {
     }
     if(entries.length===0) { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(14); text('NO MATCHING ITEMS IN BAG', 324, 275); };
     if(entries.length>4) { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(12); text('SHOWING FIRST 4 MATCHING ITEMS', 324, 455); };
-    pawnButton('SELL',312,489,152,selectedItems.length>0,color(60,112,67));
+    pawnButton('SELL',312,489,152,selectedItems.length>0 &&
+      !(dayNumber === 1 && tutorialTradesServed === 3),color(60,112,67));
   }
-  pawnButton('BARGAIN',481,489,152,!shopBargained && pawnVisitor.type !== 'Wholesaler',color(98,67,46));
-  pawnButton('REJECT',651,489,152,true,color(156,63,52));
+  const dayOneStep = dayNumber === 1 ? tutorialTradesServed : -1;
+  const bargainVisible = dayOneStep < 0 || dayOneStep >= 2;
+  if (bargainVisible) pawnButton('BARGAIN',481,489,152,
+    !shopBargained && pawnVisitor.type !== 'Wholesaler' && dayOneStep !== 3,
+    color(98,67,46));
+  pawnButton('REJECT',651,489,152,dayOneStep < 0 || dayOneStep >= 3,color(156,63,52));
   { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(pawnVisitor.type === 'Wholesaler' ? 10 : 12); text(pawnMessage, 310, 468); };
 
 
@@ -3768,6 +3876,7 @@ function shopTryBargain() {
 }
 
 function finishTrade() {
+  if (dayNumber === 1) tutorialTradesServed++;
 
   if (pawnVisitor) {
     customerReaction = chooseCustomerLine(customerDialogueOutcome);
