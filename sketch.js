@@ -2380,7 +2380,7 @@ function drawInspectorArrivalNotice() {
 }
 
 function drawInspectorNotice() {
-  if (!inspectorPhase || inspectorPhase === 'entering' || inspectorPhase === 'leaving') return;
+  if (!inspectorPhase || inspectorPhase === 'entering' || inspectorPhase === 'leaving' || inspectorPhase === 'awaiting') return;
   push();
   noStroke();
   fill(0, 0, 0, 175);
@@ -2400,12 +2400,7 @@ function drawInspectorNotice() {
       "Well, well! It's time for another inspection. Let's see if you've been keeping this place in good shape!";
     text(greeting, 146, 185, 572, 212);
     drawButton('BEGIN INSPECTION', 302, 439, 260, true, color(70, 115, 65));
-  } else if (inspectorPhase === 'awaiting') {
-    text("The inspector is ready.", 146, 227, 572, 30);
-    text("Memory game coming soon.", 146, 276, 572, 35);
-    textSize(13);
-    text("For now, continue without a grade.", 146, 338, 572, 30);
-    drawButton('CONTINUE', 302, 429, 260, true, color(70, 115, 65));
+
   } else if (inspectorPhase === 'result') {
     textStyle(BOLD); textSize(22);
     text('INSPECTION GRADE: ' + latestInspectionGrade, 432, 189);
@@ -2423,7 +2418,8 @@ function advanceInspectorNotice() {
     showMemoryGame();
     return;
   }
-  if (inspectorPhase !== 'awaiting' && inspectorPhase !== 'result') return;
+  // Complete the memory game before allowing Alex to leave.
+  if (inspectorPhase !== 'result') return;
   inspectorPhase = 'leaving';
   inspectorResultText = '';
   if (inspectorNoticePausedGame && gamePaused) togglePause();
