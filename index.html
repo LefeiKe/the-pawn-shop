@@ -15,12 +15,14 @@
         }
 
         #posh-game-overlay[hidden],
-        #tetris-game-overlay[hidden] {
+        #tetris-game-overlay[hidden],
+        #memory-game-overlay[hidden] {
             display: none;
         }
 
         #posh-game-overlay,
-        #tetris-game-overlay {
+        #tetris-game-overlay,
+        #memory-game-overlay {
             align-items: center;
             background: rgba(0, 0, 0, 0.78);
             box-sizing: border-box;
@@ -35,7 +37,8 @@
         }
 
         #posh-game-window,
-        #tetris-game-window {
+        #tetris-game-window,
+        #memory-game-window {
             background: #ead0a1;
             border: 8px solid #3c261c;
             box-sizing: border-box;
@@ -47,11 +50,18 @@
         }
 
         #posh-game-frame,
-        #tetris-game-frame {
+        #tetris-game-frame,
+        #memory-game-frame {
             border: 0;
             display: block;
             height: 100%;
             width: 100%;
+        }
+
+        /* Memory Game uses an 800 x 500 canvas */
+        #memory-game-frame {
+            width: 800px;
+            height: 500px;
         }
 
         #close-posh-game {
@@ -68,6 +78,17 @@
             z-index: 1;
         }
     </style>
+
+    <style>
+        body {
+            margin: 0;
+        }
+    
+        canvas {
+            display: block;
+        }
+    </style>
+    
 </head>
 
 <body>
@@ -89,6 +110,17 @@
         </div>
     </div>
 
+    <!-- Inspector Memory Game -->
+    <div id="memory-game-overlay" hidden>
+        <div id="memory-game-window">
+            <iframe
+                id="memory-game-frame"
+                data-src="memory-mini-game/memory-index.html"
+                title="Inspector Memory Game">
+            </iframe>
+        </div>
+    </div>
+    
     <script src="sketch.js"></script>
 
 </body>
