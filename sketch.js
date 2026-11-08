@@ -1210,17 +1210,12 @@ let pawnVisitor = null;
 let pawnMessage = '';
 let pawnRelationship = {Regular:50,Bargain:50,Collector:50,Suspicious:50};
 let pawnReady = false;
-let pawnIntroSeen = {Regular:false,Bargain:false,Collector:false,Suspicious:false,Wholesaler:false};
+let pawnIntroSeen = {Bargain:false,Collector:false,Suspicious:false,Wholesaler:false};
 let pawnIntroType = '';
 let pawnIntroPausedGame = false;
 let pawnConversation = '';
 const pawnTypeNames = {Regular:"PAL OF PAT'S",Bargain:'PENNY PINCHER',Collector:'POSH PATRON',Suspicious:'PRECARIOUS PURVEYORS',Wholesaler:'PALLET PEDDLER',Inspector:'PAWN SHOP PATROLLER'};
 const pawnTypeExplanations = {
-  Regular: [
-    "PALS OF PAT'S",
-    "Friendly faces who stop by for everyday treasures. They appreciate a fair deal and a shopkeeper they can trust.",
-    "Their offers vary, but a good reputation makes trading with them easier."
-  ],
   Bargain: [
     "PENNY PINCHERS",
     "Every penny counts for these sharp-eyed shoppers. Winning them over might take a little extra charm.",
@@ -1281,7 +1276,7 @@ function pawnDrawPoshOffer() {
 function pawnStartIntroIfNeeded() {
   if (!pawnTradeActive() || pawnIntroType || !pawnVisitor) return;
   let t=pawnVisitor.type;
-  // Pals of Pat's are ordinary customers, not a new type to unlock.
+  // Only special customer types have introduction screens.
   if (t === 'Regular') return;
   if (pawnIntroSeen[t] === false) {
     pawnIntroSeen[t] = true;
@@ -3210,10 +3205,9 @@ function restartGame() {
   
   pawnRelationship = {Regular:50,Bargain:50,Collector:50,Suspicious:50};
   pawnVisitor=null;pawnMessage='';pawnRows=[];
-  pawnIntroSeen={Regular:false,Bargain:false,Collector:false,Suspicious:false,Wholesaler:false};
+  pawnIntroSeen={Bargain:false,Collector:false,Suspicious:false,Wholesaler:false};
   pawnIntroType='';pawnIntroPausedGame=false;pawnConversation='';
   pawnUnlockedTypes={Regular:true,Bargain:false,Collector:false,Suspicious:false,Wholesaler:false};
-  pawnNewTypeDay=-1;
 
   
   shopMenu = "";
@@ -3315,7 +3309,6 @@ function generateCustomer(forcedVisitorType) {
       {type:"category", items:[], category:"Tools", budget:5, markup:1}
     ];
     currentTrade = {...scriptedTrades[tutorialStep], items:[...scriptedTrades[tutorialStep].items]};
-    pawnIntroSeen.Regular = true;
   }
   currentCustomer = new Customer(
     pawnVisitor.name, pawnVisitor.type,
