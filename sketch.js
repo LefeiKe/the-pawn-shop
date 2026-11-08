@@ -2393,17 +2393,31 @@ function drawInspectorNotice() {
   textLeading(29);
 
   if (inspectorPhase === 'intro') {
-    const greeting = !inspectorHasIntroduced ?
-      "Good day! I'm Alex, the local shop inspector. I'll be stopping by from time to time to make sure everything is in order. Inspection ratings are very important for businesses like yours. A good rating attracts more customers, while a poor one might drive them away. Now then, let's see how well you've been running this little shop!" :
-      "Well, well! It's time for another inspection. Let's see if you've been keeping this place in good shape!";
-    text(greeting, 164, 175, 536, 236);
+    if (!inspectorHasIntroduced) {
+      // Three short, separated paragraphs instead of one dense speech block.
+      text("Good day! I'm Alex, the local shop inspector.\nI'll stop by from time to time to make sure\neverything is in order.", 164, 174, 536, 85);
+      text("Inspection ratings matter for shops like this.\nA good rating attracts more customers, while\na poor one might drive them away.", 164, 272, 536, 85);
+      text("Now, let's see how you've been running this shop!", 164, 376, 536, 32);
+    } else {
+      text("Well, well! It's time for another inspection.\n\nLet's see if you've been keeping this place\nin good shape!", 164, 190, 536, 175);
+    }
     drawButton('BEGIN INSPECTION', 302, 439, 260, true, color(70, 115, 65));
 
   } else if (inspectorPhase === 'result') {
     textAlign(CENTER); textStyle(BOLD); textSize(22);
     text('INSPECTION GRADE: ' + latestInspectionGrade, 432, 189);
-    textAlign(LEFT); textStyle(NORMAL); textSize(19); textLeading(29);
-    text(inspectorResultText, 164, 223, 536, 190);
+    textAlign(LEFT); textStyle(NORMAL); textSize(19); textLeading(26);
+    // Break after the first substantial sentence so the grade response breathes.
+    const sentences = inspectorResultText.match(/[^.!?]+[.!?]+|[^.!?]+$/g) || [inspectorResultText];
+    let firstParagraph = "";
+    let remainingSentences = sentences.slice();
+    while (remainingSentences.length && firstParagraph.length < 45) {
+      firstParagraph += remainingSentences.shift();
+    }
+    const spacedResponse = remainingSentences.length
+      ? firstParagraph.trim() + "\n\n" + remainingSentences.join("").trim()
+      : inspectorResultText;
+    text(spacedResponse, 164, 216, 536, 210);
     drawButton('CONTINUE', 302, 429, 260, true, color(70, 115, 65));
   }
   pop();
