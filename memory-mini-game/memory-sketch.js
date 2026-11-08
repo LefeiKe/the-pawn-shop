@@ -220,7 +220,7 @@ function draw() {
         if (questionNumber === 1) {
 
             fill(50);
-            textSize(15);
+            textSize(18);
             text("Which item is missing?", width / 2, 188);
 
             // Display five item images and one missing item
@@ -254,7 +254,7 @@ function draw() {
         }
         else {
             fill(50);
-            textSize(14);
+            textSize(18);
             textAlign(CENTER, CENTER);
             text(questionText, 120, 185, 560, 55);
             textAlign(CENTER, BASELINE);
@@ -263,7 +263,7 @@ function draw() {
 
         // answer countdown
         fill(50);
-        textSize(14);
+        textSize(18);
         if (questionNumber === 1) {
             text("Time left: " + timeLeft, width / 2, 245);
         }
