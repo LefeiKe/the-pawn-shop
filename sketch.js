@@ -615,20 +615,25 @@ function drawIntro() {
   noStroke();
   fill(0, 0, 0, 180);
   rect(0, 0, width, height);
-  pixelBoard(90, 55, 684, 470);
+  pixelBoard(112, 152, 640, 268);
 
   textFont("Pixelify Sans");
   fill(65, 40, 28);
   textAlign(CENTER);
   textStyle(BOLD);
   textSize(31);
-  text("PIXEL PAT'S PAWNS AND PARCELS", width / 2, 249);
+  text("PIXEL PAT'S PAWNS AND PARCELS", width / 2, 227);
 
   textStyle(NORMAL);
   textSize(18);
-  text("Be prudent and profitable to help the little shop prosper!", width / 2, 296);
+  text("Be prudent and profitable to help the little shop prosper!", width / 2, 274);
 
-  drawButton("START GAME", 317, 474, 220, true, color(70, 115, 65));
+  const hoveringStart = pawnHit(292, 327, 280, 44);
+  fill(hoveringStart ? color(85, 137, 79) : color(70, 115, 65));
+  rect(292, 327, 280, 44);
+  fill(255);
+  textSize(20);
+  text("START GAME", width / 2, 356);
 }
 
 // Day and money
@@ -1070,8 +1075,7 @@ function handleBasicClick() {
   // Introduction screen
   if (showIntro) {
 
-    if (mouseX >= 317 && mouseX <= 547 &&
-        mouseY >= 474 && mouseY <= 506) {
+    if (pawnHit(292, 327, 280, 44)) {
 
       showIntro = false;
 
@@ -2179,6 +2183,7 @@ let phonePending = '';  // 'hello', 'upgrades', 'rentReveal', 'rent'
 let phoneCall = '';     // active call panel
 let phoneSeen = {hello:false, upgrades:false, rentReveal:false};
 let helloPage = 0;
+let welcomeCallCompleted = false;
 let phoneSelected = [];
 let phoneSavedPause = false;
 let phoneHint = '';
@@ -2226,6 +2231,7 @@ function phoneCheckEvents() {
 }
 
 function phoneEndCall() {
+  if (phoneCall === 'hello') welcomeCallCompleted = true;
   phonePending = '';
   phoneCall = '';
   phoneSelected = [];
@@ -2945,7 +2951,10 @@ function testJumpToDay(day) {
   phonePaidToday = false;
   dailyLog = [];
   // Prior announcements are logically unlocked when jumping beyond them.
-  if (day > 1) phoneSeen.hello = true;
+  if (day > 1) {
+    phoneSeen.hello = true;
+    welcomeCallCompleted = true;
+  }
   if (day > 3) phoneSeen.upgrades = true;
   if (day > 7) phoneSeen.rentReveal = true;
   if (day === 3) phoneSeen.upgrades = false; // Test the unlock call.
@@ -3080,9 +3089,12 @@ function draw() {
     
     drawCharacters();
     
-    drawInfo();
-    drawClock();
-    drawBagIcon();
+    // Show gameplay HUD only after Pat's first welcome call has ended.
+    if (!showIntro && welcomeCallCompleted) {
+      drawInfo();
+      drawClock();
+      drawBagIcon();
+    }
 
     if (closing) {
         fill(255);
@@ -3108,7 +3120,7 @@ function draw() {
     }
   if(pawnTradeActive()) pawnTradeBoard();
   // Keep the bag icon visible above the customer trading panel.
-  if (pawnTradeActive() && !showBag && !shopMenu) drawBagIcon();
+  if (welcomeCallCompleted && pawnTradeActive() && !showBag && !shopMenu) drawBagIcon();
     pawnStartIntroIfNeeded();
   if (poshGamePending && pawnTradeActive() && !pawnIntroType) {
     showPoshOffer();
@@ -3118,7 +3130,7 @@ function draw() {
   }
   if (pawnIntroType) pawnDrawIntro();
 
-  if (!showIntro && !showReceipt && !gameOver && !pawnIntroType) {
+  if (!showIntro && welcomeCallCompleted && !showReceipt && !gameOver && !pawnIntroType) {
     shopDrawTabs();
       if (shopMenu === "people") shopDrawPeople();
       if (shopMenu === "upgrades") shopDrawUpgrades();
@@ -3322,6 +3334,7 @@ function restartGame() {
   
   phonePending='';phoneCall='';phoneSelected=[];
   phoneSeen={hello:false, upgrades:false, rentReveal:false};
+  welcomeCallCompleted = false;
   phoneSavedPause=false;phonePaidToday=false;
 }
 
