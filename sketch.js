@@ -627,17 +627,17 @@ function dayOneTutorialHint() {
   if (showReceipt || showBag || closing) return "";
   const step = tutorialTradesServed;
   if (pawnTradeActive()) {
-    if (step === 0) return "This customer wants to sell an item. Buying costs money, but you can resell it for profit.";
-    if (step === 1) return "Buyers have a budget and a target category. Select a matching item from your bag.";
-    if (step === 2) return "BARGAIN may improve the price, but negotiations can fail.";
-    if (step === 3) return "Some buyers have a small budget. Use REJECT to avoid an unprofitable trade.";
-    return "You've learned the basics. Now explore the rest of the shop at your own pace.";
+    if (step === 0) return "Our first seller! Buying costs cash, but you can resell the item for a profit.";
+    if (step === 1) return "Here comes a buyer! Check their budget and category, then pick an item to sell.";
+    if (step === 2) return "Time to BARGAIN! You might get a better price, but it won't always work.";
+    if (step === 3) return "Only $5 to spend? Some deals aren't worth it. Hit REJECT.";
+    return "You've got the basics down! Now see what else this little shop has in store.";
   }
-  if (step === 0) return "The daily customer count is at the top right. The shop closes after everyone is served.";
-  if (step === 1) return tutorialBagSeen ? "" : "Click BAG to review your purchases. Keep an eye on your storage capacity.";
-  if (step === 2) return "Buy low and sell high to make a profit.";
-  if (step === 3) return "REPUTATION shows your relationships. Stronger relationships improve bargaining chances.";
-  if (step === 4) return "Watch your balance. Weekly debt gives you three days to recover before the shop closes.";
+  if (step === 0) return "See the customer count at the top right? We'll close up once everyone's served.";
+  if (step === 1) return tutorialBagSeen ? "" : "Take a peek at BAG to see your purchase. Watch that storage space!";
+  if (step === 2) return "That's the trick, kiddo. Buy low, sell high!";
+  if (step === 3) return "Check REPUTATION to see how folks feel about you. Good relationships help with bargains.";
+  if (step === 4) return "Keep an eye on your cash, kiddo. Clear weekly debt within three days to keep the shop open.";
   return "";
 }
 
