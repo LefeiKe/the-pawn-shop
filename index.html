@@ -48,6 +48,12 @@
             width: min(864px, 90vw);
         }
 
+        /* Memory Game uses an 800 x 500 canvas */
+        #memory-game-frame {
+            width: 800px;
+            height: 500px;
+        }
+
         #close-posh-game {
             background: #9c3f34;
             border: 0;
@@ -62,6 +68,17 @@
             z-index: 1;
         }
     </style>
+
+    <style>
+        body {
+            margin: 0;
+        }
+    
+        canvas {
+            display: block;
+        }
+    </style>
+    
 </head>
 
 <body>
