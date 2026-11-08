@@ -466,7 +466,7 @@ function resolvePoshGame(won) {
   finishTrade();
   if (won) {
     customerReaction = "You're a marvel! I've left a nice bonus for you.";
-    customerReactionUntil = millis() + 2200;
+    customerReactionUntil = millis() + 3000;
     rewardHighlightUntil = customerReactionUntil;
   }
 }
@@ -514,7 +514,7 @@ function finishStorageChallenge(won) {
   } else {
     reputationNotice = "The purchase and payment were lost in the stockroom...";
   }
-  reputationNoticeUntil = millis() + 3000;
+  reputationNoticeUntil = millis() + 4000;
   tetrisPurchase = null;
   if (tetrisPausedShop) togglePause();
   tetrisPausedShop = false;
@@ -1583,7 +1583,13 @@ function suspiciousTradeConsequence() {
   const group = random(groups);
   pawnRelationship[group.type] = constrain(pawnRelationship[group.type] - 5, 0, 100);
   reputationNotice = 'Your reputation among the ' + group.name + ' has declined...';
-  reputationNoticeUntil = millis() + 3000;
+  reputationNoticeUntil = millis() + 4000;
+}
+
+// Reuse the tutorial's letter-by-letter reveal for brief notices.
+function typedNotice(message, startedAt) {
+  const letters = constrain(floor((millis() - startedAt) / 23) + 1, 0, message.length);
+  return message.slice(0, letters);
 }
 
 function drawReputationNotice() {
@@ -1595,7 +1601,7 @@ function drawReputationNotice() {
   textAlign(CENTER);
   textStyle(NORMAL);
   textSize(16);
-  text(reputationNotice, 432, 145);
+  text(typedNotice(reputationNotice, reputationNoticeUntil - 4000), 432, 145);
   pop();
 }
 
@@ -2373,7 +2379,7 @@ function drawInspectorArrivalNotice() {
   textAlign(CENTER);
   textStyle(NORMAL);
   textSize(17);
-  text('A SPECIAL GUEST HAS ARRIVED...', 432, 145);
+  text(typedNotice('A SPECIAL GUEST HAS ARRIVED...', inspectorArrivalNoticeUntil - 3000), 432, 145);
   pop();
 }
 
@@ -3186,7 +3192,7 @@ function draw() {
       stroke(30, 20, 15);
       strokeWeight(3);
       fill(255);
-      text(customerReaction, width / 2, height - 75);
+      text(typedNotice(customerReaction, customerReactionUntil - 3000), width / 2, height - 75);
       pop();
     }
 
@@ -3226,7 +3232,7 @@ function draw() {
       if (phoneCall) phoneDrawCall();
       if (phoneHint && millis() < phoneHintUntil && !phoneCall && !phonePending) {
         fill(65,40,28); rect(540,351,310,34);
-        fill(255); textAlign(CENTER); textSize(14); text(phoneHint,695,373);
+        fill(255); textAlign(CENTER); textSize(14); text(typedNotice(phoneHint, phoneHintUntil - 2200),695,373);
       }
   }
 
@@ -3237,7 +3243,7 @@ function draw() {
     textAlign(CENTER);
     textStyle(BOLD);
     textSize(19);
-    text("DELIVERY ARRIVED!", 432, 121);
+    text(typedNotice("DELIVERY ARRIVED!", deliveryNoticeUntil - 3000), 432, 121);
     textStyle(NORMAL);
   }
 
@@ -4016,7 +4022,7 @@ function shopTryBargain() {
     pawnChangeScore(-3);
     reputationNotice = 'Your reputation among the ' +
       reputationGroupName(pawnVisitor.type) + ' has declined...';
-    reputationNoticeUntil = millis() + 3000;
+    reputationNoticeUntil = millis() + 4000;
   }
   pawnConversation = chooseCustomerLine(succeeded ? 'bargainYes' : 'bargainNo');
   pawnMessage = succeeded ? 'BARGAIN ACCEPTED' : 'BARGAIN REJECTED';
@@ -4027,7 +4033,7 @@ function finishTrade() {
 
   if (pawnVisitor) {
     customerReaction = chooseCustomerLine(customerDialogueOutcome);
-    customerReactionUntil = millis() + 2200;
+    customerReactionUntil = millis() + 3000;
   }
   customerDialogueOutcome = 'rejected';
 
