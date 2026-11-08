@@ -3221,8 +3221,18 @@ function draw() {
     inspectorPhase || tetrisPromptActive || bankruptcyNotice;
   if (latestInspectionGrade && !popupActive) {
     push();
-    fill(65, 40, 28); textSize(12); textAlign(CENTER);
-    text('INSPECTION: ' + latestInspectionGrade, 763, 83);
+    // A square inspection badge below the customer-count board.
+    // Preserve the previous popup layering rules.
+    pixelBoard(799, 70, 55, 55);
+    fill(65, 40, 28);
+    textFont("Pixelify Sans");
+    textAlign(CENTER);
+    textStyle(NORMAL);
+    textSize(10);
+    text("GRADE", 826.5, 92);
+    textStyle(BOLD);
+    textSize(23);
+    text(latestInspectionGrade, 826.5, 115);
     pop();
   }
   drawTestPanel();

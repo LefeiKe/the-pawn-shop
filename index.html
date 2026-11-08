@@ -58,10 +58,30 @@
             width: 100%;
         }
 
-        /* Memory Game uses an 800 x 500 canvas */
+        /* Sara's 800 x 500 canvas fits inside a framed window. */
+        #memory-game-window {
+            width: 840px;
+            height: 540px;
+            padding: 12px;
+        }
+
         #memory-game-frame {
             width: 800px;
             height: 500px;
+        }
+
+        /* Abdullah's 864 x 576 canvas already fills the shop viewport. */
+        #tetris-game-window {
+            width: 864px;
+            height: 576px;
+            padding: 0;
+            border: 0;
+            box-shadow: none;
+        }
+
+        #tetris-game-frame {
+            width: 864px;
+            height: 576px;
         }
 
         #close-posh-game {
