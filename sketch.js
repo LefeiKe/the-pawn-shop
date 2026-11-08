@@ -214,7 +214,7 @@ const FINAL_DAY = 28;
 // Count only upgrades purchased from the shop; Tetris capacity rewards are separate.
 function unlockedUpgradeCount() {
   return Number(priceCatalogOwned) + shelvesLevel + advertisingLevel +
-    supplierOwned.filter(Boolean).length;
+    wealthyClienteleLevel + supplierOwned.filter(Boolean).length;
 }
 
 function chooseFinalEnding() {
@@ -978,7 +978,7 @@ function availableItems() {
       let item = products[inventory[i].product];
 
       // Only show items from the requested category
-      if (item.category === currentTrade.category) {
+      if (pawnVisitor?.type === 'Wholesaler' || item.category === currentTrade.category) {
           result.push(i);
       }
   }
@@ -1439,6 +1439,15 @@ function handleCustomerClick() {
       return;
     }
   } else {
+    let buyerPages = max(1, ceil(availableItems().length / 4));
+    if (buyerPages > 1 && pawnHit(540,442,55,36) && buyerItemPage > 0) {
+      buyerItemPage--;
+      return;
+    }
+    if (buyerPages > 1 && pawnHit(710,442,55,36) && buyerItemPage < buyerPages - 1) {
+      buyerItemPage++;
+      return;
+    }
     for(let row of pawnRows) {
       if(pawnHit(row.x,row.y,row.w,row.h)) {
         let pos=selectedItems.indexOf(row.index);
@@ -1449,7 +1458,7 @@ function handleCustomerClick() {
     }
     if(pawnHit(312,489,152,36)) {
       if(!selectedItems.length){pawnMessage='SELECT AN ITEM FIRST';return;}
-      if(selectedTotal()>currentTrade.budget)showBudgetWarning=true;
+      if(pawnVisitor.type !== 'Wholesaler' && selectedTotal()>currentTrade.budget)showBudgetWarning=true;
       else completeBuyerSale();
       return;
     }
@@ -1470,11 +1479,13 @@ let shopMenu = "";             // "people", "upgrades", or ""
 let shopMenuPaused = false;
 let shelvesLevel = 0;
 let advertisingLevel = 0;
+let wealthyClienteleLevel = 0;
 let priceCatalogOwned = false;
 let supplierOwned = [false, false, false];
 let upgradePage = 0;
 let shelvesPrices = [100, 220, 450];
 let advertisingPrices = [100, 200, 400];
+let wealthyClientelePrices = [120, 260, 480];
 let supplierNames = ["TIPSY BARREL", "FLASHBACK", "RUSTY WRENCH"];
 let supplierProducts = ["Wine", "Camera", "Drill"];
 let supplierPrices = [150, 220, 180];
@@ -1482,6 +1493,7 @@ let shopMessage = "";
 let shopBargained = false;
 let shopTradeMultiplier = 1;
 let selectedWholesaleItems = []; // Positions within the Wholesaler's five offered items.
+let buyerItemPage = 0;
 let reputationNotice = '';
 let reputationNoticeUntil = 0;
 
@@ -1607,6 +1619,11 @@ function getUpgradeList() {
     "A moderate boost of customers is attracted to your shop each day.",
     "A large boost of customers is attracted to your shop each day."
   ];
+  let wealthyDescriptions = [
+    "Attract wealthier customers with slightly higher budgets.",
+    "Attract wealthier customers with moderately increased budgets.",
+    "Attract wealthy customers with significantly higher budgets."
+  ];
 
   if (shelvesLevel < 3) available.push({
     name:"DISPLAY SHELVES " + roman[shelvesLevel],
@@ -1617,6 +1634,12 @@ function getUpgradeList() {
     name:"ADVERTISING " + roman[advertisingLevel],
     description:advertisingDescriptions[advertisingLevel],
     price:advertisingPrices[advertisingLevel], type:"advertising"
+  });
+
+  if (dayNumber >= 6 && wealthyClienteleLevel < 3) available.push({
+    name:"WEALTHY CLIENTELE " + roman[wealthyClienteleLevel],
+    description:wealthyDescriptions[wealthyClienteleLevel],
+    price:wealthyClientelePrices[wealthyClienteleLevel], type:"wealthy"
   });
 
   let partnerships = [
@@ -1631,6 +1654,7 @@ function getUpgradeList() {
   }
   for (let i = 0; i < shelvesLevel; i++) owned.push({name:"DISPLAY SHELVES " + roman[i]});
   for (let i = 0; i < advertisingLevel; i++) owned.push({name:"ADVERTISING " + roman[i]});
+  for (let i = 0; i < wealthyClienteleLevel; i++) owned.push({name:"WEALTHY CLIENTELE " + roman[i]});
   return available.concat(owned);
 }
 
@@ -1679,6 +1703,7 @@ function shopBuyUpgrade(i) {
   if (upgrade.type === "catalog") priceCatalogOwned = true;
   else if (upgrade.type === "shelves") shelvesLevel++;
   else if (upgrade.type === "advertising") advertisingLevel++;
+  else if (upgrade.type === "wealthy") wealthyClienteleLevel++;
   else if (upgrade.type === "supplier") supplierOwned[upgrade.supplier] = true;
   shopMessage = upgrade.name + " UNLOCKED";
   upgradePage = 0;
@@ -3212,6 +3237,7 @@ function restartGame() {
   
   shopMenu = "";
   shopMenuPaused = false;
+  buyerItemPage = 0;
   storageBonus = 0;
   tetrisIntroduced = false;
   tetrisPurchase = null;
@@ -3219,6 +3245,7 @@ function restartGame() {
   tetrisPromptActive = false;
   shelvesLevel = 0;
   advertisingLevel = 0;
+  wealthyClienteleLevel = 0;
   priceCatalogOwned = false;
   supplierOwned = [false, false, false];
   upgradePage = 0;
@@ -3355,14 +3382,20 @@ function generateCustomer(forcedVisitorType) {
   }
   if (pawnVisitor.type === 'Wholesaler') {
     currentTrade.markup = 0.90;
-    currentTrade.budget = max(250, floor(random(300, 651)));
+    currentTrade.budget = Infinity;
     if (type === 'sell') {
       currentTrade.items = [];
       for (let i = 0; i < 5; i++) currentTrade.items.push(floor(random(12)));
     }
   }
+  // Apply the current Wealthy Clientele tier to buyer budgets only.
+  // Pallet Peddlers have no budget cap and are excluded.
+  if (currentTrade.type === 'category' && pawnVisitor.type !== 'Wholesaler') {
+    currentTrade.budget = floor(currentTrade.budget * [1, 1.15, 1.30, 1.50][wealthyClienteleLevel]);
+  }
   selectedItems = [];
   selectedWholesaleItems = [];
+  buyerItemPage = 0;
 
   shopBargained = false;
   shopTradeMultiplier = pawnVisitor.type === 'Suspicious' ? random(0.80, 0.90) :
@@ -3380,7 +3413,7 @@ function completeBuyerSale() {
 
 
   let expected = selectedTotal();
-  let actual = min(expected, currentTrade.budget);
+  let actual = pawnVisitor?.type === 'Wholesaler' ? expected : min(expected, currentTrade.budget);
 
   // Record each sold item
   for (let index of selectedItems) {
@@ -3789,11 +3822,15 @@ function pawnTradeBoard() {
     if (dayNumber === 1 && tutorialTradesServed === 2 && !shopBargained) canBuy = false;
     pawnButton(wholesale ? 'BUY SELECTED' : 'BUY ALL',312,489,152,canBuy,color(60,112,67));
   } else {
-    { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(16); text('WANTS: ' + currentTrade.category.toUpperCase(), 310, 207); };
-    { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(15); text('BUDGET $'+currentTrade.budget+' | SELECTED $'+selectedTotal().toFixed(2), 310, 220, 480, 28); };
+    const unlimitedBuyer = pawnVisitor.type === 'Wholesaler';
+    { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(16); text(unlimitedBuyer ? 'WANTS: ANY ITEM' : 'WANTS: ' + currentTrade.category.toUpperCase(), 310, 207); };
+    { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(15); text('BUDGET ' + (unlimitedBuyer ? 'UNLIMITED' : '$'+currentTrade.budget) + ' | SELECTED $'+selectedTotal().toFixed(2), 310, 220, 480, 28); };
     let entries = availableItems();
-    for(let i=0; i<entries.length && i<4; i++) {
-      let idx=entries[i];let item=products[inventory[idx].product];
+    let buyerPages = max(1, ceil(entries.length / 4));
+    buyerItemPage = constrain(buyerItemPage, 0, buyerPages - 1);
+    let visibleEntries = entries.slice(buyerItemPage * 4, buyerItemPage * 4 + 4);
+    for(let i=0; i<visibleEntries.length; i++) {
+      let idx=visibleEntries[i];let item=products[inventory[idx].product];
       let y=242+i*47;
       pawnPanel(306,y,504,44);
       let checked=selectedItems.includes(idx);
@@ -3820,7 +3857,12 @@ function pawnTradeBoard() {
       pawnRows.push({index:idx,x:306,y:y,w:504,h:44});
     }
     if(entries.length===0) { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(14); text('NO MATCHING ITEMS IN BAG', 324, 275); };
-    if(entries.length>4) { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(12); text('SHOWING FIRST 4 MATCHING ITEMS', 324, 455); };
+    if(entries.length>4) {
+      fill(63, 40, 30); textAlign(CENTER); textStyle(NORMAL); textSize(12);
+      text('PAGE ' + (buyerItemPage + 1) + '/' + buyerPages, 650, 461);
+      pawnButton('<', 540, 442, 55, buyerItemPage > 0, color(98,67,46));
+      pawnButton('>', 710, 442, 55, buyerItemPage < buyerPages - 1, color(98,67,46));
+    }
     pawnButton('SELL',312,489,152,selectedItems.length>0 &&
       !(dayNumber === 1 && tutorialTradesServed === 3),color(60,112,67));
   }
