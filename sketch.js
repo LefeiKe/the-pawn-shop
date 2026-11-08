@@ -549,22 +549,20 @@ function drawStorageTetrisPrompt() {
     fill(63,40,30); textAlign(CENTER); textStyle(BOLD); textSize(23);
     text("NEW CHALLENGE UNLOCKED!",432,109);
     textSize(21); text("STORAGE REORGANIZATION",432,139);
-    textStyle(NORMAL); textSize(16);
-    text("Oh boy, looks like you've run out of storage space!",110,164,644,35);
-    text("Ever wondered how you could make a little more room around here?",110,197,644,35);
-    text("Don't worry, kiddo! Head into the stockroom and clear five rows of crates before they pile up to the top.",110,230,644,55);
-    text("You'll earn three permanent storage slots if you succeed!",110,287,644,35);
-    text("But if you fail, you'll lose your entire purchase and the money you spent.",110,321,644,45);
-    text("Even if you win, only the most expensive items can stay if space runs out. No refunds, I'm afraid! Good luck, kiddo!",110,364,644,54);
+    // Match Pat's call: left-aligned 19px paragraphs with readable line lengths.
+    fill(66,43,29); textAlign(LEFT); textStyle(NORMAL); textSize(19); textLeading(27);
+    text("Oh boy, looks like you've run out of storage space!\nEver wondered how you could make a little more room?",145,160,565,65);
+    text("Head into the stockroom and clear five rows of\ncrates before they pile up. You'll earn three\npermanent storage slots if you succeed.",145,239,565,95);
+    text("If you fail, you lose the purchase and payment.\nEven if you win, only the most expensive items\ncan stay if space runs out. No refunds, I'm afraid!",145,342,565,85);
     pawnButton("LET'S GO!",194,453,210,true,color(70,115,65));
     pawnButton("CANCEL",460,453,210,true,color(155,83,66));
   } else {
     pawnPanel(123,150,618,270);
     fill(63,40,30); textAlign(CENTER); textStyle(BOLD); textSize(23);
     text("STORAGE WARNING",432,205);
-    textStyle(NORMAL); textSize(17);
+    fill(66,43,29); textAlign(LEFT); textStyle(NORMAL); textSize(19); textLeading(28);
     text("This purchase exceeds your storage capacity.",165,242,534,35);
-    text("Reorganize your storage? Failure costs you the purchase and payment.",165,285,534,60);
+    text("Reorganize your storage? If you fail, you'll\nlose the purchase and payment.",165,285,534,70);
     pawnButton("PROCEED",194,360,210,true,color(70,115,65));
     pawnButton("CANCEL",460,360,210,true,color(155,83,66));
   }
@@ -751,14 +749,13 @@ function drawBankruptcyNotice() {
   pixelBoard(108,92,648,390);
   fill(160,70,60); textAlign(CENTER); textStyle(BOLD); textSize(24);
   text("YOUR SHOP IS IN TROUBLE!",432,148);
-  fill(65,40,28); textStyle(NORMAL); textSize(17);
-  text("Whoa there, kiddo! The books are in the red.",145,192,574,35);
-  text("But don't pack up the shop just yet!",145,227,574,35);
+  fill(66,43,29); textAlign(LEFT); textStyle(NORMAL); textSize(19); textLeading(28);
+  text("Whoa there, kiddo! The books are in the red.\nBut don't pack up the shop just yet!",155,190,554,70);
   textStyle(BOLD);
   text("YOU HAVE 3 DAYS TO SAVE YOUR BUSINESS!",432,286);
-  textStyle(NORMAL); textSize(16);
-  text("Get your balance back to $0 or more by the end of Day " + recoveryDeadline + ".",145,315,574,55);
-  text("Make every trade count, pal. I'm rooting for ya!",145,372,574,40);
+  textAlign(LEFT); textStyle(NORMAL); textSize(19); textLeading(28);
+  text("Get your balance back to $0 or more\nby the end of Day " + recoveryDeadline + ".",155,315,554,70);
+  text("Make every trade count, pal. I'm rooting for ya!",155,390,554,30);
   drawButton("I'VE GOT THIS!",312,425,240,true,color(70,115,65));
 }
 
@@ -834,7 +831,7 @@ function endingDialogue() {
   return endingSpeeches[ending?.achievement] || endingSpeeches["Shop Closed"];
 }
 function endingMaxScroll() {
-  return max(0, 430 + 260 - 410);
+  return max(0, 445 + 260 - 410);
 }
 
 function finalItemCounts() {
@@ -849,7 +846,7 @@ function drawGameOver() {
   pixelBoard(80,40,704,496);
   const result = ending || {title:"SHOP CLOSED", won:false};
   const dialogue = endingDialogue();
-  const statsY = 430;
+  const statsY = 445;
   const itemCounts = finalItemCounts();
 
   push();
@@ -866,8 +863,8 @@ function drawGameOver() {
   fill(65,40,28); textSize(21);
   text("PIXEL PAT'S FINAL CALL",432,155);
   // Match Pat's original call: left-aligned, continuous text with normal leading.
-  textAlign(LEFT); textStyle(NORMAL); textSize(17); textLeading(28);
-  text(dialogue.join(" "),140,190,584,212);
+  textAlign(LEFT); textStyle(NORMAL); textSize(19); textLeading(29);
+  text(dialogue.join(" "),140,190,584,230);
   textAlign(CENTER);
   stroke(174,130,85); strokeWeight(2);
   line(150,statsY-30,714,statsY-30);
@@ -1310,8 +1307,8 @@ function pawnDrawIntro() {
   { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(23); text('NEW CUSTOMER TYPE!', 165, 171, 540, 28); };
   { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(22); text(lines[0], 165, 220, 540, 28); };
   fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL);
-  textSize(16); text(lines[1], 165, 255, 530, 66);
-  textStyle(BOLD); textSize(15); text(lines[2], 165, 344, 530, 48);
+  textSize(19); textLeading(29); text(lines[1], 165, 255, 520, 75);
+  textStyle(BOLD); textSize(19); text(lines[2], 165, 344, 520, 52);
   textStyle(NORMAL);
   pawnButton('CONTINUE',333,402,198,true,color(70,115,65));
 }
@@ -1321,13 +1318,11 @@ function pawnDrawPoshOffer() {
   textAlign(CENTER);
   textSize(22);
   text("NEW CHALLENGE UNLOCKED", 310, 140, 502, 28);
-  textStyle(NORMAL);
-  textSize(18);
-  text(`My antique vase shattered! I bought a new one,`, 310, 195, 502, 28);
-  text(`but thought I'd donate this old one to the shop.`, 310, 240, 502, 28);
-  text(`Would you like to try your hand at restoring it?`, 310, 285, 502, 28);
-  text(`If you can fix it, it's yours! I bet some`, 310, 330, 502, 28);
-  text(`repair skills would boost the shop's reputation.`, 310, 375, 502, 28);
+  textAlign(LEFT); textStyle(NORMAL);
+  textSize(19); textLeading(29);
+  text("My antique vase shattered! I bought a new one,\nbut thought I'd donate this old one to the shop.", 310, 190, 502, 65);
+  text("Would you like to try restoring it?", 310, 285, 502, 30);
+  text("If you can fix it, it's yours! I bet those repair\nskills would boost the shop's reputation.", 310, 332, 502, 65);
   pawnButton("I'll take a stab at it", 312, 489, 152, true, color(70,120,65));
   pawnButton('Not today', 651, 489, 152, true, color(156,63,52));
 }
@@ -2391,21 +2386,24 @@ function drawInspectorNotice() {
   textStyle(BOLD);
   textSize(23);
   text('PAWN SHOP PATROLLER', 432, 133);
+  // Follow Pat's call typography for inspector dialogue.
+  textAlign(LEFT);
   textStyle(NORMAL);
-  textSize(16);
+  textSize(19);
+  textLeading(29);
 
   if (inspectorPhase === 'intro') {
     const greeting = !inspectorHasIntroduced ?
       "Good day! I'm Alex, the local shop inspector. I'll be stopping by from time to time to make sure everything is in order. Inspection ratings are very important for businesses like yours. A good rating attracts more customers, while a poor one might drive them away. Now then, let's see how well you've been running this little shop!" :
       "Well, well! It's time for another inspection. Let's see if you've been keeping this place in good shape!";
-    text(greeting, 146, 185, 572, 212);
+    text(greeting, 164, 175, 536, 236);
     drawButton('BEGIN INSPECTION', 302, 439, 260, true, color(70, 115, 65));
 
   } else if (inspectorPhase === 'result') {
-    textStyle(BOLD); textSize(22);
+    textAlign(CENTER); textStyle(BOLD); textSize(22);
     text('INSPECTION GRADE: ' + latestInspectionGrade, 432, 189);
-    textStyle(NORMAL); textSize(16);
-    text(inspectorResultText, 146, 225, 572, 205);
+    textAlign(LEFT); textStyle(NORMAL); textSize(19); textLeading(29);
+    text(inspectorResultText, 164, 223, 536, 190);
     drawButton('CONTINUE', 302, 429, 260, true, color(70, 115, 65));
   }
   pop();
