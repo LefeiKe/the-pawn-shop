@@ -624,20 +624,24 @@ function togglePause() {
 
 // Day 1 contextual walkthrough. It never pauses play or captures input.
 function dayOneTutorialHint() {
-  if (showReceipt || showBag || closing) return "";
+  if (showReceipt || showBag) return "";
   const step = tutorialTradesServed;
   if (pawnTradeActive()) {
     if (step === 0) return "Our first seller! Buying costs cash, but you can resell the item for a profit.";
     if (step === 1) return "Here comes a buyer! Check their budget and category, then pick an item to sell.";
     if (step === 2) return "Time to BARGAIN! You might get a better price, but it won't always work.";
     if (step === 3) return "Only $5 to spend? Some deals aren't worth it. Hit REJECT.";
-    return "You've got the basics down! Now see what else this little shop has in store.";
+    if (step === 4) return shopBargained
+      ? "No worries if your reputation drops. Successful trades help you earn it back."
+      : "One more BARGAIN, kiddo. Give it another try and see what happens.";
+    return "";
   }
   if (step === 0) return "See the customer count at the top right? We'll close up once everyone's served.";
   if (step === 1) return tutorialBagSeen ? "" : "Take a peek at BAG to see your purchase. Watch that storage space!";
   if (step === 2) return "That's the trick, kiddo. Buy low, sell high!";
   if (step === 3) return "Check REPUTATION to see how folks feel about you. Good relationships help with bargains.";
   if (step === 4) return "Keep an eye on your cash, kiddo. Clear weekly debt within three days to keep the shop open.";
+  if (step === 5) return "You've got the basics down! Now see what else this little shop has in store.";
   return "";
 }
 
@@ -1728,6 +1732,8 @@ function handleShopClick() {
     if (step === 2 && (pawnHit(651,489,152,36) ||
         (!shopBargained && pawnHit(312,489,152,36)))) return;
     if (step === 3 && !pawnHit(651,489,152,36)) return;
+    if (step === 4 && !shopBargained &&
+        (pawnHit(312,489,152,36) || pawnHit(651,489,152,36))) return;
   }
   if (shopMenu !== "") {
     if (shopMenu === "people") {
@@ -3334,16 +3340,17 @@ function generateCustomer(forcedVisitorType) {
 
   // Day 1 uses guaranteed trades so every basic action can be learned in order.
   const tutorialStep = dayNumber === 1 && !forcedVisitorType ? tutorialTradesServed : -1;
-  const tutorialNames = ["Mia", "Noah", "Emma", "Leo"];
-  pawnVisitor = tutorialStep >= 0 && tutorialStep < 4
+  const tutorialNames = ["Mia", "Noah", "Emma", "Leo", "Rose"];
+  pawnVisitor = tutorialStep >= 0 && tutorialStep < 5
     ? pawnProfiles.find(profile => profile.name === tutorialNames[tutorialStep])
     : pawnPickVisitor(forcedVisitorType);
-  if (tutorialStep >= 0 && tutorialStep < 4) {
+  if (tutorialStep >= 0 && tutorialStep < 5) {
     const scriptedTrades = [
       {type:"sell", items:[0], category:"Daily", budget:100, markup:1},
       {type:"category", items:[], category:"Daily", budget:100, markup:1.15},
       {type:"sell", items:[4,5], category:"Tools", budget:100, markup:1},
-      {type:"category", items:[], category:"Tools", budget:5, markup:1}
+      {type:"category", items:[], category:"Tools", budget:5, markup:1},
+      {type:"sell", items:[1], category:"Daily", budget:100, markup:1}
     ];
     currentTrade = {...scriptedTrades[tutorialStep], items:[...scriptedTrades[tutorialStep].items]};
   }
@@ -3829,7 +3836,7 @@ function pawnTradeBoard() {
     }
     let selectedCount = wholesale ? selectedWholesaleItems.length : items.length;
     let canBuy = selectedCount > 0 && money >= total;
-    if (dayNumber === 1 && tutorialTradesServed === 2 && !shopBargained) canBuy = false;
+    if (dayNumber === 1 && (tutorialTradesServed === 2 || tutorialTradesServed === 4) && !shopBargained) canBuy = false;
     pawnButton(wholesale ? 'BUY SELECTED' : 'BUY ALL',312,489,152,canBuy,color(60,112,67));
   } else {
     const unlimitedBuyer = pawnVisitor.type === 'Wholesaler';
@@ -3881,7 +3888,8 @@ function pawnTradeBoard() {
   if (bargainVisible) pawnButton('BARGAIN',481,489,152,
     !shopBargained && pawnVisitor.type !== 'Wholesaler' && dayOneStep !== 3,
     color(98,67,46));
-  pawnButton('REJECT',651,489,152,dayOneStep < 0 || dayOneStep >= 3,color(156,63,52));
+  pawnButton('REJECT',651,489,152,(dayOneStep < 0 || dayOneStep >= 3) &&
+    !(dayOneStep === 4 && !shopBargained),color(156,63,52));
   { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(pawnVisitor.type === 'Wholesaler' ? 10 : 12); text(pawnMessage, 310, 468); };
 
 
@@ -3905,7 +3913,8 @@ function shopTryBargain() {
     (score >= 85 ? 0.70 : score >= 65 ? 0.50 : score >= 35 ? 0.35 : score >= 15 ? 0.20 : 0.05) :
     constrain(chance + (adjustments[pawnVisitor.type] || 0), 0, 1);
 
-  let succeeded = random() < chance;
+  // Day 1's fifth visitor demonstrates a failed bargain before free choice resumes.
+  let succeeded = dayNumber === 1 && tutorialTradesServed === 4 ? false : random() < chance;
   if (succeeded) {
     const improvement = pawnVisitor.type === 'Bargain' ? 0.20 : 0.10;
     if (currentTrade.type === "sell") shopTradeMultiplier *= 1 - improvement;
