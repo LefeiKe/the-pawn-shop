@@ -1,4 +1,5 @@
 let vaseSpriteSheet;
+let shopBg;
 let vaseChoice;
 let pieces = [];
 let emptySquare = {col: 2, row: 2};
@@ -43,6 +44,7 @@ async function setup() {
     textFont("Press Start 2P")
 
     vaseSpriteSheet = await loadImage('images/vases.png');
+    shopBg = await loadImage('../images/shop.png');
 
     gameState = "start";
 
@@ -52,7 +54,12 @@ async function setup() {
 }
 
 function draw() {
-    background(65, 40, 28);
+    background(0);
+    if (shopBg) image(shopBg, 0, 0, width, height);
+    // Match the main shop's start-screen dimming.
+    noStroke();
+    fill(0, 0, 0, 180);
+    rect(0, 0, width, height);
 
     if (gameState === "start") {
         drawStartScreen();

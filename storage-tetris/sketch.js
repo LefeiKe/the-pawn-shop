@@ -55,6 +55,7 @@ let nextId;
 let lastFallTime = 0;
 
 let gameState = "loading";
+let shopBg;
 
 // true when the main shop game opens this inside its iframe
 const EMBEDDED = window.parent !== window;
@@ -64,6 +65,7 @@ async function setup() {
   canvas.parent("game");
 
   noSmooth();
+  shopBg = await loadImage("../images/shop.png");
   textFont("Press Start 2P"); // from the overarching main game
 
   // keep each image next to its item in the PIECES list, or null to use the fallback color
@@ -101,6 +103,11 @@ function imageMatchesGrid(img, piece) { // shouldn't be an issue because i desgi
 
 function draw() {
   background(0);
+  if (shopBg) image(shopBg, 0, 0, width, height);
+  // Match the main shop start screen dimming (180 / 255 opacity).
+  noStroke();
+  fill(0, 0, 0, 180);
+  rect(0, 0, width, height);
 
   if (gameState === "loading") {
     return;
