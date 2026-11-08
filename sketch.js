@@ -930,7 +930,6 @@ function drawBudgetWarning() {
 
   let expected = selectedTotal();
   let actual = min(expected, currentTrade.budget);
-  let difference = expected - actual;
 
   // Darken the screen
   fill(0, 0, 0, 160);
@@ -949,7 +948,8 @@ function drawBudgetWarning() {
   textSize(14);
   text("Expected: $" + expected.toFixed(2), 432, 250);
   text("Buyer can pay: $" + actual.toFixed(2), 432, 280);
-  text("You earn $" + difference.toFixed(2) + " less.", 432, 310);
+  text("Accepting lowers your reputation among the " +
+       reputationGroupName(pawnVisitor.type) + ".", 432, 310, 510, 35);
 
   drawButton("ACCEPT", 185, 345, 180,
              true, color(70, 115, 65));
@@ -1508,6 +1508,16 @@ function sellerSelectedTotal() {
 }
 
 // Only successful Suspicious trades harm a random OTHER customer group's trust.
+function reputationGroupName(type) {
+  const names = {
+    Regular: "Pals of Pat's",
+    Bargain: "Penny Pinchers",
+    Suspicious: "Precarious Purveyors",
+    Collector: "Posh Patrons"
+  };
+  return names[type] || "customers";
+}
+
 function suspiciousTradeConsequence() {
   if (!pawnVisitor || pawnVisitor.type !== 'Suspicious') return;
   const groups = [
@@ -1582,7 +1592,7 @@ function shopMenuCard(x, y, w, h) {
 function shopDrawPeople() {
   noStroke(); fill(0, 0, 0, 175); rect(0, 0, width, height);
   pixelBoard(116, 57, 632, 462);
-  { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(22); text("CUSTOMER REPUTATION", 145, 102); };
+  { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(22); text("REPUTATION AMONG CUSTOMERS", 145, 102); };
   { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(14); text("A better reputation increases bargaining success rates.", 145, 131); };
 
   let groups = ["Regular", "Bargain", "Collector", "Suspicious"];
@@ -3414,6 +3424,7 @@ function completeBuyerSale() {
 
   let expected = selectedTotal();
   let actual = pawnVisitor?.type === 'Wholesaler' ? expected : min(expected, currentTrade.budget);
+  const discountedForBudget = actual < expected;
 
   // Record each sold item
   for (let index of selectedItems) {
@@ -3448,8 +3459,14 @@ function completeBuyerSale() {
 
   showBudgetWarning = false;
   finishTrade();
-  pawnChangeScore(2);
+  if (discountedForBudget) pawnChangeScore(-5);
+  else pawnChangeScore(2);
   suspiciousTradeConsequence();
+  if (discountedForBudget && pawnVisitor.type !== 'Wholesaler') {
+    reputationNotice = 'Your reputation among the ' +
+      reputationGroupName(pawnVisitor.type) + ' has declined...';
+    reputationNoticeUntil = millis() + 3000;
+  }
 }
 
 
