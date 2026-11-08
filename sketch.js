@@ -703,21 +703,17 @@ function dayOneTutorialHint() {
   if (showReceipt || showBag) return "";
   const step = tutorialTradesServed;
   if (pawnTradeActive()) {
-    if (step === 0) return "Our first seller! Buying costs cash, but you can resell the item for a profit.";
-    if (step === 1) return "Here comes a buyer! Check their budget and category, then pick an item to sell.";
-    if (step === 2) return "Time to BARGAIN! You might get a better price, but it won't always work.";
-    if (step === 3) return "Only $5 to spend? Some deals aren't worth it. Hit REJECT.";
-    if (step === 4) return shopBargained
-      ? "No worries if your reputation drops. Successful trades help you earn it back."
-      : "One more BARGAIN! Give it another try and see what happens.";
-    return "";
+    if (step === 0) return "This customer wants to sell an item. Buying costs money, but you can resell it for profit.";
+    if (step === 1) return "Buyers have a budget and a target category. Select a matching item from your bag.";
+    if (step === 2) return "BARGAIN may improve the price, but negotiations can fail.";
+    if (step === 3) return "Some buyers have a small budget. Use REJECT to avoid an unprofitable trade.";
+    return "You've learned the basics. Now explore the rest of the shop at your own pace.";
   }
-  if (step === 0) return "See the customer count at the top right? We'll close up once everyone's served.";
-  if (step === 1) return tutorialBagSeen ? "" : "Take a peek at BAG to see your purchase. Watch that storage space!";
-  if (step === 2) return "That's the trick, kiddo. Buy low, sell high!";
-  if (step === 3) return "Check REPUTATION to see how folks feel about you. Good relationships help with bargains.";
-  if (step === 4) return "Keep an eye on your cash, kiddo. Clear weekly debt within three days to keep the shop open.";
-  if (step === 5) return "You've learned the basics, kiddo! Now let's see how you handle the shop on your own.";
+  if (step === 0) return "The daily customer count is at the top right. The shop closes after everyone is served.";
+  if (step === 1) return "Click BAG to review your purchases. Keep an eye on your storage capacity.";
+  if (step === 2) return "Buy low and sell high to make a profit.";
+  if (step === 3) return "REPUTATION tracks your relationships. Stronger relationships improve bargaining chances.";
+  if (step === 4) return "Watch your balance. Weekly debt gives you three days to recover before the shop closes.";
   return "";
 }
 
@@ -1336,7 +1332,7 @@ function pawnDrawIntro() {
   textSize(16); text(lines[1], 165, 255, 530, 66);
   textStyle(BOLD); textSize(15); text(lines[2], 165, 344, 530, 48);
   textStyle(NORMAL);
-  pawnButton('CONTINUE',333,412,198,true,color(70,115,65));
+  pawnButton('CONTINUE',333,402,198,true,color(70,115,65));
 }
 function pawnDrawPoshOffer() {
   pawnPanel(280,95,562,458);
@@ -1488,7 +1484,7 @@ function pawnPortrait() {
 // New trade board interactions; all unrelated input still uses existing handler.
 function handleCustomerClick() {
   if (pawnIntroType) {
-    if (pawnHit(333,412,198,36)) pawnCloseIntro();
+    if (pawnHit(333,402,198,36)) pawnCloseIntro();
     return;
   }
   if (poshOfferActive) {
@@ -2423,13 +2419,13 @@ function drawInspectorNotice() {
     text("Memory game coming soon.", 146, 276, 572, 35);
     textSize(13);
     text("For now, continue without a grade.", 146, 338, 572, 30);
-    drawButton('CONTINUE', 302, 439, 260, true, color(70, 115, 65));
+    drawButton('CONTINUE', 302, 429, 260, true, color(70, 115, 65));
   } else if (inspectorPhase === 'result') {
     textStyle(BOLD); textSize(22);
     text('INSPECTION GRADE: ' + latestInspectionGrade, 432, 189);
     textStyle(NORMAL); textSize(16);
     text(inspectorResultText, 146, 225, 572, 205);
-    drawButton('CONTINUE', 302, 439, 260, true, color(70, 115, 65));
+    drawButton('CONTINUE', 302, 429, 260, true, color(70, 115, 65));
   }
   pop();
 }
@@ -2684,7 +2680,7 @@ function phoneDrawCall() {
       text(`But that's a job for a spry young whippersnapper ${"\n"}like yourself.`, 190, 295);
       text(`I'll be checking in from time to time!`, 190, 375);
     }
-    drawButton('CONTINUE', 330, 443, 204, true, color(70, 115, 65));
+    drawButton('CONTINUE', 330, 433, 204, true, color(70, 115, 65));
 
   } else if (phoneCall === 'upgrades') {
     fill(66, 43, 29);
@@ -2704,7 +2700,7 @@ function phoneDrawCall() {
     textSize(21);
     text('SHOP UPGRADES', width / 2, 374);
     textStyle(NORMAL);
-    drawButton('CONTINUE', 330, 443, 204, true, color(70, 115, 65));
+    drawButton('CONTINUE', 330, 433, 204, true, color(70, 115, 65));
 
   
   } else if (phoneCall === 'rentReveal') {
@@ -2732,7 +2728,7 @@ function phoneDrawCall() {
 
     textStyle(NORMAL);
 
-    drawButton("CONTINUE", 330, 443, 204,
+    drawButton("CONTINUE", 330, 433, 204,
               true, color(70, 115, 65));
   } else if (phoneCall === 'rent') {
     let rent = phoneRentAmount(dayNumber);
@@ -2803,7 +2799,7 @@ function mousePressed() {
   if (tetrisOverlay && !tetrisOverlay.hidden) return;
   if (inspectorPhase) {
     if (inspectorPhase === 'intro' || inspectorPhase === 'awaiting' || inspectorPhase === 'result') {
-      if (pawnHit(302, 439, 260, 32)) advanceInspectorNotice();
+      if (pawnHit(302, 429, 260, 32)) advanceInspectorNotice();
     }
     return;
   }
@@ -2886,10 +2882,10 @@ function mousePressed() {
         phoneCall = "supplierOrder";
         return;
       }
-    } else if (pawnHit(330, 443, 204, 32) && phoneCall === "hello" && helloPage === 0) {
+    } else if (pawnHit(330, 433, 204, 32) && phoneCall === "hello" && helloPage === 0) {
       helloPage = 1;
       return;
-    } else if (pawnHit(330, 443, 204, 32) && phoneCall !== "orderConfirmed") {
+    } else if (pawnHit(330, 433, 204, 32) && phoneCall !== "orderConfirmed") {
       phoneEndCall();
       return;
     }
@@ -3225,7 +3221,11 @@ function draw() {
   if (showBag) drawBag();
   drawReputationNotice();
   drawInspectorArrivalNotice();
-  if (latestInspectionGrade) {
+  const popupActive = showIntro || showReceipt || gameOver || showBudgetWarning ||
+    showBag || closing || shopMenu || phonePending || phoneCall ||
+    pawnTradeActive() || pawnIntroType || poshOfferActive ||
+    inspectorPhase || tetrisPromptActive || bankruptcyNotice;
+  if (latestInspectionGrade && !popupActive) {
     push();
     fill(65, 40, 28); textSize(12); textAlign(CENTER);
     text('INSPECTION: ' + latestInspectionGrade, 763, 83);
