@@ -1290,7 +1290,7 @@ function pawnDrawIntro() {
   textSize(16); text(lines[1], 165, 255, 530, 66);
   textStyle(BOLD); textSize(15); text(lines[2], 165, 344, 530, 48);
   textStyle(NORMAL);
-  pawnButton('CONTINUE',333,412,198,true,color(70,115,65));
+  pawnButton('CONTINUE',333,402,198,true,color(70,115,65));
 }
 function pawnDrawPoshOffer() {
   pawnPanel(280,95,562,458);
@@ -1436,7 +1436,7 @@ function pawnPortrait() {
 // New trade board interactions; all unrelated input still uses existing handler.
 function handleCustomerClick() {
   if (pawnIntroType) {
-    if (pawnHit(333,412,198,36)) pawnCloseIntro();
+    if (pawnHit(333,402,198,36)) pawnCloseIntro();
     return;
   }
   if (poshOfferActive) {
@@ -2334,13 +2334,13 @@ function drawInspectorNotice() {
     text("Memory game coming soon.", 146, 276, 572, 35);
     textSize(13);
     text("For now, continue without a grade.", 146, 338, 572, 30);
-    drawButton('CONTINUE', 302, 439, 260, true, color(70, 115, 65));
+    drawButton('CONTINUE', 302, 429, 260, true, color(70, 115, 65));
   } else if (inspectorPhase === 'result') {
     textStyle(BOLD); textSize(22);
     text('INSPECTION GRADE: ' + latestInspectionGrade, 432, 189);
     textStyle(NORMAL); textSize(16);
     text(inspectorResultText, 146, 225, 572, 205);
-    drawButton('CONTINUE', 302, 439, 260, true, color(70, 115, 65));
+    drawButton('CONTINUE', 302, 429, 260, true, color(70, 115, 65));
   }
   pop();
 }
@@ -2594,7 +2594,7 @@ function phoneDrawCall() {
       text(`But that's a job for a spry young whippersnapper ${"\n"}like yourself.`, 190, 295);
       text(`I'll be checking in from time to time!`, 190, 375);
     }
-    drawButton('CONTINUE', 330, 443, 204, true, color(70, 115, 65));
+    drawButton('CONTINUE', 330, 433, 204, true, color(70, 115, 65));
 
   } else if (phoneCall === 'upgrades') {
     fill(66, 43, 29);
@@ -2614,7 +2614,7 @@ function phoneDrawCall() {
     textSize(21);
     text('SHOP UPGRADES', width / 2, 374);
     textStyle(NORMAL);
-    drawButton('CONTINUE', 330, 443, 204, true, color(70, 115, 65));
+    drawButton('CONTINUE', 330, 433, 204, true, color(70, 115, 65));
 
   
   } else if (phoneCall === 'rentReveal') {
@@ -2642,7 +2642,7 @@ function phoneDrawCall() {
 
     textStyle(NORMAL);
 
-    drawButton("CONTINUE", 330, 443, 204,
+    drawButton("CONTINUE", 330, 433, 204,
               true, color(70, 115, 65));
   } else if (phoneCall === 'rent') {
     let rent = phoneRentAmount(dayNumber);
@@ -2713,7 +2713,7 @@ function mousePressed() {
   if (tetrisOverlay && !tetrisOverlay.hidden) return;
   if (inspectorPhase) {
     if (inspectorPhase === 'intro' || inspectorPhase === 'awaiting' || inspectorPhase === 'result') {
-      if (pawnHit(302, 439, 260, 32)) advanceInspectorNotice();
+      if (pawnHit(302, 429, 260, 32)) advanceInspectorNotice();
     }
     return;
   }
@@ -2796,10 +2796,10 @@ function mousePressed() {
         phoneCall = "supplierOrder";
         return;
       }
-    } else if (pawnHit(330, 443, 204, 32) && phoneCall === "hello" && helloPage === 0) {
+    } else if (pawnHit(330, 433, 204, 32) && phoneCall === "hello" && helloPage === 0) {
       helloPage = 1;
       return;
-    } else if (pawnHit(330, 443, 204, 32) && phoneCall !== "orderConfirmed") {
+    } else if (pawnHit(330, 433, 204, 32) && phoneCall !== "orderConfirmed") {
       phoneEndCall();
       return;
     }
@@ -3135,7 +3135,11 @@ function draw() {
   if (showBag) drawBag();
   drawReputationNotice();
   drawInspectorArrivalNotice();
-  if (latestInspectionGrade) {
+  const popupActive = showIntro || showReceipt || gameOver || showBudgetWarning ||
+    showBag || closing || shopMenu || phonePending || phoneCall ||
+    pawnTradeActive() || pawnIntroType || poshOfferActive ||
+    inspectorPhase || tetrisPromptActive || bankruptcyNotice;
+  if (latestInspectionGrade && !popupActive) {
     push();
     fill(65, 40, 28); textSize(12); textAlign(CENTER);
     text('INSPECTION: ' + latestInspectionGrade, 763, 83);
