@@ -1275,22 +1275,26 @@ const pawnTypeNames = {Regular:"PAL OF PAT'S",Bargain:'PENNY PINCHER',Collector:
 const pawnTypeExplanations = {
   Bargain: [
     "PENNY PINCHERS",
-    "Every penny counts for these sharp-eyed shoppers. Winning them over might take a little extra charm.",
+    "Every penny counts for these sharp-eyed shoppers.",
+    "Winning them over might take a little extra charm.",
     "Bargaining with them is especially difficult, but a successful negotiation can be highly rewarding."
   ],
   Collector: [
     "POSH PATRONS",
-    "Distinguished collectors with expensive tastes and impressive possessions. Quality always catches their eye.",
+    "Distinguished collectors with expensive tastes and impressive possessions.",
+    "Quality always catches their eye.",
     "They are particularly generous when purchasing valuable items."
   ],
   Suspicious: [
     "PRECARIOUS PURVEYORS",
-    "Mysterious visitors with offers that seem almost too good to be true. Word travels quickly around town...",
+    "Mysterious visitors with offers that seem almost too good to be true.",
+    "Word travels quickly around town...",
     "Their tempting deals have consequences."
   ],
   Wholesaler: [
     "PALLET PEDDLERS",
-    "Independent merchants who play by their own rules. Take your pick from their wares, but don't expect them to budge on price.",
+    "Independent merchants who play by their own rules.",
+    "Take your pick from their wares, but don't expect them to budge on price.",
     "They trade at wholesale prices, regardless of market trends or shop upgrades."
   ]
 };
@@ -1311,8 +1315,12 @@ function pawnDrawIntro() {
   fill(63,40,30); textAlign(LEFT); textStyle(NORMAL);
   textSize(23); text('NEW CUSTOMER TYPE!', 150, 118, 564, 32);
   textSize(22); text(lines[0], 150, 170, 564, 32);
-  textSize(19); textLeading(29); text(lines[1], 150, 215, 564, 110);
-  textStyle(BOLD); textSize(19); text(lines[2], 150, 345, 564, 88);
+  // One sentence per paragraph, with consistent compact spacing.
+  textSize(19); textLeading(25);
+  for (let i = 1; i < lines.length; i++) {
+    textStyle(i === lines.length - 1 ? BOLD : NORMAL);
+    text(lines[i], 150, 214 + (i - 1) * 69, 564, 66);
+  }
   textStyle(NORMAL);
   pawnButton('CONTINUE',333,454,198,true,color(70,115,65));
 }
