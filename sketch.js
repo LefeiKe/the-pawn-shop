@@ -546,15 +546,19 @@ function cancelStorageChallenge() {
 function drawStorageTetrisPrompt() {
   noStroke(); fill(0,0,0,190); rect(0,0,width,height);
   if (!tetrisIntroduced) {
-    pawnPanel(76,67,712,445);
-    fill(63,40,30); textAlign(CENTER); textStyle(BOLD); textSize(23);
-    text("NEW CHALLENGE UNLOCKED!",432,109);
-    textSize(21); text("STORAGE REORGANIZATION",432,139);
-    // Match Pat's call: left-aligned 19px paragraphs with readable line lengths.
-    fill(66,43,29); textAlign(LEFT); textStyle(NORMAL); textSize(19); textLeading(27);
-    text("Oh boy, storage is full! Let's make some room in the stockroom.",145,160,565,77);
-    text("Clear five rows of crates before they reach the top to earn three permanent storage slots.",145,239,565,95);
-    text("If you fail, you lose the purchase and payment. Even if you win, only the most expensive items can stay. No refunds, I'm afraid!",145,342,565,85);
+    // Introduce the challenge as a call from Pat, matching the Day 3 upgrade unlock.
+    phoneBox();
+    fill(66,43,29); textAlign(LEFT); textStyle(NORMAL); textSize(18);
+    text("Oh boy, the stockroom's getting crowded!",190,170);
+    text("Clear five rows of crates, and we'll make room",190,207);
+    text("for three more items—permanently!",190,239);
+    text("But if you lose, the purchase and payment are gone.",190,278);
+    text("Even a win might leave some items behind!",190,310);
+
+    fill(65,40,28); textAlign(CENTER); textStyle(BOLD);
+    textSize(24); text("NEW CHALLENGE UNLOCKED!",432,365);
+    textSize(21); text("STORAGE REORGANIZATION",432,401);
+    textStyle(NORMAL);
     pawnButton("LET'S GO!",194,453,210,true,color(70,115,65));
     pawnButton("CANCEL",460,453,210,true,color(155,83,66));
   } else {
