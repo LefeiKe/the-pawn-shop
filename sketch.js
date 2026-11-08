@@ -1281,6 +1281,8 @@ function pawnDrawPoshOffer() {
 function pawnStartIntroIfNeeded() {
   if (!pawnTradeActive() || pawnIntroType || !pawnVisitor) return;
   let t=pawnVisitor.type;
+  // Pals of Pat's are ordinary customers, not a new type to unlock.
+  if (t === 'Regular') return;
   if (pawnIntroSeen[t] === false) {
     pawnIntroSeen[t] = true;
     pawnIntroType = t;
