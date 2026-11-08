@@ -2402,7 +2402,9 @@ function drawInspectorNotice() {
   textAlign(CENTER);
   textStyle(BOLD);
   textSize(22);
-  text("PAWN SHOP PATROLLER", 310, 142, 502, 34);
+  const inspectionTitle = inspectorPhase === 'result'
+    ? "INSPECTION RESULTS" : "TIME FOR AN INSPECTION";
+  text(inspectionTitle, 310, 142, 502, 34);
   textAlign(LEFT);
   textStyle(NORMAL);
   textSize(19);
