@@ -930,6 +930,7 @@ function drawBudgetWarning() {
 
   let expected = selectedTotal();
   let actual = min(expected, currentTrade.budget);
+  let difference = expected - actual;
 
   // Darken the screen
   fill(0, 0, 0, 160);
@@ -948,8 +949,7 @@ function drawBudgetWarning() {
   textSize(14);
   text("Expected: $" + expected.toFixed(2), 432, 250);
   text("Buyer can pay: $" + actual.toFixed(2), 432, 280);
-  text("Accepting lowers your reputation among the " +
-       reputationGroupName(pawnVisitor.type) + ".", 432, 310, 510, 35);
+  text("You earn $" + difference.toFixed(2) + " less.", 432, 310);
 
   drawButton("ACCEPT", 185, 345, 180,
              true, color(70, 115, 65));
@@ -1533,7 +1533,7 @@ function suspiciousTradeConsequence() {
 
 function drawReputationNotice() {
   if (!reputationNotice || millis() >= reputationNoticeUntil ||
-      pawnTradeActive() || showIntro || showReceipt || gameOver) return;
+      showIntro || showReceipt || gameOver) return;
   push();
   pixelBoard(123, 106, 618, 62);
   fill(166, 93, 88);
@@ -3424,7 +3424,6 @@ function completeBuyerSale() {
 
   let expected = selectedTotal();
   let actual = pawnVisitor?.type === 'Wholesaler' ? expected : min(expected, currentTrade.budget);
-  const discountedForBudget = actual < expected;
 
   // Record each sold item
   for (let index of selectedItems) {
@@ -3459,14 +3458,8 @@ function completeBuyerSale() {
 
   showBudgetWarning = false;
   finishTrade();
-  if (discountedForBudget) pawnChangeScore(-5);
-  else pawnChangeScore(2);
+  pawnChangeScore(2);
   suspiciousTradeConsequence();
-  if (discountedForBudget && pawnVisitor.type !== 'Wholesaler') {
-    reputationNotice = 'Your reputation among the ' +
-      reputationGroupName(pawnVisitor.type) + ' has declined...';
-    reputationNoticeUntil = millis() + 3000;
-  }
 }
 
 
@@ -3919,6 +3912,9 @@ function shopTryBargain() {
     else currentTrade.markup *= 1 + improvement;
   } else {
     pawnChangeScore(-3);
+    reputationNotice = 'Your reputation among the ' +
+      reputationGroupName(pawnVisitor.type) + ' has declined...';
+    reputationNoticeUntil = millis() + 3000;
   }
   pawnConversation = chooseCustomerLine(succeeded ? 'bargainYes' : 'bargainNo');
   pawnMessage = succeeded ? 'BARGAIN ACCEPTED' : 'BARGAIN REJECTED';
