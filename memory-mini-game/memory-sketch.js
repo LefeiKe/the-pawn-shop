@@ -27,7 +27,7 @@ let items = [
 ];
 
 // game states and timer
-let gameState = "start";
+let gameState = "loading";
 let startTime = 0;
 let questionStartTime = 0;
 let answerTime = 20;
@@ -73,9 +73,27 @@ async function setup() {
     itemImages.Hammer = await loadImage("memory images/hammer.png");
     itemImages.Shovel = await loadImage("memory images/shovel.png");
 
-    textFont("Press Start 2P");
+    textFont("Pixelify Sans");
+    beginMemoryInspection();
 }
 
+
+function beginMemoryInspection() {
+    questionNumber = 1;
+    score = 0;
+    usedItems = [];
+    timeOut = false;
+    priceHidden = [false, false, false, false, false, false];
+    cardFlip = [0, 0, 0, 0, 0, 0];
+    usedQuestionTypes = [];
+
+    randomizePrices();
+    generateQuestionPlan();
+    newQuestion();
+
+    startTime = millis();
+    gameState = "memorize";
+}
 
 function draw() {
     background(0);
@@ -93,32 +111,13 @@ function draw() {
     fill(65, 40, 25);
     textSize(22);
 
-    // title
-    if (gameState === "start") {
-        text("INSPECTOR ARRIVED!", width / 2, 185);
-    }
-    else if (gameState !== "final") {
+    if (gameState !== "final") {
         text("INSPECTION MEMORY TEST", width / 2, 145);
     }
-    
 
-    // start screen
-    if (gameState === "start") {
+    // Begin on the memory cards; Alex already introduced the inspection.
+    if (gameState === "memorize") {
 
-        textSize(14);
-        text("Some inventory records are missing!", width / 2, 235);
-        text("Help restore the records!", width / 2, 260);  
-
-        fill(70, 115, 65);
-        rect(300, 290, 200, 60);
-
-        fill(255);
-        textSize(18);
-        text("BEGIN TEST", 400, 330);
-    }
-
-    // memorize the inventory
-    else if (gameState === "memorize") {
 
         fill(50);
         textSize(12);
@@ -423,36 +422,7 @@ function draw() {
 
 function mousePressed() {
 
-    // start the game
-    if(gameState === "start") {
-
-        if (mouseX > 300 && mouseX < 500 &&
-            mouseY > 290 && mouseY < 350) {
-            
-            // start a new game
-            questionNumber = 1;
-            score = 0;
-            usedItems = [];
-            timeOut = false;
-            priceHidden = [false, false, false, false, false, false];
-            cardFlip = [0, 0, 0, 0, 0, 0];
-            usedQuestionTypes = [];
-
-            // Generate new prices
-            randomizePrices();
-
-            // Select five question types
-            generateQuestionPlan();
-
-            // Generate the first question
-            newQuestion();
-
-            startTime = millis();
-            gameState = "memorize";
-        }
-    }
-
-    else if (gameState === "memorize") {
+    if (gameState === "memorize") {
 
         // click READY to begin questions
         if (mouseX > 330 && mouseX < 470 &&
