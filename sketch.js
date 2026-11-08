@@ -623,44 +623,47 @@ function togglePause() {
 }
 
 // Day 1 contextual walkthrough. It never pauses play or captures input.
+function dayOneTutorialHint() {
+  if (showReceipt) return "DAY COMPLETE. Review your purchases and sales, then close the receipt.";
+  if (showBag) return "Your BAG shows your stock and purchase prices. Click outside to close.";
+  if (closing) return "All customers are served. Your daily receipt is coming.";
+  const step = tutorialTradesServed;
+  if (pawnTradeActive()) {
+    if (step === 0) return "This customer wants to sell an item. Buying costs money, but you can resell it for profit.";
+    if (step === 1) return "Buyers have a budget and a target category. Select a matching item from your bag.";
+    if (step === 2) return "BARGAIN may improve the price, but negotiations can fail.";
+    if (step === 3) return "Some buyers have a small budget. Use REJECT to avoid an unprofitable trade.";
+    return "You've learned the basics. Now explore the rest of the shop at your own pace.";
+  }
+  if (step === 0) return "The daily customer count is at the top right. The shop closes after everyone is served.";
+  if (step === 1) return "Click BAG to review your purchases. Keep an eye on your storage capacity.";
+  if (step === 2) return "Buy low and sell high to make a profit.";
+  if (step === 3) return "REPUTATION shows your relationships. Stronger relationships improve bargaining chances.";
+  if (step === 4) return "Watch your balance. Weekly debt gives you three days to recover before the shop closes.";
+  return "";
+}
+
+// Subtitles follow the five scripted customers without pausing or intercepting play.
+let tutorialTypedText = "";
+let tutorialTextStartedAt = 0;
 function drawDayOneTutorial() {
   if (dayNumber !== 1 || showIntro || gameOver || phonePending || phoneCall ||
       pawnIntroType || poshOfferActive || (poshGameOverlay && !poshGameOverlay.hidden) ||
       (tetrisOverlay && !tetrisOverlay.hidden) || tetrisPromptActive || shopMenu ||
       inspectorPhase || bankruptcyNotice) return;
-
-  if (showBag) tutorialBagSeen = true;
-
-  let hint = "";
-  if (showReceipt) {
-    hint = "DAY COMPLETE! Review your purchases and sales, then click CLOSE.";
-  } else if (showBag) {
-    hint = "YOUR BAG shows what you own and what you paid. Click outside to close.";
-  } else if (closing) {
-    hint = "That's today's customers! Your daily receipt is coming up.";
-  } else if (pawnTradeActive()) {
-    if (tutorialTradesServed === 0) {
-      hint = "Read the offer. Choose BUY or SELL, try BARGAIN, or REJECT the deal.";
-    } else if (!tutorialBagSeen) {
-      hint = "Try clicking BAG to check your inventory before your next trade.";
-    } else {
-      hint = "Compare the offer with your stock, then choose how to respond.";
-    }
-  } else if (tutorialTradesServed === 0) {
-    hint = "Welcome aboard! Customers arrive automatically. Watch for your first visitor.";
-  } else if (!tutorialBagSeen) {
-    hint = "Nice work! Open BAG during a customer trade to inspect your stock.";
-  } else {
-    hint = "Keep serving customers. The customer counter shows who's left today.";
-  }
-
+  const hint = dayOneTutorialHint();
   if (!hint) return;
+  if (hint !== tutorialTypedText) {
+    tutorialTypedText = hint;
+    tutorialTextStartedAt = millis();
+  }
+  const characters = min(hint.length, floor((millis() - tutorialTextStartedAt) / 23));
   push();
   noStroke(); fill(40,29,25,225);
-  rect(94,530,676,39,7);
+  rect(94,529,676,43,7);
   fill(255); textFont("Pixelify Sans");
-  textAlign(CENTER); textStyle(NORMAL); textSize(15);
-  text(hint,110,542,644,27);
+  textAlign(CENTER); textStyle(NORMAL); textSize(14);
+  text(hint.slice(0,characters),110,536,644,34);
   pop();
 }
 
@@ -1683,6 +1686,14 @@ function shopBuyUpgrade(i) {
 
 function handleShopClick() {
   if (pawnIntroType) { handleCustomerClick(); return; }
+  if (dayNumber === 1 && pawnTradeActive() && !shopMenu) {
+    const step = tutorialTradesServed;
+    // Keep the required trade buttons genuinely inactive, not merely gray.
+    if (step <= 1 && (pawnHit(481,489,152,36) || pawnHit(651,489,152,36))) return;
+    if (step === 2 && (pawnHit(651,489,152,36) ||
+        (!shopBargained && pawnHit(312,489,152,36)))) return;
+    if (step === 3 && !pawnHit(651,489,152,36)) return;
+  }
   if (shopMenu !== "") {
     if (shopMenu === "people") {
       if (pawnHit(347, 462, 170, 32)) shopCloseMenu();
@@ -2827,6 +2838,8 @@ function testJumpToDay(day) {
   if (day === 1) {
     tutorialTradesServed = 0;
     tutorialBagSeen = false;
+    tutorialTypedText = "";
+    tutorialTextStartedAt = 0;
   }
   nextInspectionDay = day >= 3 ? day : 3;
   inspectorPhase = '';
@@ -3216,6 +3229,8 @@ function restartGame() {
   customersLeft = 5;
   tutorialTradesServed = 0;
   tutorialBagSeen = false;
+  tutorialTypedText = "";
+  tutorialTextStartedAt = 0;
   shopMessage = "";
   shopBargained = false;
   shopTradeMultiplier = 1;
@@ -3280,7 +3295,23 @@ function generateCustomer(forcedVisitorType) {
 
 
   if (!pawnReady) return;
-  pawnVisitor = pawnPickVisitor(forcedVisitorType);
+
+  // Day 1 uses guaranteed trades so every basic action can be learned in order.
+  const tutorialStep = dayNumber === 1 && !forcedVisitorType ? tutorialTradesServed : -1;
+  const tutorialNames = ["Mia", "Noah", "Emma", "Leo"];
+  pawnVisitor = tutorialStep >= 0 && tutorialStep < 4
+    ? pawnProfiles.find(profile => profile.name === tutorialNames[tutorialStep])
+    : pawnPickVisitor(forcedVisitorType);
+  if (tutorialStep >= 0 && tutorialStep < 4) {
+    const scriptedTrades = [
+      {type:"sell", items:[0], category:"Daily", budget:100, markup:1},
+      {type:"category", items:[], category:"Daily", budget:100, markup:1.15},
+      {type:"sell", items:[4,5], category:"Tools", budget:100, markup:1},
+      {type:"category", items:[], category:"Tools", budget:5, markup:1}
+    ];
+    currentTrade = {...scriptedTrades[tutorialStep], items:[...scriptedTrades[tutorialStep].items]};
+    pawnIntroSeen.Regular = true;
+  }
   currentCustomer = new Customer(
     pawnVisitor.name, pawnVisitor.type,
     pawnSprites[pawnVisitor.name], pawnPortraits[pawnVisitor.name]
@@ -3290,7 +3321,9 @@ function generateCustomer(forcedVisitorType) {
     pawnVisitor.type === "Collector" && (forcedVisitorType === "Collector" || random() < 0.3);
   poshOfferActive = false;
   pawnMessage = '';
-  pawnConversation = pawnNewConversation();
+  pawnConversation = tutorialStep === 0
+    ? "Pat said I should stop by and say hello."
+    : pawnNewConversation();
   // Collector has more to spend; bargain hunters have less.
   if (pawnVisitor.type === 'Collector') {
     if (type === 'sell') {
@@ -3755,6 +3788,7 @@ function pawnTradeBoard() {
     }
     let selectedCount = wholesale ? selectedWholesaleItems.length : items.length;
     let canBuy = selectedCount > 0 && money >= total;
+    if (dayNumber === 1 && tutorialTradesServed === 2 && !shopBargained) canBuy = false;
     pawnButton(wholesale ? 'BUY SELECTED' : 'BUY ALL',312,489,152,canBuy,color(60,112,67));
   } else {
     { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(16); text('WANTS: ' + currentTrade.category.toUpperCase(), 310, 207); };
@@ -3789,10 +3823,15 @@ function pawnTradeBoard() {
     }
     if(entries.length===0) { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(14); text('NO MATCHING ITEMS IN BAG', 324, 275); };
     if(entries.length>4) { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(12); text('SHOWING FIRST 4 MATCHING ITEMS', 324, 455); };
-    pawnButton('SELL',312,489,152,selectedItems.length>0,color(60,112,67));
+    pawnButton('SELL',312,489,152,selectedItems.length>0 &&
+      !(dayNumber === 1 && tutorialTradesServed === 3),color(60,112,67));
   }
-  pawnButton('BARGAIN',481,489,152,!shopBargained && pawnVisitor.type !== 'Wholesaler',color(98,67,46));
-  pawnButton('REJECT',651,489,152,true,color(156,63,52));
+  const dayOneStep = dayNumber === 1 ? tutorialTradesServed : -1;
+  const bargainVisible = dayOneStep < 0 || dayOneStep >= 2;
+  if (bargainVisible) pawnButton('BARGAIN',481,489,152,
+    !shopBargained && pawnVisitor.type !== 'Wholesaler' && dayOneStep !== 3,
+    color(98,67,46));
+  pawnButton('REJECT',651,489,152,dayOneStep < 0 || dayOneStep >= 3,color(156,63,52));
   { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(pawnVisitor.type === 'Wholesaler' ? 10 : 12); text(pawnMessage, 310, 468); };
 
 
