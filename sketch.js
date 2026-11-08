@@ -337,6 +337,11 @@ async function setup() {
   memoryGameFrame = document.getElementById("memory-game-frame");
   window.addEventListener("message", handleMemoryGameMessage);
 
+  // Connect Storage Tetris iframe
+  tetrisOverlay = document.getElementById("tetris-game-overlay");
+  tetrisFrame = document.getElementById("tetris-game-frame");
+  window.addEventListener("message", handleStorageTetrisMessage);
+
   shopBg = await loadImage("images/shop.png");
   vaseSpriteSheet = await loadImage("vasePuzzle/images/vases.png");
   shopkeeper = await loadImage("images/shopkeeper.png");
