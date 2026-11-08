@@ -211,10 +211,10 @@ let pastItemsBought = 0;
 let pastItemsSold = 0;
 const FINAL_DAY = 28;
 
-// Count purchased upgrades and up to three storage reorganization milestones.
+// Count only upgrades purchased from the shop; Tetris capacity rewards are separate.
 function unlockedUpgradeCount() {
   return Number(priceCatalogOwned) + shelvesLevel + advertisingLevel +
-    supplierOwned.filter(Boolean).length + min(3, floor(storageBonus / 3));
+    supplierOwned.filter(Boolean).length;
 }
 
 function chooseFinalEnding() {
