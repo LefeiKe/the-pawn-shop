@@ -2378,39 +2378,55 @@ function drawInspectorArrivalNotice() {
 }
 
 function drawInspectorNotice() {
-  if (!inspectorPhase || inspectorPhase === 'entering' || inspectorPhase === 'leaving' || inspectorPhase === 'awaiting') return;
+  if (!inspectorPhase || inspectorPhase === 'entering' ||
+      inspectorPhase === 'leaving' || inspectorPhase === 'awaiting') return;
+
+  // Match the Posh Patron's special trade: portrait on the left, dialogue on the right.
   push();
   noStroke();
-  fill(0, 0, 0, 175);
+  fill(0, 0, 0, 158);
   rect(0, 0, width, height);
-  pixelBoard(94, 78, 676, 425);
-  fill(65, 40, 28);
+
+  pawnPanel(22, 95, 248, 458);
+  if (pawnPortraits.Alex) image(pawnPortraits.Alex, 37, 110, 218, 218);
+  fill(63, 40, 30);
+  textAlign(LEFT);
+  textStyle(NORMAL);
+  textSize(23);
+  text("ALEX", 43, 358);
+  textSize(17);
+  text("PAWN SHOP PATROLLER", 43, 388, 205, 62);
+
+  pawnPanel(280, 95, 562, 458);
+  fill(63, 40, 30);
   textAlign(CENTER);
   textStyle(BOLD);
-  textSize(23);
-  text('PAWN SHOP PATROLLER', 432, 133);
-  // Follow Pat's call typography for inspector dialogue.
+  textSize(22);
+  text("PAWN SHOP PATROLLER", 310, 142, 502, 34);
   textAlign(LEFT);
   textStyle(NORMAL);
   textSize(19);
-  textLeading(29);
+  textLeading(28);
 
   if (inspectorPhase === 'intro') {
     if (!inspectorHasIntroduced) {
-      // Three short, separated paragraphs instead of one dense speech block.
-      text("Good day! I'm Alex, the local shop inspector. I'll stop by from time to time to make sure everything is in order.", 164, 174, 536, 95);
-      text("Inspection ratings matter for shops like this. A good rating attracts more customers, while a poor one might drive them away.", 164, 272, 536, 95);
-      text("Now, let's see how you've been running this shop!", 164, 376, 536, 32);
+      text("Good day! I'm Alex, the local shop inspector. I'll stop by from time to time to make sure everything is in order.", 310, 187, 502, 92);
+      text("Inspection ratings matter for shops like this. A good rating attracts more customers, while a poor one might drive them away.", 310, 284, 502, 96);
+      text("Now, let's see how you've been running this shop!", 310, 390, 502, 64);
     } else {
-      text("Well, well! It's time for another inspection.\n\nLet's see if you've been keeping this place in good shape!", 164, 190, 536, 175);
+      text("Well, well! It's time for another inspection.", 310, 205, 502, 70);
+      text("Let's see if you've been keeping this place in good shape!", 310, 292, 502, 100);
     }
-    drawButton('BEGIN INSPECTION', 302, 439, 260, true, color(70, 115, 65));
-
+    pawnButton("BEGIN INSPECTION", 431, 489, 260, true, color(70, 115, 65));
   } else if (inspectorPhase === 'result') {
-    textAlign(CENTER); textStyle(BOLD); textSize(22);
-    text('INSPECTION GRADE: ' + latestInspectionGrade, 432, 189);
-    textAlign(LEFT); textStyle(NORMAL); textSize(19); textLeading(26);
-    // Break after the first substantial sentence so the grade response breathes.
+    textAlign(CENTER);
+    textStyle(BOLD);
+    textSize(22);
+    text("INSPECTION GRADE: " + latestInspectionGrade, 310, 197, 502, 34);
+    textAlign(LEFT);
+    textStyle(NORMAL);
+    textSize(19);
+    textLeading(27);
     const sentences = inspectorResultText.match(/[^.!?]+[.!?]+|[^.!?]+$/g) || [inspectorResultText];
     let firstParagraph = "";
     let remainingSentences = sentences.slice();
@@ -2420,8 +2436,8 @@ function drawInspectorNotice() {
     const spacedResponse = remainingSentences.length
       ? firstParagraph.trim() + "\n\n" + remainingSentences.join("").trim()
       : inspectorResultText;
-    text(spacedResponse, 164, 216, 536, 210);
-    drawButton('CONTINUE', 302, 429, 260, true, color(70, 115, 65));
+    text(spacedResponse, 310, 248, 502, 218);
+    pawnButton("CONTINUE", 431, 489, 260, true, color(70, 115, 65));
   }
   pop();
 }
@@ -2798,7 +2814,7 @@ function mousePressed() {
   if (tetrisOverlay && !tetrisOverlay.hidden) return;
   if (inspectorPhase) {
     if (inspectorPhase === 'intro' || inspectorPhase === 'awaiting' || inspectorPhase === 'result') {
-      if (pawnHit(302, 429, 260, 32)) advanceInspectorNotice();
+      if (pawnHit(431, 489, 260, 36)) advanceInspectorNotice();
     }
     return;
   }
