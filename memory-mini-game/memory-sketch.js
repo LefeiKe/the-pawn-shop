@@ -120,10 +120,10 @@ function draw() {
 
 
         fill(50);
-        textSize(12);
+        textSize(14);
         text("Let's see how familiar you are with your merchandise!", width / 2, 150);
 
-        textSize(12);
+        textSize(14);
         text("Click a card to hide or reveal its price.", width / 2, 178);
 
         // display six flipping item cards
@@ -172,7 +172,7 @@ function draw() {
                 image(itemImages[items[i].name], -22, -42, 44, 44);
 
                 fill(50);
-                textSize(11);
+                textSize(14);
                 text(items[i].name, 0, 13);
 
                 fill(150, 80, 40);
@@ -254,7 +254,7 @@ function draw() {
         }
         else {
             fill(50);
-            textSize(12);
+            textSize(14);
             textAlign(CENTER, CENTER);
             text(questionText, 120, 185, 560, 55);
             textAlign(CENTER, BASELINE);
@@ -308,8 +308,11 @@ function draw() {
                 text("$" + answers[i], x, y + 30);
             }
             else {
-                textSize(10);
-                text(answers[i], x, y + 30);
+                textSize(14);
+                textAlign(CENTER, CENTER);
+                text(String(answers[i]), x - buttonWidth / 2 + 6,
+                    y + 4, buttonWidth - 12, buttonHeight - 8);
+                textAlign(CENTER, BASELINE);
             }
         }
     }    
@@ -322,7 +325,7 @@ function draw() {
         text("CORRECT!", width / 2, 230);
 
         fill(50);
-        textSize(18);
+        textSize(20);
         text("You got it right!", width / 2, 280);
 
         // restart button
@@ -355,7 +358,7 @@ function draw() {
         }
 
         fill(50);
-        textSize(12);
+        textSize(18);
         if (questionType === "price" || questionType === "difference") {
             text("Correct answer: $" + correctAnswer, width / 2, 280);
         }
@@ -387,7 +390,7 @@ function draw() {
         textSize(24);
         text("INSPECTION COMPLETE!", width / 2, 160);
 
-        textSize(22);
+        textSize(24);
         text("Your score: " + score + " / " + totalQuestions, width / 2, 260);
 
         // return to shop button
