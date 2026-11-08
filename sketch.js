@@ -3252,7 +3252,7 @@ function draw() {
   // Show the grade as soon as Alex's result dialogue is dismissed.
   // Keep it behind every popup, but allow it while Alex is walking out.
   const gradeBlocked = showIntro || showReceipt || gameOver || showBudgetWarning ||
-    showBag || closing || shopMenu || phonePending || phoneCall ||
+    showBag || shopMenu || phonePending || phoneCall ||
     pawnTradeActive() || pawnIntroType || poshOfferActive ||
     (inspectorPhase && inspectorPhase !== 'leaving') ||
     tetrisPromptActive || bankruptcyNotice;
@@ -4046,7 +4046,7 @@ function finishTrade() {
 
 function shopDrawTabs() {
 
-  if (showIntro || showReceipt || gameOver || closing) return;
+  if (showIntro || showReceipt || gameOver) return;
   drawButton('REPUTATION', 328, 12, 128, true, color(98, 67, 46));
   if (dayNumber >= 3 && phoneSeen.upgrades && !phonePending && !phoneCall) {
     drawButton('UPGRADES', 466, 12, 128, true, color(98, 67, 46));
