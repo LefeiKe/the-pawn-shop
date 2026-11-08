@@ -612,61 +612,24 @@ function pixelBoard(x, y, w, h) {
 
 
 function drawIntro() {
-    noStroke();
-    fill(0, 0, 0, 180);
-    rect(0, 0, width, height);
-    pixelBoard(90, 55, 684, 470);
-  
-    textFont("Pixelify Sans");
-    fill(65, 40, 28);
-    textAlign(CENTER);
-    textStyle(BOLD);
-    textSize(29);
-    text("WELCOME TO PIXEL PAT'S PAWNS AND PARCELS", width / 2, 102);
-  
-    textStyle(NORMAL);
-    textSize(18);
-    text("Be prudent and profitable to help your little shop prosper!", width / 2, 133);
-  
-    // How to play
-    fill(65, 40, 28);
-    textAlign(LEFT);
-    textStyle(BOLD);
-    textSize(21);
-    text("HOW TO PLAY", 142, 183);
-  
-    textStyle(NORMAL);
-    textSize(17);
-    text("Buy items from customers.", 142, 213);
-    text("Sell items that match the buyer's category.", 142, 242);
-    text("Use your earnings to unlock shop upgrades.", 142, 271);
-    text("Explore new mechanisms as the game moves on!", 142, 300);
-  
-    // Tips for making smart deals
-    fill(237, 218, 188);
-    noStroke();
-    rect(123, 312, 620, 123);
-  
-    fill(65, 40, 28);
-    textAlign(LEFT);
-    textStyle(BOLD);
-    textSize(21);
-    text("BEFORE YOU MAKE A DEAL...", 142, 343);
-  
-    textStyle(NORMAL);
-    textSize(16);
-    text("Look at the price, your budget, and available bag space.", 142, 369);
-    text("Not every offer is a good deal.", 142, 393);
-    text("Don't spend all your money!", 142, 417);
-  
-    // Daily rules
-    fill(86, 61, 42);
-    textAlign(CENTER);
-    textSize(15);
-  
-    drawButton("START GAME", 317, 474, 220, true, color(70, 115, 65));
-  }
-  
+  noStroke();
+  fill(0, 0, 0, 180);
+  rect(0, 0, width, height);
+  pixelBoard(90, 55, 684, 470);
+
+  textFont("Pixelify Sans");
+  fill(65, 40, 28);
+  textAlign(CENTER);
+  textStyle(BOLD);
+  textSize(31);
+  text("PIXEL PAT'S PAWNS AND PARCELS", width / 2, 249);
+
+  textStyle(NORMAL);
+  textSize(18);
+  text("Be prudent and profitable to help the little shop prosper!", width / 2, 296);
+
+  drawButton("START GAME", 317, 474, 220, true, color(70, 115, 65));
+}
 
 // Day and money
 
@@ -2685,7 +2648,8 @@ function phoneDrawCall() {
       text(`It's been my pride and joy for 70 years.`, 190, 205);
       text(`Boy oh boy, if I could withstand those long hours, ${"\n"}you bet I would.`, 190, 240);
       text(`But that's a job for a spry young whippersnapper ${"\n"}like yourself.`, 190, 295);
-      text(`I'll be checking in from time to time!`, 190, 375);
+      text("How about you run the shop for a month—28 days?", 190, 360);
+      text("I'll be checking in from time to time!", 190, 394);
     }
     drawButton('CONTINUE', 330, 433, 204, true, color(70, 115, 65));
 
