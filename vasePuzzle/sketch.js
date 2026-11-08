@@ -4,6 +4,8 @@ let pieces = [];
 let emptySquare = {col: 2, row: 2};
 
 let gameState = "start";
+const puzzleTimeLimit = 3 * 60 * 1000;
+let puzzleStartedAt = 0;
 
 const vaseBounds = [
   { x: 0,   y: 0, w: 2016, h: 2016 }, // Vase 0: Takes full cell
@@ -35,7 +37,7 @@ let clickOffsetY = 0;
 let shuffleX, shuffleY, shuffleW;
 
 async function setup() {
-    createCanvas(864, 600);
+    createCanvas(864, 576);
     noSmooth();
     angleMode(DEGREES); 
     textFont("Press Start 2P")
@@ -59,6 +61,28 @@ function draw() {
 
     if (gameState === "play") {
         drawPlayScreen();
+        return;
+    }
+
+    if (gameState === "win") {
+        const boardW = cols * displayPieceSize;
+        const boardH = rows * displayPieceSize;
+        const boardOffsetX = 60;
+        const boardOffsetY = (height - boardH) / 2;
+
+        drawCompletedVase(
+            selectedVaseIndex,
+            boardOffsetX,
+            boardOffsetY,
+            boardW,
+            boardH
+        );
+        drawWinScreen();
+        return;
+    }
+
+    if (gameState === "timeout") {
+        drawTimeoutScreen();
     }
 }
 
@@ -68,13 +92,24 @@ function drawStartScreen() {
   fill(65, 40, 28);
   textAlign(CENTER);
   textSize(20);
-  text("EMERGENCY REPAIR", 432, 265);
+  text("PAWNBROKEN!", 432, 265);
 
   textSize(9);
   text("CLICK TO START", 432, 330);
 }
 
 function drawPlayScreen() {
+    const timeRemaining = max(0, puzzleTimeLimit - (millis() - puzzleStartedAt));
+    if (timeRemaining === 0) {
+        gameState = "timeout";
+        selectedPiece = null;
+        window.parent.postMessage({
+            type: "vasePuzzleFailed"
+        }, window.location.origin);
+        drawTimeoutScreen();
+        return;
+    }
+
     let boardW = cols * displayPieceSize;
     let boardH = rows * displayPieceSize;
     let boardOffsetX = 60;
@@ -92,35 +127,37 @@ function drawPlayScreen() {
     fill(65, 40, 28);
     noStroke();
     textAlign(CENTER);
-    text("EMERGENCY REPAIR", referenceX + referenceSize * 0.5, boardOffsetY * 1.25);
+    text("PAWNBROKEN!", referenceX + referenceSize * 0.5, boardOffsetY * 1.25);
+
+    pixelBoard(15, 15, 160, 52);
+    fill(255);
+    textSize(15);
+    textAlign(CENTER);
+    text(`TIME ${formatTime(timeRemaining)}`, 95, 48);
 
     textAlign(CENTER);
     textSize(9);
     text("FINISHED PRODUCT", referenceX * 1.14, boardOffsetY * 1.6);
 
+    const controlsX = referenceX - referenceSize * 0.15;
+    const controlsTop = boardOffsetY + 275;
+    fill(65, 40, 28);
     textAlign(LEFT);
     textSize(9);
-    text("CONTROLS", referenceX - referenceSize * 0.15, boardOffsetY * 4);
+    text("CONTROLS", controlsX, controlsTop);
     textSize(8);
-    text("CLICK and DRAG: MOVE PIECE", referenceX - referenceSize * 0.15, boardOffsetY * 4.3);
-    text(`ONLY PIECES ADJACENT TO THE ${"\n"} EMPTY SQUARE CAN BE MOVED`, referenceX - referenceSize * 0.15, boardOffsetY * 4.6);
-    text("SINGLE CLICK: ROTATE PIECE", referenceX - referenceSize * 0.15, boardOffsetY * 5);
+    text("CLICK and DRAG: MOVE PIECE", controlsX, controlsTop + 30);
+    text(`ONLY PIECES ADJACENT TO THE ${"\n"} EMPTY SQUARE CAN BE MOVED`, controlsX, controlsTop + 60);
+    text("SINGLE CLICK: ROTATE PIECE", controlsX, controlsTop + 100);
 
     shuffleX = referenceX - referenceSize * 0.125;
-    shuffleY = boardOffsetY * 5.25;
+    shuffleY = controlsTop + 125;
     shuffleW = referenceSize * 1.25;
     drawButton("SHUFFLE BOARD", shuffleX, shuffleY, shuffleW, color(160, 70, 60));
 
     drawReferenceImage(selectedVaseIndex, referenceX, referenceY, referenceSize);
 
     if (checkWin()) {
-        if (!completionReported) {
-            completionReported = true;
-            window.parent.postMessage({
-                type: "vasePuzzleCompleted",
-                vaseIndex: selectedVaseIndex
-            }, window.location.origin);
-        }
         drawCompletedVase(selectedVaseIndex, boardOffsetX, boardOffsetY, boardW, boardH);
         gameState = "win";
         drawWinScreen();
@@ -199,6 +236,24 @@ function drawWinScreen() {
     text("CLICK FOR A REWARD", width / 2, height / 2 + 10);
 }
 
+function drawTimeoutScreen() {
+    pixelBoard(160, 130, 544, 320);
+
+    fill(65, 40, 28);
+    textAlign(CENTER);
+    textSize(22);
+    text("TIME'S UP!", width / 2, height / 2 - 20);
+    textSize(10);
+    text("OH WELL, BETTER LUCK NEXT TIME!", width / 2, height / 2 + 30);
+}
+
+function formatTime(milliseconds) {
+    const totalSeconds = ceil(milliseconds / 1000);
+    const minutes = floor(totalSeconds / 60);
+    const seconds = String(totalSeconds % 60).padStart(2, "0");
+    return `${minutes}:${seconds}`;
+}
+
 function drawReferenceImage(vaseIndex, x, y, size) {
     let cellCol = vaseIndex % spriteSheetCols;
     let cellRow = Math.floor(vaseIndex / spriteSheetCols);
@@ -231,6 +286,7 @@ function pixelBoard(x, y, w, h) {
 function mousePressed() {
     if (gameState === "start") {
         gameState = "play";
+        puzzleStartedAt = millis();
         return;
     }
 
@@ -255,7 +311,13 @@ function mousePressed() {
     }
 
     if (gameState === "win") {
-        drawWinScreen();
+        if (!completionReported) {
+            completionReported = true;
+            window.parent.postMessage({
+                type: "vasePuzzleCompleted",
+                vaseIndex: selectedVaseIndex
+            }, window.location.origin);
+        }
     }
 }
 

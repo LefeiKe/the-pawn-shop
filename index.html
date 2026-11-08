@@ -8,6 +8,12 @@
     <link href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.11.11/p5.min.js"></script>
     <style>
+        #game {
+            height: 576px;
+            position: relative;
+            width: 864px;
+        }
+
         #posh-game-overlay[hidden],
         #tetris-game-overlay[hidden] {
             display: none;
@@ -17,13 +23,14 @@
         #tetris-game-overlay {
             align-items: center;
             background: rgba(0, 0, 0, 0.78);
+            box-sizing: border-box;
             display: flex;
-            height: 100vh;
+            height: 100%;
             justify-content: center;
             left: 0;
-            position: fixed;
+            position: absolute;
             top: 0;
-            width: 100vw;
+            width: 100%;
             z-index: 10;
         }
 
@@ -31,17 +38,20 @@
         #tetris-game-window {
             background: #ead0a1;
             border: 8px solid #3c261c;
+            box-sizing: border-box;
             box-shadow: 0 0 0 4px #8c5b38;
+            height: 470px;
             padding: 14px;
             position: relative;
+            width: 684px;
         }
 
         #posh-game-frame,
         #tetris-game-frame {
             border: 0;
             display: block;
-            height: min(600px, 80vh);
-            width: min(864px, 90vw);
+            height: 100%;
+            width: 100%;
         }
 
         #close-posh-game {
@@ -61,13 +71,13 @@
 </head>
 
 <body>
-    <div id="game"></div>
-
-    <div id="posh-game-overlay" hidden>
-        <div id="posh-game-window">
-            <button id="close-posh-game" type="button">CLOSE GAME</button>
-            <iframe id="posh-game-frame" data-src="vasePuzzle/index.html"
-                title="Posh patron vase puzzle game"></iframe>
+    <div id="game">
+        <div id="posh-game-overlay" hidden>
+            <div id="posh-game-window">
+                <button id="close-posh-game" type="button">CLOSE GAME</button>
+                <iframe id="posh-game-frame" data-src="vasePuzzle/index.html"
+                    title="Posh patron vase puzzle game"></iframe>
+            </div>
         </div>
     </div>
 

@@ -294,6 +294,7 @@ let poshGameOverlay;
 let poshGameFrame;
 let poshGamePausedShop = false;
 let poshOfferPausedShop = false;
+let poshGameResult = null;
 let storageBonus = 0; // permanent slots won in Storage Tetris
 let tetrisPurchase = null;
 let tetrisIntroduced = false;
@@ -326,9 +327,6 @@ async function setup() {
   poshGameFrame = document.getElementById("posh-game-frame");
   document.getElementById("close-posh-game").addEventListener("click", closePoshGame);
   window.addEventListener("message", handleVasePuzzleMessage);
-  tetrisOverlay = document.getElementById("tetris-game-overlay");
-  tetrisFrame = document.getElementById("tetris-game-frame");
-  window.addEventListener("message", handleStorageTetrisMessage);
 
   shopBg = await loadImage("images/shop.png");
   vaseSpriteSheet = await loadImage("vasePuzzle/images/vases.png");
@@ -352,7 +350,19 @@ function handleVasePuzzleMessage(event) {
   if (event.data?.type !== "vasePuzzleCompleted") return;
   if (!Number.isInteger(event.data.vaseIndex) ||
       event.data.vaseIndex < 0 || event.data.vaseIndex >= vaseBounds.length) return;
-  completedVaseIndexes.push(event.data.vaseIndex);
+  if (!completedVaseIndexes.includes(event.data.vaseIndex)) {
+    completedVaseIndexes.push(event.data.vaseIndex);
+  }
+  if (!phoneSeen.upgrades) {
+    money *= 1.5;
+  }
+  resolvePoshGame(true);
+}
+
+function handleVasePuzzleFailure(event) {
+  if (!poshGameFrame || event.source !== poshGameFrame.contentWindow) return;
+  if (event.data?.type !== "vasePuzzleFailed") return;
+  resolvePoshGame(false);
 }
 
 function showPoshGame() {
@@ -360,6 +370,7 @@ function showPoshGame() {
   poshGamePending = false;
   poshGamePausedShop = !gamePaused;
   if (poshGamePausedShop) togglePause();
+  poshGameResult = null;
   poshGameFrame.src = poshGameFrame.dataset.src;
   poshGameOverlay.hidden = false;
 }
@@ -388,10 +399,27 @@ function choosePoshOffer(choice) {
 
 function closePoshGame() {
   if (!poshGameOverlay || !poshGameFrame) return;
+  resolvePoshGame(false);
+}
+
+function resolvePoshGame(won) {
+  if (poshGameResult !== null) return;
+  poshGameResult = won ? "win" : "loss";
+  if (!poshGameOverlay || !poshGameFrame) return;
   poshGameOverlay.hidden = true;
   poshGameFrame.src = "";
   if (poshGamePausedShop) togglePause();
   poshGamePausedShop = false;
+  poshGamePending = false;
+  if (won) {
+    customerDialogueOutcome = "accepted";
+  }
+  finishTrade();
+  if (won) {
+    customerReaction = "You're a marvel! I've left a nice bonus for you.";
+    customerReactionUntil = millis() + 2200;
+    rewardHighlightUntil = customerReactionUntil;
+  }
 }
 
 // Storage Reorganization is offered before payment whenever a purchase would overflow.
@@ -1265,19 +1293,20 @@ function pawnDrawIntro() {
   pawnButton('CONTINUE',333,412,198,true,color(70,115,65));
 }
 function pawnDrawPoshOffer() {
-  noStroke(); fill(0,0,0,190); rect(0,0,width,height);
-  pawnPanel(80,55,704,455);
+  pawnPanel(280,95,562,458);
   fill(63, 40, 30);
   textAlign(CENTER);
+  textSize(22);
+  text("NEW CHALLENGE UNLOCKED", 310, 140, 502, 28);
   textStyle(NORMAL);
-  textSize(20);
-  text(`My antique vase shattered! I bought a new one,`, 110, 125, 644, 28);
-  text(`but thought I'd donate this old one to the shop.`, 110, 175, 644, 28);
-  text(`Would you like to try your hand at restoring it?`, 110, 225, 644, 28);
-  text(`If you can fix it, it's yours! I bet some`, 110, 275, 644, 28);
-  text(`repair skills would boost the shop's reputation.`, 110, 325, 644, 28);
-  pawnButton("Sure, I can take a stab at it", 140, 415, 280, true, color(70,115,65));
-  pawnButton('Not today', 444, 415, 280, true, color(156,63,52));
+  textSize(18);
+  text(`My antique vase shattered! I bought a new one,`, 310, 195, 502, 28);
+  text(`but thought I'd donate this old one to the shop.`, 310, 240, 502, 28);
+  text(`Would you like to try your hand at restoring it?`, 310, 285, 502, 28);
+  text(`If you can fix it, it's yours! I bet some`, 310, 330, 502, 28);
+  text(`repair skills would boost the shop's reputation.`, 310, 375, 502, 28);
+  pawnButton("I'll take a stab at it", 312, 489, 152, true, color(70,120,65));
+  pawnButton('Not today', 651, 489, 152, true, color(156,63,52));
 }
 function pawnStartIntroIfNeeded() {
   if (!pawnTradeActive() || pawnIntroType || !pawnVisitor) return;
@@ -1411,8 +1440,8 @@ function handleCustomerClick() {
     return;
   }
   if (poshOfferActive) {
-    if (pawnHit(140, 415, 280, 36)) choosePoshOffer('play');
-    else if (pawnHit(444, 415, 280, 36)) choosePoshOffer('leave');
+    if (pawnHit(312, 489, 152, 36)) choosePoshOffer('play');
+    else if (pawnHit(651, 489, 152, 36)) choosePoshOffer('leave');
     return;
   }
   if(!pawnTradeActive()) {handleBasicClick();return;}
@@ -2042,6 +2071,7 @@ const naturalCustomerLines = {
 let lastCustomerDialogue = '';
 let customerReaction = '';
 let customerReactionUntil = 0;
+let rewardHighlightUntil = 0;
 let customerDialogueOutcome = 'rejected';
 
 function chooseCustomerLine(kind) {
@@ -2943,7 +2973,6 @@ function drawTestPanel() {
   pop();
 }
 
-
 function keyPressed() {
   if (DEV_TEST_MODE) {
     let k = String(key).toLowerCase();
@@ -2967,42 +2996,6 @@ function keyPressed() {
     }
   }
 };
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 function draw() {
     // Supplier order confirmations close automatically after three seconds.
     if (phoneCall === "orderConfirmed" && millis() >= orderConfirmationUntil) {
@@ -3086,6 +3079,20 @@ function draw() {
       text(customerReaction, width / 2, height - 75);
       pop();
     }
+
+  if (millis() < rewardHighlightUntil && !showIntro && !showReceipt && !gameOver) {
+    push();
+    noFill();
+    stroke(255);
+    strokeWeight(3);
+    rect(17, 47, 194, 25);
+    noStroke();
+    fill(255);
+    textAlign(LEFT);
+    textSize(11);
+    text("BONUS!", 158, 42);
+    pop();
+  }
 
   if (!showIntro && !gameOver) {
     // An easy-to-see 180px red telephone at the lower-right of the shop.
@@ -3247,6 +3254,7 @@ function restartGame() {
   lastCustomerDialogue = '';
   customerReaction = '';
   customerReactionUntil = 0;
+  rewardHighlightUntil = 0;
   customerDialogueOutcome = 'rejected';
 
   
