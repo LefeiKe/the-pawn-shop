@@ -552,9 +552,9 @@ function drawStorageTetrisPrompt() {
     textSize(21); text("STORAGE REORGANIZATION",432,139);
     // Match Pat's call: left-aligned 19px paragraphs with readable line lengths.
     fill(66,43,29); textAlign(LEFT); textStyle(NORMAL); textSize(19); textLeading(27);
-    text("Oh boy, looks like you've run out of storage space!\nEver wondered how you could make a little more room?",145,160,565,65);
-    text("Head into the stockroom and clear five rows of\ncrates before they pile up. You'll earn three\npermanent storage slots if you succeed.",145,239,565,95);
-    text("If you fail, you lose the purchase and payment.\nEven if you win, only the most expensive items\ncan stay if space runs out. No refunds, I'm afraid!",145,342,565,85);
+    text("Oh boy, storage is full! Let's make some room in the stockroom.",145,160,565,77);
+    text("Clear five rows of crates before they reach the top to earn three permanent storage slots.",145,239,565,95);
+    text("If you fail, you lose the purchase and payment. Even if you win, only the most expensive items can stay. No refunds, I'm afraid!",145,342,565,85);
     pawnButton("LET'S GO!",194,453,210,true,color(70,115,65));
     pawnButton("CANCEL",460,453,210,true,color(155,83,66));
   } else {
@@ -563,7 +563,7 @@ function drawStorageTetrisPrompt() {
     text("STORAGE WARNING",432,205);
     fill(66,43,29); textAlign(LEFT); textStyle(NORMAL); textSize(19); textLeading(28);
     text("This purchase exceeds your storage capacity.",165,242,534,35);
-    text("Reorganize your storage? If you fail, you'll\nlose the purchase and payment.",165,285,534,70);
+    text("Reorganize your storage? If you fail, you'll lose the purchase and payment.",165,285,534,70);
     pawnButton("PROCEED",194,360,210,true,color(70,115,65));
     pawnButton("CANCEL",460,360,210,true,color(155,83,66));
   }
@@ -751,11 +751,11 @@ function drawBankruptcyNotice() {
   fill(160,70,60); textAlign(CENTER); textStyle(BOLD); textSize(24);
   text("YOUR SHOP IS IN TROUBLE!",432,148);
   fill(66,43,29); textAlign(LEFT); textStyle(NORMAL); textSize(19); textLeading(28);
-  text("Whoa there, kiddo! The books are in the red.\nBut don't pack up the shop just yet!",155,190,554,70);
+  text("Whoa there, kiddo! The books are in the red. But don't pack up the shop just yet!",155,190,554,70);
   textStyle(BOLD);
   text("YOU HAVE 3 DAYS TO SAVE YOUR BUSINESS!",432,286);
   textAlign(LEFT); textStyle(NORMAL); textSize(19); textLeading(28);
-  text("Get your balance back to $0 or more\nby the end of Day " + recoveryDeadline + ".",155,315,554,70);
+  text("Get your balance back to $0 or more by the end of Day " + recoveryDeadline + ".",155,315,554,70);
   text("Make every trade count, pal. I'm rooting for ya!",155,390,554,30);
   drawButton("I'VE GOT THIS!",312,425,240,true,color(70,115,65));
 }
@@ -1322,9 +1322,9 @@ function pawnDrawPoshOffer() {
   text("NEW CHALLENGE UNLOCKED", 310, 140, 502, 28);
   textAlign(LEFT); textStyle(NORMAL);
   textSize(19); textLeading(29);
-  text("My antique vase shattered! I bought a new one,\nbut thought I'd donate this old one to the shop.", 310, 190, 502, 65);
+  text("My antique vase shattered! I bought a new one, but thought I'd donate this old one to the shop.", 310, 190, 502, 65);
   text("Would you like to try restoring it?", 310, 285, 502, 30);
-  text("If you can fix it, it's yours! I bet those repair\nskills would boost the shop's reputation.", 310, 332, 502, 65);
+  text("If you can fix it, it's yours! I bet those repair skills would boost the shop's reputation.", 310, 332, 502, 65);
   pawnButton("I'll take a stab at it", 312, 489, 152, true, color(70,120,65));
   pawnButton('Not today', 651, 489, 152, true, color(156,63,52));
 }
@@ -2398,11 +2398,11 @@ function drawInspectorNotice() {
   if (inspectorPhase === 'intro') {
     if (!inspectorHasIntroduced) {
       // Three short, separated paragraphs instead of one dense speech block.
-      text("Good day! I'm Alex, the local shop inspector.\nI'll stop by from time to time to make sure\neverything is in order.", 164, 174, 536, 85);
-      text("Inspection ratings matter for shops like this.\nA good rating attracts more customers, while\na poor one might drive them away.", 164, 272, 536, 85);
+      text("Good day! I'm Alex, the local shop inspector. I'll stop by from time to time to make sure everything is in order.", 164, 174, 536, 95);
+      text("Inspection ratings matter for shops like this. A good rating attracts more customers, while a poor one might drive them away.", 164, 272, 536, 95);
       text("Now, let's see how you've been running this shop!", 164, 376, 536, 32);
     } else {
-      text("Well, well! It's time for another inspection.\n\nLet's see if you've been keeping this place\nin good shape!", 164, 190, 536, 175);
+      text("Well, well! It's time for another inspection.\n\nLet's see if you've been keeping this place in good shape!", 164, 190, 536, 175);
     }
     drawButton('BEGIN INSPECTION', 302, 439, 260, true, color(70, 115, 65));
 
