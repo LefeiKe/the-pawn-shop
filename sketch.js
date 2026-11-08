@@ -343,7 +343,7 @@ async function setup() {
   window.addEventListener("message", handleStorageTetrisMessage);
 
   shopBg = await loadImage("images/shop.png");
-  vaseSpriteSheet = await loadImage("vasePuzzle/images/vases.png");
+  vaseSpriteSheet = await loadImage("vase-puzzle/images/vases.png");
   shopkeeper = await loadImage("images/shopkeeper.png");
   shopkeeperActor = new Shopkeeper(shopkeeper);
   currentCustomer = new Customer("", "", null, null);
