@@ -273,6 +273,7 @@ let tutorialBagSeen = false;
 // Inspector visits are separate from the daily customer quota.
 let nextInspectionDay = 3;
 let latestInspectionGrade = '';
+let inspectorGradeAcknowledged = false;
 let inspectorPhase = ''; // entering, intro, awaiting minigame, result, leaving
 let inspectorActor = null;
 let inspectorArrivalNoticeUntil = 0;
@@ -1301,16 +1302,17 @@ const pawnDialogue = {
 // pawnNewConversation is defined by its final game-specific implementation below.
 function pawnDrawIntro() {
   noStroke(); fill(0,0,0,190); rect(0,0,width,height);
-  pawnPanel(123,116,618,341);
+  // Use the full Pat-style dialogue panel so longer type descriptions never clip.
+  pawnPanel(105,65,654,455);
   let lines = pawnTypeExplanations[pawnIntroType];
   if (!lines) return;
-  { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(23); text('NEW CUSTOMER TYPE!', 165, 171, 540, 28); };
-  { fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL); textSize(22); text(lines[0], 165, 220, 540, 28); };
-  fill(63, 40, 30); textAlign(LEFT); textStyle(NORMAL);
-  textSize(19); textLeading(29); text(lines[1], 165, 255, 520, 75);
-  textStyle(BOLD); textSize(19); text(lines[2], 165, 344, 520, 52);
+  fill(63,40,30); textAlign(LEFT); textStyle(NORMAL);
+  textSize(23); text('NEW CUSTOMER TYPE!', 150, 118, 564, 32);
+  textSize(22); text(lines[0], 150, 170, 564, 32);
+  textSize(19); textLeading(29); text(lines[1], 150, 215, 564, 110);
+  textStyle(BOLD); textSize(19); text(lines[2], 150, 345, 564, 88);
   textStyle(NORMAL);
-  pawnButton('CONTINUE',333,402,198,true,color(70,115,65));
+  pawnButton('CONTINUE',333,454,198,true,color(70,115,65));
 }
 function pawnDrawPoshOffer() {
   pawnPanel(280,95,562,458);
@@ -1460,7 +1462,7 @@ function pawnPortrait() {
 // New trade board interactions; all unrelated input still uses existing handler.
 function handleCustomerClick() {
   if (pawnIntroType) {
-    if (pawnHit(333,402,198,36)) pawnCloseIntro();
+    if (pawnHit(333,454,198,36)) pawnCloseIntro();
     return;
   }
   if (poshOfferActive) {
@@ -1805,8 +1807,8 @@ function handleShopClick() {
     return;
   }
   if (!showIntro && !showReceipt && !gameOver && !closing && !showBudgetWarning) {
-    if (pawnHit(328, 12, 150, 32)) { shopOpenMenu("people"); return; }
-    if (pawnHit(488, 12, 140, 32)) { shopOpenMenu("upgrades"); return; }
+    if (pawnHit(328, 12, 128, 32)) { shopOpenMenu("people"); return; }
+    if (pawnHit(466, 12, 128, 32)) { shopOpenMenu("upgrades"); return; }
   }
   if (pawnTradeActive() && !gamePaused && !showBag &&
       pawnVisitor.type !== 'Wholesaler' && !shopBargained &&
@@ -2321,6 +2323,7 @@ function nextInspectorResponse(grade) {
 // The latest grade changes tomorrow's customer quota, not today's.
 function recordInspectionResult(correctAnswers) {
   if (!Number.isInteger(correctAnswers) || correctAnswers < 0 || correctAnswers > 5) return;
+  inspectorGradeAcknowledged = false;
   latestInspectionGrade = correctAnswers === 5 ? 'A' :
                           correctAnswers >= 3 ? 'B' : 'C';
   if (inspectorPhase === 'awaiting') {
@@ -2432,6 +2435,7 @@ function advanceInspectorNotice() {
   }
   // Complete the memory game before allowing Alex to leave.
   if (inspectorPhase !== 'result') return;
+  inspectorGradeAcknowledged = true;
   inspectorPhase = 'leaving';
   inspectorResultText = '';
   if (inspectorNoticePausedGame && gamePaused) togglePause();
@@ -3223,24 +3227,22 @@ function draw() {
   if (showBag) drawBag();
   drawReputationNotice();
   drawInspectorArrivalNotice();
-  const popupActive = showIntro || showReceipt || gameOver || showBudgetWarning ||
+  // Show the grade as soon as Alex's result dialogue is dismissed.
+  // Keep it behind every popup, but allow it while Alex is walking out.
+  const gradeBlocked = showIntro || showReceipt || gameOver || showBudgetWarning ||
     showBag || closing || shopMenu || phonePending || phoneCall ||
     pawnTradeActive() || pawnIntroType || poshOfferActive ||
-    inspectorPhase || tetrisPromptActive || bankruptcyNotice;
-  if (latestInspectionGrade && !popupActive) {
+    (inspectorPhase && inspectorPhase !== 'leaving') ||
+    tetrisPromptActive || bankruptcyNotice;
+  if (latestInspectionGrade && inspectorGradeAcknowledged && !gradeBlocked) {
     push();
-    // A square inspection badge below the customer-count board.
-    // Preserve the previous popup layering rules.
-    pixelBoard(799, 70, 55, 55);
+    pixelBoard(607, 10, 55, 55);
     fill(65, 40, 28);
     textFont("Pixelify Sans");
     textAlign(CENTER);
-    textStyle(NORMAL);
-    textSize(10);
-    text("GRADE", 826.5, 92);
     textStyle(BOLD);
-    textSize(23);
-    text(latestInspectionGrade, 826.5, 115);
+    textSize(29);
+    text(latestInspectionGrade, 634.5, 48);
     pop();
   }
   drawTestPanel();
@@ -3269,6 +3271,7 @@ function restartGame() {
   nextMorning = 0;
   nextInspectionDay = 3;
   latestInspectionGrade = '';
+  inspectorGradeAcknowledged = false;
   inspectorPhase = '';
   inspectorActor = null;
   inspectorArrivalNoticeUntil = 0;
@@ -4020,9 +4023,9 @@ function finishTrade() {
 function shopDrawTabs() {
 
   if (showIntro || showReceipt || gameOver || closing) return;
-  drawButton('REPUTATION', 328, 12, 150, true, color(98, 67, 46));
+  drawButton('REPUTATION', 328, 12, 128, true, color(98, 67, 46));
   if (dayNumber >= 3 && phoneSeen.upgrades && !phonePending && !phoneCall) {
-    drawButton('UPGRADES', 488, 12, 140, true, color(98, 67, 46));
+    drawButton('UPGRADES', 466, 12, 128, true, color(98, 67, 46));
   }
 }
 
