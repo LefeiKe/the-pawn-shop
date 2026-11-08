@@ -624,9 +624,7 @@ function togglePause() {
 
 // Day 1 contextual walkthrough. It never pauses play or captures input.
 function dayOneTutorialHint() {
-  if (showReceipt) return "DAY COMPLETE. Review your purchases and sales, then close the receipt.";
-  if (showBag) return "Your BAG shows your stock and purchase prices. Click outside to close.";
-  if (closing) return "All customers are served. Your daily receipt is coming.";
+  if (showReceipt || showBag || closing) return "";
   const step = tutorialTradesServed;
   if (pawnTradeActive()) {
     if (step === 0) return "This customer wants to sell an item. Buying costs money, but you can resell it for profit.";
@@ -636,7 +634,7 @@ function dayOneTutorialHint() {
     return "You've learned the basics. Now explore the rest of the shop at your own pace.";
   }
   if (step === 0) return "The daily customer count is at the top right. The shop closes after everyone is served.";
-  if (step === 1) return "Click BAG to review your purchases. Keep an eye on your storage capacity.";
+  if (step === 1) return tutorialBagSeen ? "" : "Click BAG to review your purchases. Keep an eye on your storage capacity.";
   if (step === 2) return "Buy low and sell high to make a profit.";
   if (step === 3) return "REPUTATION shows your relationships. Stronger relationships improve bargaining chances.";
   if (step === 4) return "Watch your balance. Weekly debt gives you three days to recover before the shop closes.";
@@ -651,6 +649,7 @@ function drawDayOneTutorial() {
       pawnIntroType || poshOfferActive || (poshGameOverlay && !poshGameOverlay.hidden) ||
       (tetrisOverlay && !tetrisOverlay.hidden) || tetrisPromptActive || shopMenu ||
       inspectorPhase || bankruptcyNotice) return;
+  if (showBag) tutorialBagSeen = true;
   const hint = dayOneTutorialHint();
   if (!hint) return;
   if (hint !== tutorialTypedText) {
