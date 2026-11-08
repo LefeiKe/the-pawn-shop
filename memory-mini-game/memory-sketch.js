@@ -388,27 +388,7 @@ function draw() {
         text("INSPECTION COMPLETE!", width / 2, 145);
 
         textSize(22);
-        text("Your score: " + score + " / " + totalQuestions, width / 2, 220);
-
-        // final rating
-        let rating;
-
-        if (score === 5) {
-            rating = "A";
-            fill(50, 150, 80);
-        }
-        else if (score >= 3) {
-            rating = "B";
-            fill(190, 130, 40);
-        }
-        else {
-            rating = "C";
-            fill(200, 60, 60);
-        }
-
-        textSize(26);
-        text("RATING: " + rating, width / 2, 280);
-
+        text("Your score: " + score + " / " + totalQuestions, width / 2, 260);
 
         // return to shop button
         fill(70, 115, 65);

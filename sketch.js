@@ -922,11 +922,9 @@ function moveCustomer() {
   currentCustomer.move();
   if (previousState === "leaving" && currentCustomer.state === "gone") {
     if (!closing) {
-      customersLeft--;
-      if (customersLeft <= 0) {
-        customersLeft = 0;
-        finishCustomerDay();
-      } else scheduleCustomer();
+      // The counter tracks customers who have not yet entered.
+      if (customersLeft <= 0) finishCustomerDay();
+      else scheduleCustomer();
     } else shopkeeperActor.leave();
   }
 }
@@ -3520,6 +3518,8 @@ function generateCustomer(forcedVisitorType) {
     // Small, predictable relationship discount/bonus for sales.
     currentTrade.markup *= 1 + (score - 50) * 0.002;
   }
+  // Count down as a customer enters, while still allowing their trade to finish.
+  if (customersLeft > 0) customersLeft--;
 }
 
 
