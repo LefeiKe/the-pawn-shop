@@ -3077,7 +3077,7 @@ function keyPressed() {
       else if (k === '0') testJumpToDay(14);
       else if (k === 'p') testEnterPoshPatron();
       else if (k === 'w') testEnterWholesaler();
-      else if (k === 's') startStorageOverflow(() => {});
+      else if (k === 's') startStorageOverflow([]);
       else if (k === 'a') recordInspectionResult(5);
       else if (k === 'b') recordInspectionResult(4);
       else if (k === 'c') recordInspectionResult(2);
