@@ -45,6 +45,12 @@
         miniCash.currentTime = 0;
         miniCash.play().catch(() => {});
       }
+      window.addEventListener("message", event => {
+        if (event.source !== window.parent || event.origin !== window.location.origin ||
+            event.data?.type !== "shopAudioMute") return;
+        const muted = event.data.muted === true;
+        for (const sound of [miniClick, miniCash]) sound.muted = muted;
+      });
     </script>
 </body>
 </html>
