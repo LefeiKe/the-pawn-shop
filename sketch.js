@@ -20,6 +20,7 @@ shopAudio.ring.loop = true;
 let shopAudioUnlocked = false;
 let cashHandledClick = false;
 let activeTypingId = null;
+let activeTypingPriority = 0;
 let typingIdleTimeout = null;
 shopAudio.typing.loop = true;
 const TYPEWRITER_MS = 30;
@@ -55,9 +56,10 @@ function stopTypingSound() {
   shopAudio.typing.pause();
   shopAudio.typing.currentTime = 0;
   activeTypingId = null;
+  activeTypingPriority = 0;
 }
 
-function soundTypingTick(id, count, total) {
+function soundTypingTick(id, count, total, priority = 0) {
   // Start with the first visible character, stop on the final one.
   if (count >= total || total === 0) {
     if (activeTypingId === id) stopTypingSound();
@@ -66,8 +68,11 @@ function soundTypingTick(id, count, total) {
   if (count <= 0 || !shopAudioUnlocked) return;
 
   if (activeTypingId !== id) {
+    // A red/system notice takes priority over simultaneous tutorial subtitles.
+    if (activeTypingId !== null && priority < activeTypingPriority) return;
     stopTypingSound();
     activeTypingId = id;
+    activeTypingPriority = priority;
     playShopSound("typing");
   }
 
@@ -791,7 +796,7 @@ function dayOneTutorialHint() {
     return "";
   }
   if (step === 0) return "See the customer count at the top right? We'll close up once everyone's served.";
-  if (step === 1) return tutorialBagSeen ? "" : "Take a peek at BAG to see your purchase. Watch that storage space!";
+  if (step === 1) return tutorialBagSeen ? "" : "You've just completed your first trade! Take a peek at BAG to see your purchase. Watch that storage space!";
   if (step === 2) return "That's the trick, kiddo. Buy low, sell high!";
   if (step === 3) return "Keep an eye on your cash, kiddo. Clear weekly debt within three days to keep the shop open.";
   if (step === 4) return "Check REPUTATION to see how folks feel about you. Good relationships help with bargains.";
@@ -1703,7 +1708,7 @@ function suspiciousTradeConsequence() {
 // Reuse the tutorial's letter-by-letter reveal for brief notices.
 function typedNotice(message, startedAt, withSound = true) {
   const letters = constrain(floor((millis() - startedAt) / TYPEWRITER_MS) + 1, 0, message.length);
-  if (withSound) soundTypingTick(startedAt + ":" + message, letters, message.length);
+  if (withSound) soundTypingTick(startedAt + ":" + message, letters, message.length, 1);
   return message.slice(0, letters);
 }
 
@@ -4163,6 +4168,7 @@ function shopTryBargain() {
   let succeeded = dayNumber === 1 && tutorialTradesServed === 3 ? true :
                   dayNumber === 1 && tutorialTradesServed === 4 ? false : random() < chance;
   if (succeeded) {
+    playCashSound(); // A successful negotiation uses cash instead of the click cue.
     const improvement = pawnVisitor.type === 'Bargain' ? 0.20 : 0.10;
     if (currentTrade.type === "sell") shopTradeMultiplier *= 1 - improvement;
     else currentTrade.markup *= 1 + improvement;
