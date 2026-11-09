@@ -18,7 +18,7 @@
 // MAIN GAME
 // ============================================================
 
-// Audio system workshopped with ChatGPT on 11/08/2026.
+// BGM, responsive click sounds, and typewriting audio refined with ChatGPT on 11/08–11/09/2026.
 // Sounds use p5.sound's loadSound(), as introduced in Interactive Computing Lecture 5.
 const shopAudio = {};
 const GAME_AUDIO_VOLUME = 0.7;
@@ -338,7 +338,7 @@ function unlockedUpgradeCount() {
     wealthyClienteleLevel + supplierOwned.filter(Boolean).length;
 }
 
-// Game endings workshopped with ChatGPT on 11/07/2026.
+// Day 28 ending conditions and scrollable final results workshopped with ChatGPT on 11/07/2026.
 function chooseFinalEnding() {
   const upgrades = unlockedUpgradeCount();
   if (money < 0) return {title:"SHOP CLOSED", message:"Your shop could not cover its final debts.", won:false, achievement:"Shop Closed", announcement:"The Pawn Shop has closed its doors."};
@@ -598,7 +598,7 @@ function resolvePoshGame(won) {
 
 // Storage Reorganization is offered before payment whenever a purchase would overflow.
 // Supplier confirmations stay in the compact phone panel; walk-in customers use this board.
-// Shop storage and overflow rules workshopped with ChatGPT on 11/07/2026.
+// Shop-side overflow purchases and storage-capacity consequences workshopped with ChatGPT on 11/07/2026.
 function needsStorageChallenge(quantity) {
   return inventory.length + reservedStorage() + quantity > shopCapacity();
 }
@@ -1387,7 +1387,7 @@ function handleBasicClick() {
 
 
 // ============================================================
-// Customer generation and trading logic workshopped with ChatGPT on 10/20/2026.
+// Customer type selection and buy/sell trade flow workshopped with ChatGPT during 10/20–11/07/2026.
 // CUSTOMER PORTRAITS AND TRADING
 // ============================================================
 
@@ -1830,7 +1830,7 @@ function shopDrawPeople() {
   drawButton("CLOSE", 347, 462, 170, true, color(98, 67, 46));
 }
 
-// Shop upgrades and supplier system workshopped with ChatGPT on 11/01/2026.
+// Upgrade progression and next-day supplier orders workshopped with ChatGPT on 11/01–11/02/2026.
 function getUpgradeList() {
   let available = [];
   let owned = [];
@@ -2491,7 +2491,7 @@ function nextInspectorResponse(grade) {
 
 // Sara's future memory game will call this after its five questions.
 // The latest grade changes tomorrow's customer quota, not today's.
-// Shop inspection grading rules workshopped with ChatGPT on 11/06/2026.
+// Inspector A/B/C grade thresholds and next-day customer counts workshopped with ChatGPT on 11/06/2026.
 function recordInspectionResult(correctAnswers) {
   if (!Number.isInteger(correctAnswers) || correctAnswers < 0 || correctAnswers > 5) return;
   inspectorGradeAcknowledged = false;
@@ -2976,7 +2976,7 @@ function phoneSellSelection() {
 
 
 // Route clicks to the topmost active modal before allowing shop interactions.
-// Shop UI and input handling workshopped with ChatGPT on 11/08/2026.
+// Shop modal click priority and screen layering refined with ChatGPT on 11/08/2026.
 function mousePressed() {
   unlockShopAudio();
   cashHandledClick = false;
@@ -4026,7 +4026,7 @@ function pawnTradeBoard() {
 }
 
 
-// Bargaining and reputation rules workshopped with ChatGPT on 11/05/2026.
+// Reputation-based bargain success tiers and penalties workshopped with ChatGPT on 11/05–11/06/2026.
 function shopTryBargain() {
   if (shopBargained || !currentTrade || !pawnVisitor || pawnVisitor.type === 'Wholesaler') return;
   shopBargained = true;
