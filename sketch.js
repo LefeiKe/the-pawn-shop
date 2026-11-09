@@ -130,6 +130,7 @@ const vaseBounds = [
   { x: 50, y: 0, w: 1916, h: 2016 }
 ];
 
+// Customer state machine: enter the shop, wait at the counter, then leave.
 class Customer {
   constructor(name, type, sprite, portrait) {
     this.name = name;
@@ -204,6 +205,7 @@ class Customer {
   }
 }
 
+// Shopkeeper state machine: follows the store route between opening and closing.
 class Shopkeeper {
   constructor(sprite) {
     this.sprite = sprite;
@@ -367,7 +369,6 @@ function settleDay() {
 
 let inventory = [];
 let money = 150;
-// let money = 500;
 let customerNumber = 0;
 let dailyCustomerLimit = 5;
 let customersLeft = 5;
@@ -1427,13 +1428,6 @@ const pawnTypeExplanations = {
     "Take your pick from their wares, but don't expect them to budge on price.",
     "They trade at wholesale prices, regardless of market trends or shop upgrades."
   ]
-};
-const pawnDialogue = {
-  Regular:{sell:['I FOUND A FEW THINGS TO SELL.','WOULD YOU BE INTERESTED IN THESE?','I HOPE THIS IS A FAIR PRICE.'],category:['DO YOU HAVE ANYTHING USEFUL?','I AM LOOKING FOR SOMETHING TODAY.','LET ME SEE WHAT YOU HAVE IN STOCK.']},
-  Bargain:{sell:['I THINK THIS IS A GREAT DEAL.','HOW MUCH CAN YOU GIVE ME?','I REALLY NEED A GOOD PRICE.'],category:['MY BUDGET IS A LITTLE TIGHT.','ANY CHANCE OF A GOOD DEAL?','I AM TRYING NOT TO SPEND TOO MUCH.']},
-  Collector:{sell:['THIS MIGHT INTEREST YOU.','I BROUGHT SOMETHING FROM MY COLLECTION.','I KNOW GOOD ITEMS WHEN I SEE THEM.'],category:['I AM LOOKING FOR SOMETHING SPECIAL.','QUALITY MATTERS MORE THAN PRICE.','SHOW ME YOUR FINEST STOCK.']},
-  Wholesaler:{sell:['I HAVE FIVE ITEMS AT WHOLESALE PRICES.'],category:['I BUY AT A FIXED PRICE.']},
-  Suspicious:{sell:['NO NEED TO ASK TOO MANY QUESTIONS.','I HAVE AN INTERESTING OFFER FOR YOU.','TRUST ME, THIS IS A BARGAIN.'],category:['JUST SHOW ME WHAT YOU HAVE.','I AM ONLY LOOKING AROUND.','KEEP THIS BETWEEN US, ALL RIGHT?']}
 };
 // pawnNewConversation is defined by its final game-specific implementation below.
 function pawnDrawIntro() {
@@ -2959,6 +2953,7 @@ function phoneSellSelection() {
 // Receipts no longer treat rent as a daily $10 charge.
 
 
+// Route clicks to the topmost active modal before allowing shop interactions.
 function mousePressed() {
   unlockShopAudio();
   cashHandledClick = false;
@@ -3117,171 +3112,7 @@ function mousePressed() {
 // Ensure each rent day is handled only once even if the receipt stays open.
 
 // ------------------------------------------------------------
-// DEVELOPMENT TEST MODE (turn OFF before submitting the game)
-// Set to false when you no longer need the shortcuts.
-// ------------------------------------------------------------
-let DEV_TEST_MODE = true;
-let testPanelVisible = false;
-
-// Enter a chosen day with a clean shop. Current money and inventory stay intact.
-function testJumpToDay(day) {
-  if (phonePending || phoneCall) return; // Finish incoming calls first.
-  if (pawnIntroType) pawnCloseIntro();
-  if (shopMenu) shopCloseMenu();
-  // Clear a pause from a previous screen without changing the clock math.
-  gamePaused = false;
-  showIntro = false;
-  showReceipt = false;
-  showBag = false;
-  showBudgetWarning = false;
-  gameOver = false;
-  ending = null;
-  endingShownAt = 0;
-  endingScroll = 0;
-  recoveryDeadline = 0;
-  bankruptcyNotice = false;
-  closing = false;
-  currentCustomer.state = 'gone';
-  currentTrade = undefined;
-  selectedItems = [];
-  pawnVisitor = null;
-  dayNumber = day;
-  if (day === 1) {
-    tutorialTradesServed = 0;
-    tutorialBagSeen = false;
-    tutorialTypedText = "";
-    tutorialTextStartedAt = 0;
-    tutorialWelcomeStartedAt = millis();
-    firstTradeCelebrationStartedAt = 0;
-  }
-  nextInspectionDay = day >= 3 ? day : 3;
-  inspectorPhase = '';
-  inspectorActor = null;
-  inspectorArrivalNoticeUntil = 0;
-  inspectorNoticePausedGame = false;
-  dayStarted = true;
-  startTime = millis();
-  dailyCustomerLimit = getDailyCustomers();
-  customersLeft = dailyCustomerLimit;
-  nextArrival = millis() + 6000;
-  nextMorning = 0;
-  shopkeeperActor.state = 'working';
-  shopkeeperActor.x = 710;
-  shopkeeperActor.y = 260;
-  phonePaidToday = false;
-  dailyLog = [];
-  // Prior announcements are logically unlocked when jumping beyond them.
-  if (day > 1) {
-    phoneSeen.hello = true;
-    welcomeCallCompleted = true;
-  }
-  if (day > 3) phoneSeen.upgrades = true;
-  if (day > 7) phoneSeen.rentReveal = true;
-  if (day === 3) phoneSeen.upgrades = false; // Test the unlock call.
-  if (day === 7) phoneSeen.rentReveal = false; // Test the reveal at closing.
-}
-
-// Spawn a Collector immediately so the posh patron offer can be tested.
-function testEnterPoshPatron() {
-  if (phonePending || phoneCall || showIntro || showReceipt || gameOver ||
-      closing || currentCustomer.state === 'waiting') return;
-  if (pawnIntroType) pawnCloseIntro();
-  if (shopMenu) shopCloseMenu();
-  gamePaused = false;
-  showBag = false;
-  showBudgetWarning = false;
-  dayStarted = true;
-  closing = false;
-  if (customersLeft <= 0) customersLeft = 1;
-  currentCustomer.state = 'gone';
-  currentTrade = undefined;
-  selectedItems = [];
-  nextArrival = 0;
-  generateCustomer('Collector');
-}
-
-// Spawn a Wholesaler for quick testing without changing the normal introduction day.
-function testEnterWholesaler() {
-  if (phonePending || phoneCall || showIntro || showReceipt || gameOver ||
-      closing || currentCustomer.state === 'waiting') return;
-  if (pawnIntroType) pawnCloseIntro();
-  if (shopMenu) shopCloseMenu();
-  gamePaused = false;
-  showBag = false;
-  showBudgetWarning = false;
-  dayStarted = true;
-  if (customersLeft <= 0) customersLeft = 1;
-  currentCustomer.state = 'gone';
-  currentTrade = undefined;
-  selectedItems = [];
-  nextArrival = 0;
-  generateCustomer('Wholesaler');
-}
-
-// Close the day immediately and open its receipt. Phone events work normally.
-function testEndDay() {
-  customersLeft = 0;
-  if (showIntro || phonePending || phoneCall || pawnIntroType || gameOver) return;
-  if (shopMenu) shopCloseMenu();
-  gamePaused = false;
-  showBag = false;
-  showBudgetWarning = false;
-  currentCustomer.state = 'gone';
-  currentTrade = undefined;
-  selectedItems = [];
-  if (dayNumber === nextInspectionDay) {
-    // Developer shortcut behaves like the last customer just left.
-    dayStarted = true;
-    closing = false;
-    finishCustomerDay();
-    return;
-  }
-  closing = true;
-  dayStarted = false;
-  shopkeeperActor.state = 'gone';
-  showReceipt = true;
-}
-
-// Small on-screen keyboard reference; no mouse controls to clash with trading.
-function drawTestPanel() {
-  if (!DEV_TEST_MODE || !testPanelVisible) return;
-  push();
-  noStroke(); fill(40, 29, 25, 235); rect(216, 100, 433, 225);
-  fill(255); textFont('Pixelify Sans'); textAlign(LEFT); textStyle(NORMAL);
-  textSize(20); text('DEV TEST MODE', 234, 130);
-  textSize(16);
-  text('N = next day     E = end today', 234, 160);
-  text('3 = Day 3       7 = Day 7', 234, 187);
-  text('8 = Day 8       0 = Day 14', 234, 214);
-  text('M = +$100   P = posh   W = wholesaler', 234, 244);
-  text('A/B/C = test inspection grade   S = tetris', 234, 272);
-  text('T = hide/show', 234, 295);
-  pop();
-}
-
-function keyPressed() {
-  if (DEV_TEST_MODE) {
-    let k = String(key).toLowerCase();
-    if (k === 't') { testPanelVisible = !testPanelVisible; return false; }
-    if (testPanelVisible) {
-      if (k === 'n') testJumpToDay(dayNumber + 1);
-      else if (k === 'e') testEndDay();
-      else if (k === 'm') money += 100;
-      else if (k === '3') testJumpToDay(3);
-      else if (k === '7') testJumpToDay(7);
-      else if (k === '8') testJumpToDay(8);
-      else if (k === '0') testJumpToDay(14);
-      else if (k === 'p') testEnterPoshPatron();
-      else if (k === 'w') testEnterWholesaler();
-      else if (k === 's') startStorageOverflow([]);
-      else if (k === 'a') recordInspectionResult(5);
-      else if (k === 'b') recordInspectionResult(4);
-      else if (k === 'c') recordInspectionResult(2);
-      
-      return false;
-    }
-  }
-};
+// Main rendering loop: update world state, then draw overlays in interaction order.
 function draw() {
     // Supplier order confirmations close automatically after three seconds.
     if (phoneCall === "orderConfirmed" && millis() >= orderConfirmationUntil) {
@@ -3442,7 +3273,6 @@ function draw() {
     text(latestInspectionGrade, 634.5, 48);
     pop();
   }
-  drawTestPanel();
   drawInspectorNotice();
   if (tetrisPromptActive) drawStorageTetrisPrompt();
   drawBankruptcyNotice();
@@ -3570,6 +3400,7 @@ function restartGame() {
 }
 
 
+// Build a daily visitor and trade offer, including type-specific pricing rules.
 function generateCustomer(forcedVisitorType) {
 
 
