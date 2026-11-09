@@ -3311,6 +3311,9 @@ function draw() {
       drawInfo();
       drawClock();
       drawBagIcon();
+      // Draw persistent controls before modal screens darken the background.
+      // Their existing click handlers remain unchanged.
+      if (!gameOver && !pawnIntroType) shopDrawTabs();
     }
 
     if (closing) {
@@ -3336,8 +3339,6 @@ function draw() {
         drawGameOver();
     }
   if(pawnTradeActive()) pawnTradeBoard();
-  // Keep the bag icon visible above the customer trading panel.
-  if (welcomeCallCompleted && pawnTradeActive() && !showBag && !shopMenu) drawBagIcon();
     pawnStartIntroIfNeeded();
   if (poshGamePending && pawnTradeActive() && !pawnIntroType) {
     showPoshOffer();
@@ -3348,7 +3349,6 @@ function draw() {
   if (pawnIntroType) pawnDrawIntro();
 
   if (!showIntro && welcomeCallCompleted && !gameOver && !pawnIntroType) {
-    shopDrawTabs();
       if (shopMenu === "people") shopDrawPeople();
       if (shopMenu === "upgrades") shopDrawUpgrades();
   }
