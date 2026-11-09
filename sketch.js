@@ -659,7 +659,7 @@ function drawStorageTetrisPrompt() {
     phoneBox();
     fill(66,43,29); textAlign(LEFT); textStyle(NORMAL); textSize(18);
     text("Oh boy, the stockroom's getting crowded!",190,170);
-    text("Clear five rows of crates, and we'll make room",190,207);
+    text("Clear five rows of crates, to make some room",190,207);
     text("for three more items—permanently!",190,239);
     text("But if you lose, the purchase and payment are gone.",190,278);
     text("Even a win might leave some items behind!",190,310);
@@ -738,7 +738,7 @@ function drawIntro() {
 
   textStyle(NORMAL);
   textSize(18);
-  text("Be prudent and profitable to help the little shop prosper!", width / 2, 274);
+  text("Be prudent and profitable to help your little shop prosper!", width / 2, 274);
 
   const hoveringStart = pawnHit(292, 327, 280, 44);
   fill(hoveringStart ? color(85, 137, 79) : color(70, 115, 65));
