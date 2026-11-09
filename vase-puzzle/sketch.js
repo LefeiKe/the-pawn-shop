@@ -292,6 +292,7 @@ function pixelBoard(x, y, w, h) {
 
 function mousePressed() {
     if (gameState === "start") {
+        playMiniClick();
         gameState = "play";
         puzzleStartedAt = millis();
         return;
@@ -299,6 +300,7 @@ function mousePressed() {
 
     if (gameState === "play") {
         if (mouseOverButton(shuffleX, shuffleY, shuffleW)) {
+            playMiniClick();
             shuffleBoard(80);
             return;
         }
@@ -308,6 +310,7 @@ function mousePressed() {
         for (let p of pieces) {
             if (p.isClicked(mouseX, mouseY)) {
                 selectedPiece = p;
+                playMiniClick();
                 dragStartX = mouseX;
                 dragStartY = mouseY;
                 clickOffsetX = mouseX - p.x;
@@ -319,6 +322,7 @@ function mousePressed() {
 
     if (gameState === "win") {
         if (!completionReported) {
+            playMiniClick();
             completionReported = true;
             window.parent.postMessage({
                 type: "vasePuzzleCompleted",
