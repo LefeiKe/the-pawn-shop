@@ -65,6 +65,7 @@ function stopPhoneRing() {
   shopAudio.ring.stop();
 }
 
+// Audio behavior refined with ChatGPT: avoid cutting off Pat's voice during board transitions.
 function playPatVoice() {
   if (!shopAudioUnlocked) return;
   // Allow Pat's voice to finish even if the player closes the dialogue.
@@ -84,6 +85,7 @@ function stopTypingSound() {
   activeTypingId = null;
 }
 
+// Audio timing refined with ChatGPT: synchronize looping typing audio with visible characters.
 function soundTypingTick(id, count, total) {
   if (count >= total || total === 0) {
     if (activeTypingId === id) stopTypingSound();
@@ -102,6 +104,7 @@ function soundTypingTick(id, count, total) {
 }
 
 // Compare UI state before and after a click, so empty/disabled areas stay silent.
+// Substantial ChatGPT implementation assistance: compare UI snapshots to suppress clicks on inactive areas.
 function responsiveClickState() {
   return JSON.stringify([
     showIntro, showReceipt, showBag, showBudgetWarning, gameOver, shopMenu,
@@ -338,6 +341,7 @@ function unlockedUpgradeCount() {
     wealthyClienteleLevel + supplierOwned.filter(Boolean).length;
 }
 
+// ChatGPT-workshopped logic: combine shop earnings and upgrade progress into ending conditions.
 function chooseFinalEnding() {
   const upgrades = unlockedUpgradeCount();
   if (money < 0) return {title:"SHOP CLOSED", message:"Your shop could not cover its final debts.", won:false, achievement:"Shop Closed", announcement:"The Pawn Shop has closed its doors."};
@@ -493,6 +497,7 @@ function showMemoryGame() {
 }
 
 // Receive the result from Inspector Memory Game
+// Substantial ChatGPT implementation assistance: validate messages from the embedded memory game.
 function handleMemoryGameMessage(event) {
 
     if (!memoryGameFrame ||
@@ -517,6 +522,7 @@ function handleMemoryGameMessage(event) {
     recordInspectionResult(receivedScore);
 }
 
+// Substantial ChatGPT implementation assistance: integrate the vase iframe result with the shop's trade state.
 function handleVasePuzzleMessage(event) {
   if (!poshGameFrame || event.source !== poshGameFrame.contentWindow) return;
   if (event.data?.type !== "vasePuzzleCompleted") return;
@@ -601,6 +607,7 @@ function needsStorageChallenge(quantity) {
   return inventory.length + reservedStorage() + quantity > shopCapacity();
 }
 
+// ChatGPT-workshopped logic: hold a pending purchase until the storage challenge is accepted.
 function requestStorageChallenge(source, purchase) {
   playNewBoardSound();
   if (!tetrisIntroduced) playPatVoice();
@@ -608,6 +615,7 @@ function requestStorageChallenge(source, purchase) {
   tetrisPromptActive = true;
 }
 
+// Substantial ChatGPT implementation assistance: coordinate overflow purchases and Tetris transitions.
 function startStorageOverflow(entries, source = "customer", supplierOrder = null) {
   tetrisPurchase = {entries: entries, source: source, order: supplierOrder};
   tetrisPromptActive = false;
@@ -648,6 +656,7 @@ function finishStorageChallenge(won) {
   tetrisPausedShop = false;
 }
 
+// Substantial ChatGPT implementation assistance: receive Tetris results across the iframe boundary.
 function handleStorageTetrisMessage(event) {
   if (!tetrisFrame || event.source !== tetrisFrame.contentWindow) return;
   if (event.data?.type !== "storageTetrisResult" || tetrisOverlay.hidden) return;
@@ -701,6 +710,7 @@ function drawStorageTetrisPrompt() {
   }
 }
 
+// ChatGPT-workshopped logic: apply the same capacity rule to customer and supplier purchases.
 function storeOrOverflow(entries, source = "customer", supplierOrder = null) {
   if (needsStorageChallenge(entries.length)) {
     startStorageOverflow(entries, source, supplierOrder);
@@ -995,6 +1005,7 @@ function finalItemCounts() {
   };
 }
 
+// Interface refined with ChatGPT: clipped scrolling results with a fixed footer and ending dialogue.
 function drawGameOver() {
   noStroke(); fill(0,0,0,185); rect(0,0,width,height);
   pixelBoard(80,40,704,496);
@@ -1511,6 +1522,7 @@ let pawnRows = []; // [{index,x,y,w,h}] - current clickable buyer rows
 let pawnUnlockedTypes = {Regular:true, Bargain:false, Collector:false, Suspicious:false, Wholesaler:false};
 // Introduce exactly one new customer type on each of Days 2–5.
 const pawnTypeSchedule = {2:'Bargain', 3:'Suspicious', 4:'Collector', 5:'Wholesaler'};
+// Customer generation logic workshopped with ChatGPT: unlock types progressively and filter eligible visitors.
 function pawnPickVisitor(forcedType) {
   const types = ['Regular', 'Bargain', 'Collector', 'Suspicious', 'Wholesaler'];
   if (forcedType) {
@@ -1616,6 +1628,7 @@ function pawnPortrait() {
 }
 
 // New trade board interactions; all unrelated input still uses existing handler.
+// Trade interaction logic workshopped with ChatGPT: coordinate buyer/seller choices and inventory updates.
 function handleCustomerClick() {
   if (pawnIntroType) {
     if (pawnHit(333,454,198,36)) pawnCloseIntro();
@@ -1829,6 +1842,7 @@ function shopDrawPeople() {
   drawButton("CLOSE", 347, 462, 170, true, color(98, 67, 46));
 }
 
+// Upgrade presentation and progression rules workshopped with ChatGPT.
 function getUpgradeList() {
   let available = [];
   let owned = [];
@@ -1925,6 +1939,7 @@ function shopDrawUpgrades() {
 
 
 
+// Upgrade purchase effects and state updates workshopped with ChatGPT.
 function shopBuyUpgrade(i) {
   let upgrade = getUpgradeList()[i];
   if (!upgrade || upgrade.price === undefined || money < upgrade.price) return;
@@ -2489,6 +2504,7 @@ function nextInspectorResponse(grade) {
 
 // Sara's future memory game will call this after its five questions.
 // The latest grade changes tomorrow's customer quota, not today's.
+// Inspector grading integration workshopped with ChatGPT; the memory mini-game was developed separately.
 function recordInspectionResult(correctAnswers) {
   if (!Number.isInteger(correctAnswers) || correctAnswers < 0 || correctAnswers > 5) return;
   inspectorGradeAcknowledged = false;
@@ -2636,6 +2652,7 @@ function advanceInspectorNotice() {
 // Hide upgrades until Day 3, without changing the REPUTATION button.
 
 
+// Supplier ordering and delayed inventory delivery logic workshopped with ChatGPT.
 function buySupplierItems(quantity, confirmed = false) {
   let productIndex = 12 + selectedSupplier;
   let unitPrices = [20, 35, 30];
@@ -2973,6 +2990,7 @@ function phoneSellSelection() {
 
 
 // Route clicks to the topmost active modal before allowing shop interactions.
+// Substantial ChatGPT implementation assistance: route input through modal states before normal shop controls.
 function mousePressed() {
   unlockShopAudio();
   cashHandledClick = false;
@@ -3421,6 +3439,7 @@ function restartGame() {
 
 
 // Build a daily visitor and trade offer, including type-specific pricing rules.
+// Customer trade generation and type-specific pricing rules workshopped with ChatGPT.
 function generateCustomer(forcedVisitorType) {
 
 
@@ -4023,6 +4042,7 @@ function pawnTradeBoard() {
 }
 
 
+// Bargaining thresholds and their integration with reputation were workshopped with ChatGPT.
 function shopTryBargain() {
   if (shopBargained || !currentTrade || !pawnVisitor || pawnVisitor.type === 'Wholesaler') return;
   shopBargained = true;
