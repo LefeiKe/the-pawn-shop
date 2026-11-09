@@ -18,8 +18,8 @@
 // MAIN GAME
 // ============================================================
 
+// Audio system workshopped with ChatGPT on 11/08/2026.
 // Sounds use p5.sound's loadSound(), as introduced in Interactive Computing Lecture 5.
-// Sound integration adapted with ChatGPT on 11/08/2026 and 11/09/2026.
 const shopAudio = {};
 const GAME_AUDIO_VOLUME = 0.7;
 const TYPEWRITER_MS = 30;
@@ -65,7 +65,6 @@ function stopPhoneRing() {
   shopAudio.ring.stop();
 }
 
-// Audio behavior refined with ChatGPT: avoid cutting off Pat's voice during board transitions.
 function playPatVoice() {
   if (!shopAudioUnlocked) return;
   // Allow Pat's voice to finish even if the player closes the dialogue.
@@ -85,7 +84,6 @@ function stopTypingSound() {
   activeTypingId = null;
 }
 
-// Audio timing refined with ChatGPT: synchronize looping typing audio with visible characters.
 function soundTypingTick(id, count, total) {
   if (count >= total || total === 0) {
     if (activeTypingId === id) stopTypingSound();
@@ -104,7 +102,6 @@ function soundTypingTick(id, count, total) {
 }
 
 // Compare UI state before and after a click, so empty/disabled areas stay silent.
-// Substantial ChatGPT implementation assistance: compare UI snapshots to suppress clicks on inactive areas.
 function responsiveClickState() {
   return JSON.stringify([
     showIntro, showReceipt, showBag, showBudgetWarning, gameOver, shopMenu,
@@ -341,7 +338,7 @@ function unlockedUpgradeCount() {
     wealthyClienteleLevel + supplierOwned.filter(Boolean).length;
 }
 
-// ChatGPT-workshopped logic: combine shop earnings and upgrade progress into ending conditions.
+// Game endings workshopped with ChatGPT on 11/07/2026.
 function chooseFinalEnding() {
   const upgrades = unlockedUpgradeCount();
   if (money < 0) return {title:"SHOP CLOSED", message:"Your shop could not cover its final debts.", won:false, achievement:"Shop Closed", announcement:"The Pawn Shop has closed its doors."};
@@ -601,11 +598,11 @@ function resolvePoshGame(won) {
 
 // Storage Reorganization is offered before payment whenever a purchase would overflow.
 // Supplier confirmations stay in the compact phone panel; walk-in customers use this board.
+// Shop storage and overflow rules workshopped with ChatGPT on 11/07/2026.
 function needsStorageChallenge(quantity) {
   return inventory.length + reservedStorage() + quantity > shopCapacity();
 }
 
-// ChatGPT-workshopped logic: hold a pending purchase until the storage challenge is accepted.
 function requestStorageChallenge(source, purchase) {
   playNewBoardSound();
   if (!tetrisIntroduced) playPatVoice();
@@ -613,7 +610,6 @@ function requestStorageChallenge(source, purchase) {
   tetrisPromptActive = true;
 }
 
-// Shop-side overflow purchase handling workshopped with ChatGPT; the Tetris mini-game integration was handled separately.
 function startStorageOverflow(entries, source = "customer", supplierOrder = null) {
   tetrisPurchase = {entries: entries, source: source, order: supplierOrder};
   tetrisPromptActive = false;
@@ -624,7 +620,6 @@ function startStorageOverflow(entries, source = "customer", supplierOrder = null
   tetrisFrame.onload = () => tetrisFrame.focus();
 }
 
-// Shop-side storage reward and inventory consequences reviewed with ChatGPT on 11/08/2026.
 function finishStorageChallenge(won) {
   let purchase = tetrisPurchase;
   if (won) {
@@ -707,7 +702,6 @@ function drawStorageTetrisPrompt() {
   }
 }
 
-// ChatGPT-workshopped logic: apply the same capacity rule to customer and supplier purchases.
 function storeOrOverflow(entries, source = "customer", supplierOrder = null) {
   if (needsStorageChallenge(entries.length)) {
     startStorageOverflow(entries, source, supplierOrder);
@@ -808,7 +802,6 @@ function togglePause() {
 const FIRST_TRADE_CELEBRATION = "Nice, you just completed your first trade!";
 const FIRST_TRADE_PAUSE_MS = 3000;
 let firstTradeCelebrationStartedAt = 0;
-// Day 1 subtitle sequencing and timing refined with ChatGPT on 11/08/2026.
 function dayOneTutorialHint() {
   if (showReceipt || showBag) return "";
   if (tutorialTradesServed === 0 && tutorialWelcomeStartedAt > 0) {
@@ -1002,7 +995,6 @@ function finalItemCounts() {
   };
 }
 
-// Interface refined with ChatGPT: clipped scrolling results with a fixed footer and ending dialogue.
 function drawGameOver() {
   noStroke(); fill(0,0,0,185); rect(0,0,width,height);
   pixelBoard(80,40,704,496);
@@ -1395,6 +1387,7 @@ function handleBasicClick() {
 
 
 // ============================================================
+// Customer generation and trading logic workshopped with ChatGPT on 10/20/2026.
 // CUSTOMER PORTRAITS AND TRADING
 // ============================================================
 
@@ -1519,7 +1512,6 @@ let pawnRows = []; // [{index,x,y,w,h}] - current clickable buyer rows
 let pawnUnlockedTypes = {Regular:true, Bargain:false, Collector:false, Suspicious:false, Wholesaler:false};
 // Introduce exactly one new customer type on each of Days 2–5.
 const pawnTypeSchedule = {2:'Bargain', 3:'Suspicious', 4:'Collector', 5:'Wholesaler'};
-// Customer generation logic workshopped with ChatGPT: unlock types progressively and filter eligible visitors.
 function pawnPickVisitor(forcedType) {
   const types = ['Regular', 'Bargain', 'Collector', 'Suspicious', 'Wholesaler'];
   if (forcedType) {
@@ -1625,7 +1617,6 @@ function pawnPortrait() {
 }
 
 // New trade board interactions; all unrelated input still uses existing handler.
-// Trade interaction logic workshopped with ChatGPT: coordinate buyer/seller choices and inventory updates.
 function handleCustomerClick() {
   if (pawnIntroType) {
     if (pawnHit(333,454,198,36)) pawnCloseIntro();
@@ -1839,7 +1830,7 @@ function shopDrawPeople() {
   drawButton("CLOSE", 347, 462, 170, true, color(98, 67, 46));
 }
 
-// Upgrade presentation and progression rules workshopped with ChatGPT.
+// Shop upgrades and supplier system workshopped with ChatGPT on 11/01/2026.
 function getUpgradeList() {
   let available = [];
   let owned = [];
@@ -1936,7 +1927,6 @@ function shopDrawUpgrades() {
 
 
 
-// Upgrade purchase effects and state updates workshopped with ChatGPT.
 function shopBuyUpgrade(i) {
   let upgrade = getUpgradeList()[i];
   if (!upgrade || upgrade.price === undefined || money < upgrade.price) return;
@@ -2501,7 +2491,7 @@ function nextInspectorResponse(grade) {
 
 // Sara's future memory game will call this after its five questions.
 // The latest grade changes tomorrow's customer quota, not today's.
-// Shop-side inspection grade effects on customer flow workshopped with ChatGPT; the memory mini-game and its connection were handled separately.
+// Shop inspection grading rules workshopped with ChatGPT on 11/06/2026.
 function recordInspectionResult(correctAnswers) {
   if (!Number.isInteger(correctAnswers) || correctAnswers < 0 || correctAnswers > 5) return;
   inspectorGradeAcknowledged = false;
@@ -2649,7 +2639,6 @@ function advanceInspectorNotice() {
 // Hide upgrades until Day 3, without changing the REPUTATION button.
 
 
-// Supplier ordering and delayed inventory delivery logic workshopped with ChatGPT.
 function buySupplierItems(quantity, confirmed = false) {
   let productIndex = 12 + selectedSupplier;
   let unitPrices = [20, 35, 30];
@@ -2987,7 +2976,7 @@ function phoneSellSelection() {
 
 
 // Route clicks to the topmost active modal before allowing shop interactions.
-// Substantial ChatGPT implementation assistance: route input through modal states before normal shop controls.
+// Shop UI and input handling workshopped with ChatGPT on 11/08/2026.
 function mousePressed() {
   unlockShopAudio();
   cashHandledClick = false;
@@ -3147,7 +3136,6 @@ function mousePressed() {
 
 // ------------------------------------------------------------
 // Main rendering loop: update world state, then draw overlays in interaction order.
-// Main screen layering and modal ordering adjusted with ChatGPT on 11/08/2026.
 function draw() {
     // Supplier order confirmations close automatically after three seconds.
     if (phoneCall === "orderConfirmed" && millis() >= orderConfirmationUntil) {
@@ -3436,7 +3424,6 @@ function restartGame() {
 
 
 // Build a daily visitor and trade offer, including type-specific pricing rules.
-// Customer trade generation and type-specific pricing rules workshopped with ChatGPT.
 function generateCustomer(forcedVisitorType) {
 
 
@@ -4039,7 +4026,7 @@ function pawnTradeBoard() {
 }
 
 
-// Bargaining thresholds and their integration with reputation were workshopped with ChatGPT.
+// Bargaining and reputation rules workshopped with ChatGPT on 11/05/2026.
 function shopTryBargain() {
   if (shopBargained || !currentTrade || !pawnVisitor || pawnVisitor.type === 'Wholesaler') return;
   shopBargained = true;
