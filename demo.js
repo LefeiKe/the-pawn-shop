@@ -32,9 +32,9 @@
     '<button data-action="customer">Show customer & trade</button>' +
     '<h3>Shop systems</h3><button data-action="upgrades">Open upgrades</button>' +
     '<button data-action="unlock">Unlock all upgrades</button><button data-action="bag">Fill & open bag</button>' +
-    '<button data-action="supplier">Supplier phone</button><button data-action="receipt">Daily receipt</button>' +
+    '<button data-action="supplier">Supplier phone</button><button data-action="reputation">Reputation board</button><button data-action="pat">Pat’s upgrade call</button><button data-action="rent">Weekly rent reveal</button><button data-action="receipt">Daily receipt</button>' +
     '<h3>Challenges</h3><button data-action="inspector">Inspector intro</button>' +
-    '<button data-action="memory">Memory mini-game</button><button data-action="tetris">Storage Tetris</button>' +
+    '<button data-action="memory">Memory mini-game</button><select id="demo-grade"><option value="5">Inspector grade A</option><option value="4">Inspector grade B</option><option value="2">Inspector grade C</option></select><button data-action="grade">Show selected grade</button><button data-action="tetrisIntro">Tetris introduction</button><button data-action="tetris">Storage Tetris directly</button>' +
     '<button data-action="posh">Posh Patron offer</button><button data-action="vase">Vase puzzle</button>' +
     '<h3>Endings</h3><select id="demo-ending">' +
     '<option value="owner">The New Owner</option><option value="trusted">A Trusted Successor</option>' +
@@ -148,6 +148,18 @@
       prepare(); supplierOwned = [true,true,true];
       phoneCall = "suppliers"; status("Supplier ordering phone opened.");
     },
+    reputation() {
+      prepare(); shopOpenMenu("people"); status("Reputation board opened.");
+    },
+    pat() {
+      prepare(); dayNumber = Math.max(3, dayNumber);
+      phoneCall = "upgrades"; playPatVoice();
+      status("Pat introduces the shop upgrades.");
+    },
+    rent() {
+      prepare(); dayNumber = 7; phoneCall = "rentReveal"; playPatVoice();
+      status("Pat introduces the weekly rent challenge.");
+    },
     receipt() {
       prepare();
       if (!dailyLog.length) {
@@ -169,6 +181,20 @@
       inspectorActor = new Customer("Alex","Inspector",pawnSprites.Alex,pawnPortraits.Alex);
       inspectorActor.state = "waiting"; inspectorPhase = "awaiting"; showMemoryGame();
       status("Memory game opened; grade returns to the shop.");
+    },
+    grade() {
+      prepare();
+      inspectorActor = new Customer("Alex","Inspector",pawnSprites.Alex,pawnPortraits.Alex);
+      inspectorActor.state = "waiting"; inspectorPhase = "awaiting";
+      inspectorNoticePausedGame = true; togglePause();
+      recordInspectionResult(Number(panel.querySelector("#demo-grade").value));
+      status("Inspection grade " + latestInspectionGrade + " revealed.");
+    },
+    tetrisIntro() {
+      prepare(); tetrisIntroduced = false;
+      const entries = [0,1,4,5].map(id => ({product:id,boughtFor:products[id].value}));
+      requestStorageChallenge("customer", () => startStorageOverflow(entries,"customer"));
+      status("Pat introduces the storage challenge. Select LET’S GO.");
     },
     tetris() {
       prepare();
