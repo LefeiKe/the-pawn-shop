@@ -122,13 +122,38 @@
     status("Showing " + ending.achievement + ".");
   }
 
+  // Trigger the normal shop-opening transition when presenting another day.
+  function startDemoDay(day) {
+    prepare();
+    dayNumber = day;
+    tutorialTradesServed = 0;
+    tutorialBagSeen = false;
+    phonePaidToday = false;
+    phoneSeen.hello = day !== 1;
+    phoneSeen.upgrades = day !== 3;
+    welcomeCallCompleted = day !== 1;
+    for (const [unlockDay, type] of Object.entries(pawnTypeSchedule)) {
+      pawnUnlockedTypes[type] = day > Number(unlockDay);
+    }
+    for (const type of Object.values(pawnTypeSchedule)) pawnIntroSeen[type] = false;
+    dayStarted = false;
+    closing = false;
+    dailyLog = [];
+    nextMorning = 0;
+    nextArrival = 0;
+    shopkeeperActor.routeIndex = shopkeeperRoute.length - 1;
+    shopkeeperActor.x = shopkeeperRoute[shopkeeperActor.routeIndex].x;
+    shopkeeperActor.y = shopkeeperRoute[shopkeeperActor.routeIndex].y;
+    shopkeeperActor.state = "entering";
+  }
+
   const actions = {
-    reset() { restartGame(); prepare(); dayNumber = 2; status("Fresh demonstration shop."); },
+    reset() { restartGame(); startDemoDay(1); status("Fresh demonstration shop, starting Day 1."); },
     money() { prepare(); money += 5000; status("Balance: $" + money.toFixed(2)); },
     day() {
-      prepare(); dayNumber = Number(panel.querySelector("#demo-day").value);
-      if (dayNumber === 1) tutorialTradesServed = 0;
-      status("Jumped to Day " + dayNumber + ". Choose a feature or customer.");
+      const day = Number(panel.querySelector("#demo-day").value);
+      startDemoDay(day);
+      status("Starting Day " + day + ": customers and scheduled calls are active.");
     },
     customer() { showCustomer(panel.querySelector("#demo-customer").value); },
     upgrades() {
