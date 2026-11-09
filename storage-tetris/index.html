@@ -6,9 +6,34 @@
     <title>Storage Tetris</title>
     <link href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.11.11/p5.min.js"></script>
+    <style>
+      html, body {
+        width: 100%;
+        min-height: 100%;
+        margin: 0;
+      }
+      body {
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+        background: #000;
+        color: #ead09f;
+        font-family: "Pixelify Sans", sans-serif;
+      }
+      #game {
+        width: 864px;
+        height: 576px;
+      }
+      canvas {
+        display: block;
+        image-rendering: pixelated;
+      }
+    </style>
 </head>
 
-<body style="margin: 0;">
+<body>
     <div id="game"></div>
 
     <script src="sketch.js"></script>
