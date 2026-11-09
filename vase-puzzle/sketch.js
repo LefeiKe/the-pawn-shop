@@ -1,3 +1,13 @@
+/*
+ * Pixel Pat's Pawns and Parcels — Broken Vase Puzzle
+ * Authors: Lefei Ke (lk3104), Margot Anderson ([NetID]),
+ *          Shuangran Zhao ([NetID]), Abdullah Noor ([NetID])
+ * Submission Date: November 9, 2026
+ * Description: Reassemble a broken vase before the timer runs out.
+ * Controls: Click a tile to rotate clockwise; drag a tile into the
+ * adjacent empty space; use SHUFFLE BOARD to rearrange the pieces.
+ */
+
 let vaseSpriteSheet;
 let shopBg;
 let pieces = [];
@@ -36,6 +46,7 @@ let clickOffsetY = 0;
 
 let shuffleX, shuffleY, shuffleW;
 
+// Embedded puzzle auto-start and background presentation adjusted with ChatGPT on 11/08/2026.
 async function setup() {
     createCanvas(864, 576);
     noSmooth();
@@ -345,6 +356,7 @@ function mouseDragged() {
 }
 
 // A short click rotates; a drag toward an adjacent empty cell moves the piece.
+// Vase interaction sound placement refined with ChatGPT on 11/08/2026.
 function mouseReleased() {
     if (!selectedPiece) return;
 
