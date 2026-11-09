@@ -54,6 +54,8 @@
         miniFlip.currentTime = 0;
         miniFlip.play().catch(() => {});
       }
+      // Match the main game's 70% playback volume.
+      for (const sound of [miniClick, miniFlip]) sound.volume = 0.7;
       window.addEventListener("message", event => {
         if (event.source !== window.parent || event.origin !== window.location.origin ||
             event.data?.type !== "shopAudioMute") return;
