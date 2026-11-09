@@ -46,11 +46,17 @@ async function setup() {
     vaseSpriteSheet = await loadImage('images/vases.png');
     shopBg = await loadImage('../images/shop.png');
 
-    gameState = "start";
-
     selectedVaseIndex = random([0, 1, 2, 3]);
-
     startPuzzle(selectedVaseIndex);
+
+    // The shop's "I'll have a stab at it" button already starts the challenge.
+    // Keep the intro screen only when opening the mini-game on its own.
+    if (window.parent !== window) {
+        gameState = "play";
+        puzzleStartedAt = millis();
+    } else {
+        gameState = "start";
+    }
 }
 
 function draw() {
