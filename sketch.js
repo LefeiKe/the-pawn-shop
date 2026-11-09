@@ -12,9 +12,7 @@ const shopAudio = {
   typing: new Audio("sounds/typewritting.mp3"),
   ring: new Audio("sounds/ring.mp3")
 };
-const shopSoundVolumes = {bgm:0.22, click:0.48, cash:0.58, flip:0.62, pat:0.55, typing:0.17, ring:0.6};
-for (const [name, sound] of Object.entries(shopAudio)) {
-  sound.volume = shopSoundVolumes[name];
+for (const sound of Object.values(shopAudio)) {
   sound.preload = "auto";
 }
 shopAudio.bgm.loop = true;
