@@ -770,6 +770,9 @@ function togglePause() {
 }
 
 // Day 1 contextual walkthrough. It never pauses play or captures input.
+const FIRST_TRADE_CELEBRATION = "Nice, you just completed your first trade!";
+const FIRST_TRADE_PAUSE_MS = 2500;
+let firstTradeCelebrationStartedAt = 0;
 function dayOneTutorialHint() {
   if (showReceipt || showBag) return "";
   if (tutorialTradesServed === 0 && tutorialWelcomeStartedAt > 0) {
@@ -778,6 +781,17 @@ function dayOneTutorialHint() {
     if (millis() - tutorialWelcomeStartedAt < typingTime + 3000) return welcome;
   }
   const step = tutorialTradesServed;
+  if (step === 1) {
+    // Show the congratulation as its own subtitle, then pause before the BAG tip.
+    const celebrationDuration = FIRST_TRADE_CELEBRATION.length * TYPEWRITER_MS + FIRST_TRADE_PAUSE_MS;
+    if (!firstTradeCelebrationStartedAt ||
+        millis() - firstTradeCelebrationStartedAt < celebrationDuration) {
+      return FIRST_TRADE_CELEBRATION;
+    }
+    if (!tutorialBagSeen) {
+      return "Take a peek at BAG to see your purchase. Watch that storage space!";
+    }
+  }
   if (pawnTradeActive()) {
     if (step === 0) return "Our first seller! Buying costs cash, but you can resell the item for a profit.";
     if (step === 1) return "Here comes a buyer! Check their budget and category, then pick an item to sell.";
@@ -791,7 +805,7 @@ function dayOneTutorialHint() {
     return "";
   }
   if (step === 0) return "See the customer count at the top right? We'll close up once everyone's served.";
-  if (step === 1) return tutorialBagSeen ? "" : "You've just completed your first trade! Take a peek at BAG to see your purchase. Watch that storage space!";
+  if (step === 1) return "";
   if (step === 2) return "That's the trick, kiddo. Buy low, sell high!";
   if (step === 3) return "Keep an eye on your cash, kiddo. Clear weekly debt within three days to keep the shop open.";
   if (step === 4) return "Check REPUTATION to see how folks feel about you. Good relationships help with bargains.";
@@ -814,6 +828,9 @@ function drawDayOneTutorial() {
   if (hint !== tutorialTypedText) {
     tutorialTypedText = hint;
     tutorialTextStartedAt = millis();
+    if (hint === FIRST_TRADE_CELEBRATION && !firstTradeCelebrationStartedAt) {
+      firstTradeCelebrationStartedAt = tutorialTextStartedAt;
+    }
   }
   const characters = min(hint.length, floor((millis() - tutorialTextStartedAt) / TYPEWRITER_MS));
   soundTypingTick("tutorial:" + tutorialTextStartedAt, characters, hint.length);
@@ -3124,6 +3141,7 @@ function testJumpToDay(day) {
     tutorialTypedText = "";
     tutorialTextStartedAt = 0;
     tutorialWelcomeStartedAt = millis();
+    firstTradeCelebrationStartedAt = 0;
   }
   nextInspectionDay = day >= 3 ? day : 3;
   inspectorPhase = '';
@@ -3514,6 +3532,7 @@ function restartGame() {
   tutorialTypedText = "";
   tutorialTextStartedAt = 0;
   tutorialWelcomeStartedAt = 0;
+  firstTradeCelebrationStartedAt = 0;
   shopMessage = "";
   shopBargained = false;
   shopTradeMultiplier = 1;
