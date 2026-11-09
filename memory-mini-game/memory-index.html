@@ -8,9 +8,30 @@
     <script src="memory-sketch.js"></script>
 
     <link href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+      html, body {
+        width: 100%;
+        min-height: 100%;
+        margin: 0;
+      }
+      body {
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+        background: #000;
+        color: #ead09f;
+        font-family: "Pixelify Sans", sans-serif;
+      }
+      canvas {
+        display: block;
+        image-rendering: pixelated;
+      }
+    </style>
 </head>
 
-<body style="margin: 0; width: 100vw; height: 100vh; display: flex; align-items: center; justify-content: center; overflow: hidden; background: #000;">
+<body>
 
     <script>
       // Mini-game canvases run in iframes, so their clicks need their own sound.
