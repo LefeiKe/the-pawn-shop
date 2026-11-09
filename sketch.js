@@ -1,3 +1,14 @@
+/*
+ * Pixel Pat's Pawns and Parcels — Main Shop
+ * Authors: Lefei Ke (lk3104), Margot Anderson ([NetID]),
+ *          Shuangran Zhao ([NetID]), Abdullah Noor ([NetID])
+ * Submission Date: November 9, 2026
+ * Description: Manage a pawn shop for 28 days through buying, selling,
+ * bargaining, upgrades, customer encounters, and integrated mini-games.
+ * Controls: Mouse to navigate and trade; use the on-screen BAG, phone,
+ * reputation, and upgrades controls to manage the business.
+ */
+
 // ============================================================
 // MAIN GAME
 // ============================================================
@@ -27,6 +38,7 @@ let typingIdleTimeout = null;
 shopAudio.typing.loop = true;
 const TYPEWRITER_MS = 30;
 
+// Audio event routing workshopped with ChatGPT on 11/08/2026.
 function playShopSound(name) {
   if (!shopAudioUnlocked) return;
   const sound = shopAudio[name];
@@ -601,6 +613,7 @@ function startStorageOverflow(entries, source = "customer", supplierOrder = null
   tetrisFrame.onload = () => tetrisFrame.focus();
 }
 
+// Storage mini-game reward integration reviewed with ChatGPT on 11/08/2026.
 function finishStorageChallenge(won) {
   let purchase = tetrisPurchase;
   if (won) {
@@ -783,6 +796,7 @@ function togglePause() {
 const FIRST_TRADE_CELEBRATION = "Nice, you just completed your first trade!";
 const FIRST_TRADE_PAUSE_MS = 3000;
 let firstTradeCelebrationStartedAt = 0;
+// Day 1 subtitle sequencing and timing refined with ChatGPT on 11/08/2026.
 function dayOneTutorialHint() {
   if (showReceipt || showBag) return "";
   if (tutorialTradesServed === 0 && tutorialWelcomeStartedAt > 0) {
@@ -3113,6 +3127,7 @@ function mousePressed() {
 
 // ------------------------------------------------------------
 // Main rendering loop: update world state, then draw overlays in interaction order.
+// Main screen layering and modal ordering adjusted with ChatGPT on 11/08/2026.
 function draw() {
     // Supplier order confirmations close automatically after three seconds.
     if (phoneCall === "orderConfirmed" && millis() >= orderConfirmationUntil) {
