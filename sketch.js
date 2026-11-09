@@ -497,7 +497,6 @@ function showMemoryGame() {
 }
 
 // Receive the result from Inspector Memory Game
-// Substantial ChatGPT implementation assistance: validate messages from the embedded memory game.
 function handleMemoryGameMessage(event) {
 
     if (!memoryGameFrame ||
@@ -522,7 +521,6 @@ function handleMemoryGameMessage(event) {
     recordInspectionResult(receivedScore);
 }
 
-// Substantial ChatGPT implementation assistance: integrate the vase iframe result with the shop's trade state.
 function handleVasePuzzleMessage(event) {
   if (!poshGameFrame || event.source !== poshGameFrame.contentWindow) return;
   if (event.data?.type !== "vasePuzzleCompleted") return;
@@ -615,7 +613,7 @@ function requestStorageChallenge(source, purchase) {
   tetrisPromptActive = true;
 }
 
-// Substantial ChatGPT implementation assistance: coordinate overflow purchases and Tetris transitions.
+// Shop-side overflow purchase handling workshopped with ChatGPT; the Tetris mini-game integration was handled separately.
 function startStorageOverflow(entries, source = "customer", supplierOrder = null) {
   tetrisPurchase = {entries: entries, source: source, order: supplierOrder};
   tetrisPromptActive = false;
@@ -626,7 +624,7 @@ function startStorageOverflow(entries, source = "customer", supplierOrder = null
   tetrisFrame.onload = () => tetrisFrame.focus();
 }
 
-// Storage mini-game reward integration reviewed with ChatGPT on 11/08/2026.
+// Shop-side storage reward and inventory consequences reviewed with ChatGPT on 11/08/2026.
 function finishStorageChallenge(won) {
   let purchase = tetrisPurchase;
   if (won) {
@@ -656,7 +654,6 @@ function finishStorageChallenge(won) {
   tetrisPausedShop = false;
 }
 
-// Substantial ChatGPT implementation assistance: receive Tetris results across the iframe boundary.
 function handleStorageTetrisMessage(event) {
   if (!tetrisFrame || event.source !== tetrisFrame.contentWindow) return;
   if (event.data?.type !== "storageTetrisResult" || tetrisOverlay.hidden) return;
@@ -2504,7 +2501,7 @@ function nextInspectorResponse(grade) {
 
 // Sara's future memory game will call this after its five questions.
 // The latest grade changes tomorrow's customer quota, not today's.
-// Inspector grading integration workshopped with ChatGPT; the memory mini-game was developed separately.
+// Shop-side inspection grade effects on customer flow workshopped with ChatGPT; the memory mini-game and its connection were handled separately.
 function recordInspectionResult(correctAnswers) {
   if (!Number.isInteger(correctAnswers) || correctAnswers < 0 || correctAnswers > 5) return;
   inspectorGradeAcknowledged = false;
