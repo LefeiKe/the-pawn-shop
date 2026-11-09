@@ -163,6 +163,11 @@ class Customer {
     if (this.x === target.x && this.y === target.y) {
       if (this.routeIndex === 4 && this.state === "entering") {
         this.state = "waiting";
+        // Reveal each customer's trade screen with a page flip. A first-time
+        // customer-type introduction has its own flip before the trade screen.
+        if (this === currentCustomer && pawnIntroSeen[this.type] !== false) {
+          playNewBoardSound();
+        }
       } else if (this.routeIndex === 7) {
         this.state = "gone";
       } else {
@@ -1475,6 +1480,8 @@ function pawnCloseIntro() {
   pawnIntroType = '';
   if (pawnIntroPausedGame) togglePause();
   pawnIntroPausedGame = false;
+  // The customer's trade screen is now revealed beneath the introduction.
+  playNewBoardSound();
 }
 let pawnRows = []; // [{index,x,y,w,h}] - current clickable buyer rows
 
