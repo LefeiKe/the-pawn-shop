@@ -1,3 +1,13 @@
+/*
+ * Pixel Pat's Pawns and Parcels — Storage Reorganization
+ * Authors: Lefei Ke (lk3104), Margot Anderson ([NetID]),
+ *          Shuangran Zhao ([NetID]), Abdullah Noor ([NetID])
+ * Submission Date: November 9, 2026
+ * Description: Clear five rows to expand shop storage capacity.
+ * Controls: Arrow keys or A/D to move; Up/W to rotate clockwise;
+ * Down/S to soft-drop; Space to hard-drop; P to pause.
+ */
+
 const TARGET_LINES = 5;
 const FALL_MS = 600;
 const SOFT_DROP_MS = 50;
@@ -205,6 +215,7 @@ function makeCells(id) {
 }
 
 // the next piece becomes the falling piece, at the top middle of the board
+// Spawn the next item; a blocked entry point ends the round.
 function spawnPiece() {
   pieceId = nextId;
   pieceShape = makeCells(pieceId);
@@ -295,6 +306,7 @@ function updateFall() {
 
 // LOCKING AND CLEARING 
 // copy the piece into the board, clear rows, then win or bring in the next piece
+// Commit the falling item to the grid, clear complete rows, and check victory.
 function lockPiece() {
   lockedItemCount += 1;
 
@@ -312,7 +324,8 @@ function lockPiece() {
   }
 }
 
-// going top to bottom is safe: removing a row only moves the rows above it
+// Scan from top to bottom; removing a row shifts only the rows above it.
+// Row-clear sound trigger integrated with ChatGPT on 11/08/2026.
 function clearRows() {
   let brokenItems = [];
   const clearedBefore = linesCleared;

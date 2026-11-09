@@ -1,3 +1,13 @@
+/*
+ * Pixel Pat's Pawns and Parcels — Inspection Memory Game
+ * Authors: Lefei Ke (lk3104), Margot Anderson ([NetID]),
+ *          Shuangran Zhao ([NetID]), Abdullah Noor ([NetID])
+ * Submission Date: November 9, 2026
+ * Description: Memorize displayed merchandise prices and answer
+ * five questions to receive an inspection grade.
+ * Controls: Mouse to flip memory cards and select answers.
+ */
+
 // shop background
 let shopBg;
 const MEMORY_OFFSET_X = 32;
@@ -415,6 +425,8 @@ function draw() {
     pop();
 }
 
+// Correct-answer cash sound and incorrect-answer click behavior
+// integrated with ChatGPT on 11/08/2026.
 function mousePressed() {
     const localMouseX = mouseX - MEMORY_OFFSET_X;
     const localMouseY = mouseY - MEMORY_OFFSET_Y;
@@ -546,6 +558,7 @@ function mousePressed() {
 
 
 // generate five question types for each round
+// Build a balanced five-question sequence from the current displayed prices.
 function generateQuestionPlan() {
 
     // Q1 is always the missing item question
@@ -644,6 +657,7 @@ function generateQuestionPlan() {
 }
 
 
+// Prepare one question and four distinct choices with the answer included.
 function newQuestion() {
 
     questionType = questionPlan[questionNumber - 1];
@@ -889,6 +903,7 @@ function makeItemAnswers(correctName) {
 
 
 // generate random prices for all items
+// Assign round-specific prices while guaranteeing useful comparisons.
 function randomizePrices() {
 
     for (let i = 0; i < items.length; i++) {

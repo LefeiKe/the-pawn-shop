@@ -1,6 +1,15 @@
+/*
+ * Pixel Pat's Pawns and Parcels — Broken Vase Puzzle
+ * Authors: Lefei Ke (lk3104), Margot Anderson ([NetID]),
+ *          Shuangran Zhao ([NetID]), Abdullah Noor ([NetID])
+ * Submission Date: November 9, 2026
+ * Description: Reassemble a broken vase before the timer runs out.
+ * Controls: Click a tile to rotate clockwise; drag a tile into the
+ * adjacent empty space; use SHUFFLE BOARD to rearrange the pieces.
+ */
+
 let vaseSpriteSheet;
 let shopBg;
-let vaseChoice;
 let pieces = [];
 let emptySquare = {col: 2, row: 2};
 
@@ -37,6 +46,7 @@ let clickOffsetY = 0;
 
 let shuffleX, shuffleY, shuffleW;
 
+// Embedded puzzle auto-start and background presentation adjusted with ChatGPT on 11/08/2026.
 async function setup() {
     createCanvas(864, 576);
     noSmooth();
@@ -218,8 +228,6 @@ function chooseVase(vaseIndex, boardX, boardY) {
     let pieceSourceW = bounds.w / cols;
     let pieceSourceH = bounds.h / rows;
 
-    let startingSpriteIndex = 4 + (vaseIndex * 8);
-
     // generate puzzle pieces
     for (let i = 0; i < 8; i++) {
         let localCol = i % cols;
@@ -347,6 +355,8 @@ function mouseDragged() {
     }
 }
 
+// A short click rotates; a drag toward an adjacent empty cell moves the piece.
+// Vase interaction sound placement refined with ChatGPT on 11/08/2026.
 function mouseReleased() {
     if (!selectedPiece) return;
 
@@ -397,6 +407,7 @@ function mouseOverButton(x, y, w) {
   return mouseX >= x && mouseX <= x + w && mouseY >= y && mouseY <= y + 32;
 }
 
+// Shuffle using only legal moves so the board remains solvable.
 function shuffleBoard(moves) {
     for (let i = 0; i < moves; i++) {
         let validPieces = pieces.filter( p => p.isNearEmpty() );
@@ -433,6 +444,7 @@ function drawCompletedVase(vaseIndex, boardX, boardY, boardW, boardH) {
     noFill();
     rect(boardX, boardY, boardW, boardH);
 }
+// Puzzle tile: tracks grid coordinates separately from animated screen position.
 class Piece {
     constructor(spriteSheet, sx, sy, sw, sh, targetCol, targetRow, boardX, boardY, displaySize) {
         this.spriteSheet = spriteSheet;
