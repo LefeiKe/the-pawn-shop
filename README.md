@@ -70,7 +70,7 @@ The final results screen includes Pat's ending call, a scrollable statistics sum
 
 All three mini-games appear within the main shop, using embedded iframes that return results to the main game. The background music continues while they are open.
 
-### Broken Vase Repair — Posh Patrons (Margot Anderson)
+### Broken Vase Repair — Posh Patrons (Margot Anderson-Song)
 
 Posh Patrons may offer a broken antique vase as a special challenge. Choose **“I'll take a stab at it”** to start the puzzle immediately; selecting **“Not today”** skips it.
 
