@@ -672,8 +672,8 @@ function cancelStorageChallenge() {
 }
 
 function drawStorageTetrisPrompt() {
-  noStroke(); fill(0,0,0,190); rect(0,0,width,height);
   if (!tetrisIntroduced) {
+    // phoneBox() already dims the shop, so do not darken it twice.
     // Introduce the challenge as a call from Pat, matching the Day 3 upgrade unlock.
     phoneBox();
     fill(66,43,29); textAlign(LEFT); textStyle(NORMAL); textSize(18);
@@ -690,6 +690,7 @@ function drawStorageTetrisPrompt() {
     pawnButton("LET'S GO!",194,453,210,true,color(70,115,65));
     pawnButton("CANCEL",460,453,210,true,color(155,83,66));
   } else {
+    noStroke(); fill(0,0,0,190); rect(0,0,width,height);
     pawnPanel(123,150,618,270);
     fill(63,40,30); textAlign(CENTER); textStyle(BOLD); textSize(23);
     text("STORAGE WARNING",432,205);
