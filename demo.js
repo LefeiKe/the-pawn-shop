@@ -25,6 +25,7 @@
     '<option value="4">Day 4</option><option value="5">Day 5</option><option value="7">Day 7</option>' +
     '<option value="14">Day 14</option><option value="28">Day 28</option></select>' +
     '<button data-action="day">Jump to day</button>' +
+    '<button id="demo-fast-forward" type="button">HOLD TO FAST-FORWARD ×5</button>' +
     '<h3>Customers</h3><select id="demo-customer">' +
     '<option value="Regular">Pals of Pat’s</option><option value="Bargain">Penny Pinchers</option>' +
     '<option value="Suspicious">Precarious Purveyors</option><option value="Collector">Posh Patrons</option>' +
@@ -50,6 +51,47 @@
     panel.querySelector("#demo-collapse").textContent = panel.classList.contains("collapsed") ? "+" : "−";
   });
   const status = text => { panel.querySelector("#demo-status").textContent = text; };
+  // Hold the button to accelerate walking and shorten the next arrival delay.
+  // These changes are temporary and only run when the opt-in demo panel is loaded.
+  const fastForwardButton = panel.querySelector("#demo-fast-forward");
+  let fastForwardActive = false;
+  function updateDemoSpeed() {
+    if (typeof shopkeeperActor !== "undefined" && shopkeeperActor) {
+      shopkeeperActor.speed = fastForwardActive ? 5 : 1;
+    }
+    if (typeof currentCustomer !== "undefined" && currentCustomer) {
+      currentCustomer.speed = fastForwardActive ? 10 : 2;
+    }
+    if (typeof inspectorActor !== "undefined" && inspectorActor) {
+      inspectorActor.speed = fastForwardActive ? 10 : 2;
+    }
+    if (fastForwardActive && typeof dayStarted !== "undefined" &&
+        dayStarted && !closing && customersLeft > 0 &&
+        currentCustomer?.state === "gone" && !gamePaused) {
+      nextArrival = Math.min(nextArrival, millis() + 200);
+    }
+  }
+  function setFastForward(active) {
+    fastForwardActive = active;
+    fastForwardButton.textContent = active ? "FAST-FORWARDING ×5…" : "HOLD TO FAST-FORWARD ×5";
+    fastForwardButton.style.background = active ? "#a76b32" : "";
+    updateDemoSpeed();
+  }
+  fastForwardButton.addEventListener("pointerdown", event => {
+    if (event.button !== 0) return;
+    event.preventDefault();
+    fastForwardButton.setPointerCapture(event.pointerId);
+    setFastForward(true);
+  });
+  for (const name of ["pointerup", "pointercancel", "lostpointercapture"]) {
+    fastForwardButton.addEventListener(name, () => setFastForward(false));
+  }
+  window.addEventListener("blur", () => setFastForward(false));
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden) setFastForward(false);
+  });
+  setInterval(updateDemoSpeed, 50);
+
 
   function ready() {
     if (!pawnReady || !shopkeeperActor) {
