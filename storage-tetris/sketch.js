@@ -315,6 +315,7 @@ function lockPiece() {
 // going top to bottom is safe: removing a row only moves the rows above it
 function clearRows() {
   let brokenItems = [];
+  const clearedBefore = linesCleared;
 
   for (let row = 0; row < ROWS; row++) {
     if (!board[row].includes(0)) {
@@ -328,6 +329,9 @@ function clearRows() {
       linesCleared += 1;
     }
   }
+
+  // One sound per row-clear event, including simultaneous multi-row clears.
+  if (linesCleared > clearedBefore) playMiniLineClear();
 
   eachFilledCell(board, function (cell, row, col) {
     if (brokenItems.includes(cell.itemNumber)) {
