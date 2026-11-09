@@ -9,7 +9,7 @@ const shopAudio = {
   cash: new Audio("sounds/cash.mp3"),
   flip: new Audio("sounds/bookflip.mp3"),
   pat: new Audio("sounds/pattalk.mp3"),
-  typing: new Audio("sounds/typewritting.mp3"),
+  typing: new Audio("sounds/typewriting.mp3"),
   ring: new Audio("sounds/ring.mp3")
 };
 for (const sound of Object.values(shopAudio)) {
