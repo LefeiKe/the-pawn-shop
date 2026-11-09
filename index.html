@@ -159,10 +159,39 @@
             font-size: 18px;
         }
 
-        .page-hint {
-            margin: 16px 0 0;
+        .page-description {
+            margin: 0 0 18px;
             color: #ead09f;
-            font-size: 17px;
+            font-size: 16px;
+        }
+
+        .page-credits {
+            margin: 16px 0 0;
+            color: #d0a06e;
+            font-size: 16px;
+            line-height: 1.5;
+        }
+
+        .page-credits strong {
+            color: #e6bf73;
+            font-weight: 600;
+        }
+
+        #mute-toggle {
+            position: fixed;
+            right: 20px;
+            bottom: 20px;
+            z-index: 20;
+            padding: 9px 16px;
+            border: 2px solid #e6bf73;
+            background: #41281c;
+            color: #ead09f;
+            font: 600 17px "Pixelify Sans", sans-serif;
+            cursor: pointer;
+        }
+
+        #mute-toggle:hover, #mute-toggle:focus-visible {
+            background: #915b33;
         }
     </style>
     
@@ -172,7 +201,8 @@
     <main class="page-shell">
       <header>
         <h1 class="page-title">Pixel Pat's Pawns and Parcels</h1>
-        <p class="page-tagline">Be prudent and profitable to help the little shop prosper.</p>
+        <p class="page-tagline">Every treasure has a story. Every trade is a gamble.</p>
+        <p class="page-description">Step behind the counter for 28 days of bargaining, curious customers, and unexpected challenges.</p>
       </header>
     <div id="game">
         <div id="posh-game-overlay" hidden>
@@ -202,10 +232,40 @@
             </div>
         </div>
     </div>
-      <p class="page-hint">Buy low, sell high, and make your shop prosper in 28 days!</p>
+      <footer class="page-credits">
+        <div><strong>NYU Interactive Computing — Midterm Project</strong></div>
+        <div>Created by Lefei Ke, Margot, Sara, and Abdullah</div>
+      </footer>
     </main>
+    <button id="mute-toggle" type="button" aria-pressed="false" aria-label="Mute all game audio">SOUND: ON</button>
 
     <script src="sketch.js"></script>
+    <script>
+      // The shop and its three embedded mini-games share a single mute state.
+      let allGameAudioMuted = false;
+      const audioFrames = ["posh-game-frame", "tetris-game-frame", "memory-game-frame"]
+        .map(id => document.getElementById(id));
+      function syncMiniGameMute(frame) {
+        if (frame.contentWindow) {
+          frame.contentWindow.postMessage({ type: "shopAudioMute", muted: allGameAudioMuted }, window.location.origin);
+        }
+      }
+      function updateGameMute(muted) {
+        allGameAudioMuted = muted;
+        for (const sound of Object.values(shopAudio)) sound.muted = muted;
+        for (const frame of audioFrames) syncMiniGameMute(frame);
+        const button = document.getElementById("mute-toggle");
+        button.textContent = muted ? "SOUND: OFF" : "SOUND: ON";
+        button.setAttribute("aria-pressed", String(muted));
+        button.setAttribute("aria-label", muted ? "Unmute all game audio" : "Mute all game audio");
+      }
+      for (const frame of audioFrames) {
+        frame.addEventListener("load", () => syncMiniGameMute(frame));
+      }
+      document.getElementById("mute-toggle").addEventListener("click", () => {
+        updateGameMute(!allGameAudioMuted);
+      });
+    </script>
 
 </body>
 
