@@ -20,7 +20,6 @@ shopAudio.ring.loop = true;
 let shopAudioUnlocked = false;
 let cashHandledClick = false;
 let activeTypingId = null;
-let activeTypingPriority = 0;
 let typingIdleTimeout = null;
 shopAudio.typing.loop = true;
 const TYPEWRITER_MS = 30;
@@ -56,10 +55,9 @@ function stopTypingSound() {
   shopAudio.typing.pause();
   shopAudio.typing.currentTime = 0;
   activeTypingId = null;
-  activeTypingPriority = 0;
 }
 
-function soundTypingTick(id, count, total, priority = 0) {
+function soundTypingTick(id, count, total) {
   // Start with the first visible character, stop on the final one.
   if (count >= total || total === 0) {
     if (activeTypingId === id) stopTypingSound();
@@ -68,11 +66,8 @@ function soundTypingTick(id, count, total, priority = 0) {
   if (count <= 0 || !shopAudioUnlocked) return;
 
   if (activeTypingId !== id) {
-    // A red/system notice takes priority over simultaneous tutorial subtitles.
-    if (activeTypingId !== null && priority < activeTypingPriority) return;
     stopTypingSound();
     activeTypingId = id;
-    activeTypingPriority = priority;
     playShopSound("typing");
   }
 
@@ -1708,7 +1703,7 @@ function suspiciousTradeConsequence() {
 // Reuse the tutorial's letter-by-letter reveal for brief notices.
 function typedNotice(message, startedAt, withSound = true) {
   const letters = constrain(floor((millis() - startedAt) / TYPEWRITER_MS) + 1, 0, message.length);
-  if (withSound) soundTypingTick(startedAt + ":" + message, letters, message.length, 1);
+  if (withSound) soundTypingTick(startedAt + ":" + message, letters, message.length);
   return message.slice(0, letters);
 }
 
@@ -1721,7 +1716,7 @@ function drawReputationNotice() {
   textAlign(CENTER);
   textStyle(NORMAL);
   textSize(16);
-  text(typedNotice(reputationNotice, reputationNoticeUntil - 4000), 432, 145);
+  text(typedNotice(reputationNotice, reputationNoticeUntil - 4000, dayNumber !== 1), 432, 145);
   pop();
 }
 
