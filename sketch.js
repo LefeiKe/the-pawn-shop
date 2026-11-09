@@ -598,7 +598,6 @@ function resolvePoshGame(won) {
 
 // Storage Reorganization is offered before payment whenever a purchase would overflow.
 // Supplier confirmations stay in the compact phone panel; walk-in customers use this board.
-// Shop-side overflow purchases and storage-capacity consequences workshopped with ChatGPT on 11/07/2026.
 function needsStorageChallenge(quantity) {
   return inventory.length + reservedStorage() + quantity > shopCapacity();
 }
@@ -2491,7 +2490,6 @@ function nextInspectorResponse(grade) {
 
 // Sara's future memory game will call this after its five questions.
 // The latest grade changes tomorrow's customer quota, not today's.
-// Inspector A/B/C grade thresholds and next-day customer counts workshopped with ChatGPT on 11/06/2026.
 function recordInspectionResult(correctAnswers) {
   if (!Number.isInteger(correctAnswers) || correctAnswers < 0 || correctAnswers > 5) return;
   inspectorGradeAcknowledged = false;
@@ -3304,6 +3302,7 @@ function draw() {
 }
 
 
+// Game-over and restart flow workshopped with ChatGPT on 10/12/2026.
 function restartGame() {
 
 
@@ -3703,6 +3702,7 @@ function drawInfo() {
 }
 
 
+// Day-end receipt display workshopped with ChatGPT on 10/12/2026.
 function drawReceipt() {
   if (phonePending || phoneCall) return;
 
