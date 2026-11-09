@@ -75,10 +75,13 @@ Inspector Alex visits separately from the normal customer quota. The player play
 3. Serve the folder using the **Live Server** extension or another local HTTP server.
 4. Open `index.html` in a browser.
 
-The game uses `sketch.js` for its main logic, `index.html` for the canvas and iframe overlays, and the `images/`, `sounds/`, `vasePuzzle/`, `storage-tetris/`, and `memory-mini-game/` folders for assets and mini-games. No build step is needed. A local server is recommended so iframe and asset paths work reliably.
+The game uses `sketch.js` for its main logic, `index.html` for the canvas and iframe overlays, and the `images/`, `sounds/`, `vase-puzzle/`, `storage-tetris/`, and `memory-mini-game/` folders for assets and mini-games. No build step is needed. A local server is recommended so iframe and asset paths work reliably.
 
-## Development and Testing
+## Code Organization
 
-The main sketch currently has `DEV_TEST_MODE = true`, which enables shortcuts for jumping between days and testing customer encounters and endings without playing a full 28-day run. Set it to `false` before a public release.
+- `sketch.js` contains the main shop state, customer/shopkeeper/product classes, trading, upgrades, and game flow.
+- Each mini-game lives in its own directory and communicates with the shop through iframe messages.
+- `index.html` handles the page layout, audio toggle, and embedded game windows.
+- Debug-only keyboard shortcuts are not included in the submission version.
 
 Built with **JavaScript**, **p5.js**, pixel-art assets, and object-oriented classes including `Customer`, `Shopkeeper`, `Product`, and `CustomerProfile`.
