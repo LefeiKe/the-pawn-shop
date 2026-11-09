@@ -1511,7 +1511,6 @@ let pawnRows = []; // [{index,x,y,w,h}] - current clickable buyer rows
 let pawnUnlockedTypes = {Regular:true, Bargain:false, Collector:false, Suspicious:false, Wholesaler:false};
 // Introduce exactly one new customer type on each of Days 2–5.
 const pawnTypeSchedule = {2:'Bargain', 3:'Suspicious', 4:'Collector', 5:'Wholesaler'};
-// Random selection of eligible customers from each type workshopped with ChatGPT on 10/20/2026.
 function pawnPickVisitor(forcedType) {
   const types = ['Regular', 'Bargain', 'Collector', 'Suspicious', 'Wholesaler'];
   if (forcedType) {
@@ -3423,6 +3422,7 @@ function restartGame() {
 
 
 // Build a daily visitor and trade offer, including type-specific pricing rules.
+// Customer-type-specific pricing and trade offer generation workshopped with ChatGPT during 10/20–11/07/2026.
 function generateCustomer(forcedVisitorType) {
 
 
