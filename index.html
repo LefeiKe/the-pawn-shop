@@ -7,6 +7,7 @@
     <title>Pixel Pat's Pawns and Parcels</title>
     <link href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.11.11/p5.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.11.11/addons/p5.sound.min.js"></script>
     <style>
         #game {
             height: 576px;
@@ -252,7 +253,7 @@
       }
       function updateGameMute(muted) {
         allGameAudioMuted = muted;
-        for (const sound of Object.values(shopAudio)) sound.muted = muted;
+        for (const sound of Object.values(shopAudio)) sound.setVolume(muted ? 0 : GAME_AUDIO_VOLUME);
         for (const frame of audioFrames) syncMiniGameMute(frame);
         const button = document.getElementById("mute-toggle");
         button.textContent = muted ? "SOUND: OFF" : "SOUND: ON";

@@ -18,83 +18,83 @@
 // MAIN GAME
 // ============================================================
 
-// Shop audio; playback is unlocked by the first player interaction.
-const shopAudio = {
-  bgm: new Audio("sounds/bgm.mp3"),
-  click: new Audio("sounds/click.mp3"),
-  cash: new Audio("sounds/cash.mp3"),
-  flip: new Audio("sounds/bookflip.mp3"),
-  pat: new Audio("sounds/pattalk.mp3"),
-  typing: new Audio("sounds/typewriting.mp3"),
-  ring: new Audio("sounds/ring.mp3")
-};
-// Apply the same 30% playback-volume reduction to BGM and every effect.
+// BGM, responsive click sounds, and typewriting audio refined with ChatGPT on 11/08–11/09/2026.
+// Sounds use p5.sound's loadSound(), as introduced in Interactive Computing Lecture 5.
+const shopAudio = {};
 const GAME_AUDIO_VOLUME = 0.7;
-for (const sound of Object.values(shopAudio)) {
-  sound.preload = "auto";
-  sound.volume = GAME_AUDIO_VOLUME;
-}
-shopAudio.bgm.loop = true;
-shopAudio.ring.loop = true;
+const TYPEWRITER_MS = 30;
 let shopAudioUnlocked = false;
 let cashHandledClick = false;
 let activeTypingId = null;
 let typingIdleTimeout = null;
-shopAudio.typing.loop = true;
-const TYPEWRITER_MS = 30;
 
-// Audio event routing workshopped with ChatGPT on 11/08/2026.
+// p5.js loads all sound files before setup() starts.
+function preload() {
+  shopAudio.bgm = loadSound("sounds/bgm.mp3");
+  shopAudio.click = loadSound("sounds/click.mp3");
+  shopAudio.cash = loadSound("sounds/cash.mp3");
+  shopAudio.flip = loadSound("sounds/bookflip.mp3");
+  shopAudio.pat = loadSound("sounds/pattalk.mp3");
+  shopAudio.typing = loadSound("sounds/typewriting.mp3");
+  shopAudio.ring = loadSound("sounds/ring.mp3");
+}
+
 function playShopSound(name) {
   if (!shopAudioUnlocked) return;
   const sound = shopAudio[name];
   if (!sound) return;
-  sound.currentTime = 0;
-  sound.play().catch(() => {});
+  // A new click or board opening restarts its effect.
+  sound.stop();
+  if (name === "typing" || name === "ring") sound.loop();
+  else sound.play();
 }
+
 function unlockShopAudio() {
   if (shopAudioUnlocked) return;
   shopAudioUnlocked = true;
-  shopAudio.bgm.play().catch(() => {});
+  // Start the background music after a user gesture, per browser audio rules.
+  userStartAudio();
+  for (const sound of Object.values(shopAudio)) {
+    sound.setVolume(allGameAudioMuted ? 0 : GAME_AUDIO_VOLUME);
+  }
+  shopAudio.bgm.loop();
   if (phonePending && !phoneCall) playShopSound("ring");
 }
+
 function stopPhoneRing() {
-  shopAudio.ring.pause();
-  shopAudio.ring.currentTime = 0;
+  shopAudio.ring.stop();
 }
+
 function playPatVoice() {
   if (!shopAudioUnlocked) return;
-  // Keep a triggered Pat line playing to its natural end, even if its board closes.
-  if (!shopAudio.pat.paused && !shopAudio.pat.ended) return;
-  shopAudio.pat.currentTime = 0;
-  shopAudio.pat.play().catch(() => {});
+  // Allow Pat's voice to finish even if the player closes the dialogue.
+  if (shopAudio.pat.isPlaying()) return;
+  shopAudio.pat.play();
 }
+
 function playCashSound() {
   cashHandledClick = true;
   playShopSound("cash");
 }
+
 function stopTypingSound() {
   if (typingIdleTimeout !== null) clearTimeout(typingIdleTimeout);
   typingIdleTimeout = null;
-  shopAudio.typing.pause();
-  shopAudio.typing.currentTime = 0;
+  shopAudio.typing.stop();
   activeTypingId = null;
 }
 
 function soundTypingTick(id, count, total) {
-  // Start with the first visible character, stop on the final one.
   if (count >= total || total === 0) {
     if (activeTypingId === id) stopTypingSound();
     return;
   }
   if (count <= 0 || !shopAudioUnlocked) return;
-
   if (activeTypingId !== id) {
     stopTypingSound();
     activeTypingId = id;
     playShopSound("typing");
   }
-
-  // Stop if the notice disappears before reaching its last character.
   if (typingIdleTimeout !== null) clearTimeout(typingIdleTimeout);
   typingIdleTimeout = setTimeout(() => {
     if (activeTypingId === id) stopTypingSound();
@@ -338,6 +338,7 @@ function unlockedUpgradeCount() {
     wealthyClienteleLevel + supplierOwned.filter(Boolean).length;
 }
 
+// Day 28 ending conditions and scrollable final results workshopped with ChatGPT on 11/07/2026.
 function chooseFinalEnding() {
   const upgrades = unlockedUpgradeCount();
   if (money < 0) return {title:"SHOP CLOSED", message:"Your shop could not cover its final debts.", won:false, achievement:"Shop Closed", announcement:"The Pawn Shop has closed its doors."};
@@ -618,7 +619,6 @@ function startStorageOverflow(entries, source = "customer", supplierOrder = null
   tetrisFrame.onload = () => tetrisFrame.focus();
 }
 
-// Storage mini-game reward integration reviewed with ChatGPT on 11/08/2026.
 function finishStorageChallenge(won) {
   let purchase = tetrisPurchase;
   if (won) {
@@ -801,7 +801,6 @@ function togglePause() {
 const FIRST_TRADE_CELEBRATION = "Nice, you just completed your first trade!";
 const FIRST_TRADE_PAUSE_MS = 3000;
 let firstTradeCelebrationStartedAt = 0;
-// Day 1 subtitle sequencing and timing refined with ChatGPT on 11/08/2026.
 function dayOneTutorialHint() {
   if (showReceipt || showBag) return "";
   if (tutorialTradesServed === 0 && tutorialWelcomeStartedAt > 0) {
@@ -1387,6 +1386,7 @@ function handleBasicClick() {
 
 
 // ============================================================
+// Buy/sell trade flow workshopped with ChatGPT during 10/20–11/07/2026.
 // CUSTOMER PORTRAITS AND TRADING
 // ============================================================
 
@@ -1829,6 +1829,7 @@ function shopDrawPeople() {
   drawButton("CLOSE", 347, 462, 170, true, color(98, 67, 46));
 }
 
+// Upgrade progression and next-day supplier orders workshopped with ChatGPT on 11/01–11/02/2026.
 function getUpgradeList() {
   let available = [];
   let owned = [];
@@ -2973,6 +2974,7 @@ function phoneSellSelection() {
 
 
 // Route clicks to the topmost active modal before allowing shop interactions.
+// Shop modal click priority and screen layering refined with ChatGPT on 11/08/2026.
 function mousePressed() {
   unlockShopAudio();
   cashHandledClick = false;
@@ -3132,7 +3134,6 @@ function mousePressed() {
 
 // ------------------------------------------------------------
 // Main rendering loop: update world state, then draw overlays in interaction order.
-// Main screen layering and modal ordering adjusted with ChatGPT on 11/08/2026.
 function draw() {
     // Supplier order confirmations close automatically after three seconds.
     if (phoneCall === "orderConfirmed" && millis() >= orderConfirmationUntil) {
@@ -3421,6 +3422,7 @@ function restartGame() {
 
 
 // Build a daily visitor and trade offer, including type-specific pricing rules.
+// Customer-type-specific pricing and trade offer generation workshopped with ChatGPT during 10/20–11/07/2026.
 function generateCustomer(forcedVisitorType) {
 
 
@@ -3700,6 +3702,7 @@ function drawInfo() {
 }
 
 
+// Day-end receipt display workshopped with ChatGPT on 10/12/2026.
 function drawReceipt() {
   if (phonePending || phoneCall) return;
 
@@ -4023,6 +4026,7 @@ function pawnTradeBoard() {
 }
 
 
+// Reputation-based bargain success tiers and penalties workshopped with ChatGPT on 11/05–11/06/2026.
 function shopTryBargain() {
   if (shopBargained || !currentTrade || !pawnVisitor || pawnVisitor.type === 'Wholesaler') return;
   shopBargained = true;
