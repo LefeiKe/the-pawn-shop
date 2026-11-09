@@ -15,7 +15,6 @@
     <script>
       // Mini-game canvases run in iframes, so their clicks need their own sound.
       const miniClick = new Audio("../sounds/click.mp3");
-      miniClick.volume = 0.45;
       function playMiniClick() {
         miniClick.currentTime = 0;
         miniClick.play().catch(() => {});
