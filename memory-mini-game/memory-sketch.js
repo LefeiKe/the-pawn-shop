@@ -475,12 +475,13 @@ function mousePressed() {
                 localMouseY < y + buttonHeight
             ) {
 
-                playMiniClick();
                 if (answers[i] === correctAnswer) {
+                    playMiniCash();
                     score++;
                     gameState = "correct";
                 }
                 else {
+                    playMiniClick();
                     gameState = "incorrect";
                 }
 
