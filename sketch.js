@@ -1,12 +1,17 @@
 /*
- * Pixel Pat's Pawns and Parcels — Main Shop
- * Authors: Lefei Ke (lk3104), Margot Anderson ([NetID]),
- *          Shuangran Zhao ([NetID]), Abdullah Noor ([NetID])
+ * Project Title:Pixel Pat's Pawns and Parcels
+
+ * Authors: Lefei Ke (lk3104),
+ *          Margot Anderson (ma7815),
+ *          Shuangran Zhao (ma7759), 
+ *          Abdullah Noor ([NetID])
+ * 
  * Submission Date: November 9, 2026
+ * 
  * Description: Manage a pawn shop for 28 days through buying, selling,
  * bargaining, upgrades, customer encounters, and integrated mini-games.
- * Controls: Mouse to navigate and trade; use the on-screen BAG, phone,
- * reputation, and upgrades controls to manage the business.
+ * 
+ * Controls: Use the mouse to navigate and click to manage the business.
  */
 
 // ============================================================
