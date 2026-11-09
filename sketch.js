@@ -41,9 +41,12 @@ function stopPhoneRing() {
   shopAudio.ring.pause();
   shopAudio.ring.currentTime = 0;
 }
-function stopPatVoice() {
-  shopAudio.pat.pause();
+function playPatVoice() {
+  if (!shopAudioUnlocked) return;
+  // Keep a triggered Pat line playing to its natural end, even if its board closes.
+  if (!shopAudio.pat.paused && !shopAudio.pat.ended) return;
   shopAudio.pat.currentTime = 0;
+  shopAudio.pat.play().catch(() => {});
 }
 function playCashSound() {
   cashHandledClick = true;
@@ -326,7 +329,7 @@ function chooseFinalEnding() {
 function finishGame(result) {
   ending = result;
   playNewBoardSound();
-  playShopSound("pat");
+  playPatVoice();
   endingShownAt = millis();
   endingScroll = 0;
   gameOver = true;
@@ -574,7 +577,7 @@ function needsStorageChallenge(quantity) {
 
 function requestStorageChallenge(source, purchase) {
   playNewBoardSound();
-  if (!tetrisIntroduced) playShopSound("pat");
+  if (!tetrisIntroduced) playPatVoice();
   tetrisAcceptPurchase = purchase;
   tetrisPromptActive = true;
 }
@@ -628,7 +631,6 @@ function handleStorageTetrisMessage(event) {
 
 function acceptStorageChallenge() {
   if (!tetrisAcceptPurchase) return;
-  stopPatVoice();
   const purchase = tetrisAcceptPurchase;
   tetrisAcceptPurchase = null;
   tetrisPromptActive = false;
@@ -637,7 +639,6 @@ function acceptStorageChallenge() {
 }
 
 function cancelStorageChallenge() {
-  stopPatVoice();
   tetrisAcceptPurchase = null;
   tetrisPromptActive = false;
   // The first introduction should appear again if the player did not try it.
@@ -2377,7 +2378,6 @@ function phoneCheckEvents() {
 
 function phoneEndCall() {
   stopPhoneRing();
-  stopPatVoice();
   if (phoneCall === 'hello') {
     welcomeCallCompleted = true;
     tutorialWelcomeStartedAt = millis();
@@ -2995,7 +2995,7 @@ function mousePressed() {
       stopPhoneRing();
       if (phoneCall === 'hello' || phoneCall === 'upgrades' ||
           phoneCall === 'rentReveal' || phoneCall === 'rent') {
-        playShopSound("pat");
+        playPatVoice();
       }
     }
     return;
@@ -3057,8 +3057,7 @@ function mousePressed() {
       }
     } else if (pawnHit(330, 433, 204, 32) && phoneCall === "hello" && helloPage === 0) {
       helloPage = 1;
-      stopPatVoice();
-      return;
+          return;
     } else if (pawnHit(330, 433, 204, 32) && phoneCall !== "orderConfirmed") {
       phoneEndCall();
       return;
@@ -3441,7 +3440,6 @@ function draw() {
 
 
 function restartGame() {
-  stopPatVoice();
 
 
   // Reset money and inventory
