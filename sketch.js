@@ -12,8 +12,11 @@ const shopAudio = {
   typing: new Audio("sounds/typewriting.mp3"),
   ring: new Audio("sounds/ring.mp3")
 };
+// Apply the same 30% playback-volume reduction to BGM and every effect.
+const GAME_AUDIO_VOLUME = 0.7;
 for (const sound of Object.values(shopAudio)) {
   sound.preload = "auto";
+  sound.volume = GAME_AUDIO_VOLUME;
 }
 shopAudio.bgm.loop = true;
 shopAudio.ring.loop = true;
