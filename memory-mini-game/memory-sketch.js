@@ -546,6 +546,7 @@ function mousePressed() {
 
 
 // generate five question types for each round
+// Build a balanced five-question sequence from the current displayed prices.
 function generateQuestionPlan() {
 
     // Q1 is always the missing item question
@@ -644,6 +645,7 @@ function generateQuestionPlan() {
 }
 
 
+// Prepare one question and four distinct choices with the answer included.
 function newQuestion() {
 
     questionType = questionPlan[questionNumber - 1];
@@ -889,6 +891,7 @@ function makeItemAnswers(correctName) {
 
 
 // generate random prices for all items
+// Assign round-specific prices while guaranteeing useful comparisons.
 function randomizePrices() {
 
     for (let i = 0; i < items.length; i++) {
