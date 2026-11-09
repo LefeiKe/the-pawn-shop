@@ -205,6 +205,7 @@ function makeCells(id) {
 }
 
 // the next piece becomes the falling piece, at the top middle of the board
+// Spawn the next item; a blocked entry point ends the round.
 function spawnPiece() {
   pieceId = nextId;
   pieceShape = makeCells(pieceId);
@@ -295,6 +296,7 @@ function updateFall() {
 
 // LOCKING AND CLEARING 
 // copy the piece into the board, clear rows, then win or bring in the next piece
+// Commit the falling item to the grid, clear complete rows, and check victory.
 function lockPiece() {
   lockedItemCount += 1;
 
@@ -312,7 +314,7 @@ function lockPiece() {
   }
 }
 
-// going top to bottom is safe: removing a row only moves the rows above it
+// Scan from top to bottom; removing a row shifts only the rows above it.
 function clearRows() {
   let brokenItems = [];
   const clearedBefore = linesCleared;
