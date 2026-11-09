@@ -383,13 +383,16 @@ function mouseOverButton(x, y, w) {
 
 function mouseClicked() {
   if (gameState === "start") {
+    playMiniClick();
     startRound();
   } else if (gameState === "playing" || gameState === "paused") {
     if (mouseOverButton(GIVE_UP_X, GIVE_UP_Y, GIVE_UP_W)) {
+      playMiniClick();
       gameState = "quit";
     }
   } else if (gameState === "won" || gameState === "lost" || gameState === "quit") {
     if (mouseOverButton(NEW_ROUND_X, NEW_ROUND_Y, NEW_ROUND_W)) {
+      playMiniClick();
       if (EMBEDDED) {
         // report back to the main shop game, which closes this iframe
         window.parent.postMessage({ type: "storageTetrisResult", won: gameState === "won" }, window.location.origin);
