@@ -3,8 +3,8 @@
 
  * Authors: Lefei Ke (lk3104),
  *          Margot Anderson (ma7815),
- *          Shuangran Zhao (ma7759), 
- *          Abdullah Noor ([NetID])
+ *          Abdullah Noor (ma7759), 
+ *          Shuangran Zhao ([NetID])
  * 
  * Submission Date: November 9, 2026
  * 
