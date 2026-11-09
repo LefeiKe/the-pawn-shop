@@ -65,6 +65,7 @@
     showIntro = false; welcomeCallCompleted = true;
     phoneSeen.hello = true; phoneSeen.upgrades = true; phoneSeen.rentReveal = true;
     phonePending = ""; phoneCall = ""; phoneSavedPause = false; stopPhoneRing();
+    stopTypingSound();
     showReceipt = false; showBag = false; showBudgetWarning = false;
     gameOver = false; closing = false; bankruptcyNotice = false;
     shopMenu = ""; shopMenuPaused = false;
@@ -82,6 +83,8 @@
     currentCustomer.state = "gone";
     pawnVisitor = null; currentTrade = undefined;
     dayStarted = true; shopkeeperActor.state = "working";
+    shopkeeperActor.x = shopkeeperRoute[shopkeeperRoute.length - 1].x;
+    shopkeeperActor.y = shopkeeperRoute[shopkeeperRoute.length - 1].y;
     customersLeft = 5; nextArrival = millis() + 600000;
     unlockShopAudio();
   }
