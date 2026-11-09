@@ -1,6 +1,5 @@
 let vaseSpriteSheet;
 let shopBg;
-let vaseChoice;
 let pieces = [];
 let emptySquare = {col: 2, row: 2};
 
@@ -218,8 +217,6 @@ function chooseVase(vaseIndex, boardX, boardY) {
     let pieceSourceW = bounds.w / cols;
     let pieceSourceH = bounds.h / rows;
 
-    let startingSpriteIndex = 4 + (vaseIndex * 8);
-
     // generate puzzle pieces
     for (let i = 0; i < 8; i++) {
         let localCol = i % cols;
@@ -347,6 +344,7 @@ function mouseDragged() {
     }
 }
 
+// A short click rotates; a drag toward an adjacent empty cell moves the piece.
 function mouseReleased() {
     if (!selectedPiece) return;
 
@@ -397,6 +395,7 @@ function mouseOverButton(x, y, w) {
   return mouseX >= x && mouseX <= x + w && mouseY >= y && mouseY <= y + 32;
 }
 
+// Shuffle using only legal moves so the board remains solvable.
 function shuffleBoard(moves) {
     for (let i = 0; i < moves; i++) {
         let validPieces = pieces.filter( p => p.isNearEmpty() );
@@ -433,6 +432,7 @@ function drawCompletedVase(vaseIndex, boardX, boardY, boardW, boardH) {
     noFill();
     rect(boardX, boardY, boardW, boardH);
 }
+// Puzzle tile: tracks grid coordinates separately from animated screen position.
 class Piece {
     constructor(spriteSheet, sx, sy, sw, sh, targetCol, targetRow, boardX, boardY, displaySize) {
         this.spriteSheet = spriteSheet;
