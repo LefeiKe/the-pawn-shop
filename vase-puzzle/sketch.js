@@ -310,7 +310,6 @@ function mousePressed() {
         for (let p of pieces) {
             if (p.isClicked(mouseX, mouseY)) {
                 selectedPiece = p;
-                playMiniClick();
                 dragStartX = mouseX;
                 dragStartY = mouseY;
                 clickOffsetX = mouseX - p.x;
@@ -352,6 +351,7 @@ function mouseReleased() {
     let dragDistance = dist(mouseX, mouseY, dragStartX, dragStartY);
     if (dragDistance <= dragThreshold) {
         selectedPiece.rotatePiece();
+        playMiniFlip();
     } else if (selectedPiece.isNearEmpty()) {
             let originX = selectedPiece.boardX + selectedPiece.col * selectedPiece.size;
             let originY = selectedPiece.boardY + selectedPiece.row * selectedPiece.size;
@@ -363,9 +363,11 @@ function mouseReleased() {
 
             if (distToEmpty < totalDist * 0.5) {
                 selectedPiece.tryMove();
+                playMiniFlip();
             }
         } else {
             selectedPiece.rotatePiece();
+            playMiniFlip();
         }
 
     selectedPiece = null;
