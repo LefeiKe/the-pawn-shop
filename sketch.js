@@ -777,7 +777,7 @@ function togglePause() {
 
 // Day 1 contextual walkthrough. It never pauses play or captures input.
 const FIRST_TRADE_CELEBRATION = "Nice, you just completed your first trade!";
-const FIRST_TRADE_PAUSE_MS = 2500;
+const FIRST_TRADE_PAUSE_MS = 3000;
 let firstTradeCelebrationStartedAt = 0;
 function dayOneTutorialHint() {
   if (showReceipt || showBag) return "";
@@ -794,7 +794,9 @@ function dayOneTutorialHint() {
         millis() - firstTradeCelebrationStartedAt < celebrationDuration) {
       return FIRST_TRADE_CELEBRATION;
     }
-    if (!tutorialBagSeen) {
+    // Keep this instruction visible between customers, even after BAG is opened.
+    // The next buyer's tutorial takes over once their trade screen appears.
+    if (!pawnTradeActive()) {
       return "Take a peek at BAG to see your purchase. Watch that storage space!";
     }
   }
