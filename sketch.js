@@ -55,7 +55,7 @@ function unlockShopAudio() {
   // Start the background music after a user gesture, per browser audio rules.
   userStartAudio();
   for (const sound of Object.values(shopAudio)) {
-    sound.setVolume(GAME_AUDIO_VOLUME);
+    sound.setVolume(allGameAudioMuted ? 0 : GAME_AUDIO_VOLUME);
   }
   shopAudio.bgm.loop();
   if (phonePending && !phoneCall) playShopSound("ring");
