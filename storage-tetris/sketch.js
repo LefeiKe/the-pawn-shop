@@ -114,9 +114,9 @@ function imageMatchesGrid(img, piece) { // shouldn't be an issue because i desgi
 function draw() {
   background(0);
   if (shopBg) image(shopBg, 0, 0, width, height);
-  // Match the main shop start screen dimming.
+  // Keep the shop visible on the introduction screen; dim more during play.
   noStroke();
-  fill(0, 0, 0, 180);
+  fill(0, 0, 0, gameState === "start" ? 90 : 180);
   rect(0, 0, width, height);
 
   if (gameState === "loading") {
