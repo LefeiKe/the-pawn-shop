@@ -1,0 +1,7 @@
+# macOS Finder metadata
+.DS_Store
+
+# Local editor and Python cache files
+.vscode/
+__pycache__/
+*.pyc

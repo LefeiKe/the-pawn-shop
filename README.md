@@ -46,27 +46,60 @@ There are **no purchasable Storage upgrades**. The bag starts with **6 slots**, 
 
 ## Days, Rent, and Endings
 
-- Customer quota is based on Advertising, with inspection grades potentially changing it by **+2** (A), **0** (B), or **−2** (C), to a minimum of three customers.
-- The first week is rent-free. Pat explains rent on Day 7; payments begin on **Day 14**, recur every seven days, and increase by 20% each week (rounded to whole dollars).
-- If the balance is negative at the end of a week, the player has **three days** to recover. Remaining in debt at the end of that period closes the shop.
-- The run concludes at the end of **Day 28**. Endings depend on money earned and upgrades unlocked, with special outcomes for exceptional success or very limited progress.
-- The final results screen includes ending dialogue, money, upgrades, final storage capacity, and items bought and sold. An achievement-style notification appears afterward.
+- Advertising sets the base customer count to **5, 7, 10, or 13** per day. The latest inspection grade modifies it by **+2** (A), **0** (B), or **−2** (C), with a minimum of three.
+- The first week is rent-free. Pat introduces rent on Day 7; payments begin on **Day 14**, repeat on Days 21 and 28, and increase by **20% per week** (rounded to whole dollars).
+- If the balance is negative at the end of a rent week, the shop has **three days to recover**. Staying in debt past that deadline triggers **SHOP CLOSED**.
+- The game normally ends after **Day 28**. The ending depends on the total money earned from sales and how many upgrades were purchased, **not** simply the final cash balance.
+- Each purchased upgrade level counts individually toward the upgrade total; each one-time supplier partnership counts once. Tetris storage rewards do **not** count as purchased upgrades.
+
+### Endings
+
+The checks run in the order shown; the first matching condition determines the ending.
+
+| Ending | Condition | Outcome |
+| --- | --- | --- |
+| **SHOP CLOSED** | Fail the three-day debt recovery deadline, or finish Day 28 with negative cash | Defeat: the pawn shop closes. |
+| **SPECIAL ENDING: THE NEW OWNER** | Unlock **8+** upgrades **and** earn **$7,500+** in total sales | Victory: Pat entrusts the entire shop to you. |
+| **SPECIAL ENDING: THE QUIET SHOP** | Unlock **2 or fewer** upgrades **and** earn **less than $1,000** in total sales | Modest victory: you survive the month with a quiet little shop. |
+| **A TRUSTED SUCCESSOR** | Unlock **5+** upgrades **and** earn **$2,500+** in total sales (without meeting the higher-priority special ending) | Victory: Pat keeps you on as the trusted shop manager. |
+| **A PROMISING START** | Complete Day 28 without meeting any of the above conditions | Victory: you successfully complete your first month. |
+
+The final results screen includes Pat's ending call, a scrollable statistics summary (money, income, upgrades, storage capacity, and items bought/sold), and an achievement-style notification.
 
 ## Integrated Mini-Games
 
-The three mini-games run in embedded iframes and communicate their results back to the main game.
+All three mini-games appear within the main shop, using embedded iframes that return results to the main game. The background music continues while they are open.
 
-### Broken Vase Repair — Posh Patrons
+### Broken Vase Repair — Posh Patrons (Margot Anderson)
 
-Certain collectors offer a shattered antique vase. Complete the repair puzzle to earn a repaired item and bonus value to sell later.
+Posh Patrons may offer a broken antique vase as a special challenge. Choose **“I'll take a stab at it”** to start the puzzle immediately; selecting **“Not today”** skips it.
 
-### Storage Reorganization — Tetris
+- **Goal:** Reassemble the vase on a **3 × 3 grid** of eight movable pieces and one empty space within **3 minutes**.
+- **Controls:** **Click** a piece to rotate it clockwise by 90°. **Click and drag** a piece toward the empty square to move it; only pieces directly adjacent to the empty square can move. **SHUFFLE BOARD** rearranges the puzzle.
+- **Reference:** A finished-vase preview appears beside the puzzle.
+- **Success:** Complete the arrangement before time runs out to finish the challenge, register the repaired vase, and receive the Posh Patron's bonus response.
+- **Failure:** Running out of time or closing the challenge counts as an unsuccessful attempt.
 
-When a purchase would exceed storage capacity, the player can attempt a Tetris-style challenge. Winning adds **3 permanent storage slots**; failing risks losing the purchase and payment.
+### Storage Reorganization — Tetris (Abdullah Noor)
 
-### Inspector Memory Game
+When a customer purchase or supplier delivery would exceed the shop's current storage capacity, the player can attempt a storage challenge.
 
-Inspector Alex visits separately from the normal customer quota. The player plays a card-matching memory game; the result produces an **A, B, or C** grade that affects subsequent customer traffic.
+- **Goal:** Clear **5 complete rows** on a **10 × 20** board. Several bottom rows start partially filled with crates.
+- **Controls:** **Left/Right** or **A/D** to move; **Up/W** to rotate clockwise; **Down/S** for soft drop; **Space** for hard drop; **P** to pause. Use the on-screen button to give up.
+- **Rules:** Falling pieces lock into the grid. Filled rows disappear; parts of broken-up items are converted into crates. The game ends when five rows are cleared or a new piece cannot spawn.
+- **Success:** Gain **3 permanent storage slots**. The game then saves as much of the pending purchase as capacity allows.
+- **Failure:** The pending purchase and its payment are lost. Previously owned inventory remains protected.
+- **Sound:** The line-clear effect plays when rows are removed.
+
+### Inspector Memory Game — Inspector Alex (Shuangran Zhao)
+
+Inspector Alex arrives separately from ordinary customers, roughly every **4–6 days**, and does not count toward the day's customer quota.
+
+- **Memorize:** Study **six merchandise cards** and their displayed prices. Click a card to hide or reveal its price, then press **READY**.
+- **Questions:** Answer **5 multiple-choice questions**, with **4 choices** and **20 seconds per question**. The first asks which item is missing; later questions test remembered prices, highest/lowest values, price comparisons, or differences.
+- **Pricing:** Each inspection round generates its own displayed prices for the memory challenge. These are the prices to remember for that round, rather than live transaction totals from the main shop.
+- **Feedback:** Correct answers play a cash sound; incorrect selections play a click sound. After each result, continue to the next question.
+- **Grade:** **A = 5 correct**, **B = 3–4 correct**, and **C = 0–2 correct**. The grade changes daily customer traffic by **+2**, **0**, or **−2**, respectively, until superseded by a later inspection.
 
 ## Running Locally
 
@@ -75,10 +108,13 @@ Inspector Alex visits separately from the normal customer quota. The player play
 3. Serve the folder using the **Live Server** extension or another local HTTP server.
 4. Open `index.html` in a browser.
 
-The game uses `sketch.js` for its main logic, `index.html` for the canvas and iframe overlays, and the `images/`, `sounds/`, `vasePuzzle/`, `storage-tetris/`, and `memory-mini-game/` folders for assets and mini-games. No build step is needed. A local server is recommended so iframe and asset paths work reliably.
+The game uses `sketch.js` for its main logic, `index.html` for the canvas and iframe overlays, and the `images/`, `sounds/`, `vase-puzzle/`, `storage-tetris/`, and `memory-mini-game/` folders for assets and mini-games. No build step is needed. A local server is recommended so iframe and asset paths work reliably.
 
-## Development and Testing
+## Code Organization
 
-The main sketch currently has `DEV_TEST_MODE = true`, which enables shortcuts for jumping between days and testing customer encounters and endings without playing a full 28-day run. Set it to `false` before a public release.
+- `sketch.js` contains the main shop state, customer/shopkeeper/product classes, trading, upgrades, and game flow.
+- Each mini-game lives in its own directory and communicates with the shop through iframe messages.
+- `index.html` handles the page layout, audio toggle, and embedded game windows.
+- Debug-only keyboard shortcuts are not included in the submission version.
 
 Built with **JavaScript**, **p5.js**, pixel-art assets, and object-oriented classes including `Customer`, `Shopkeeper`, `Product`, and `CustomerProfile`.
