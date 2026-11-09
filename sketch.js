@@ -19,8 +19,9 @@ shopAudio.bgm.loop = true;
 shopAudio.ring.loop = true;
 let shopAudioUnlocked = false;
 let cashHandledClick = false;
-let lastTypingSoundAt = 0;
-const typingProgress = new Map();
+let activeTypingId = null;
+let typingIdleTimeout = null;
+shopAudio.typing.loop = true;
 
 function playShopSound(name) {
   if (!shopAudioUnlocked) return;
@@ -47,14 +48,33 @@ function playCashSound() {
   cashHandledClick = true;
   playShopSound("cash");
 }
-function soundTypingTick(id, count) {
-  const previous = typingProgress.get(id) || 0;
-  if (count > previous && count > 0 && millis() - lastTypingSoundAt >= 100) {
-    playShopSound("typing");
-    lastTypingSoundAt = millis();
+function stopTypingSound() {
+  if (typingIdleTimeout !== null) clearTimeout(typingIdleTimeout);
+  typingIdleTimeout = null;
+  shopAudio.typing.pause();
+  shopAudio.typing.currentTime = 0;
+  activeTypingId = null;
+}
+
+function soundTypingTick(id, count, total) {
+  // Start with the first visible character, stop on the final one.
+  if (count >= total || total === 0) {
+    if (activeTypingId === id) stopTypingSound();
+    return;
   }
-  typingProgress.set(id, count);
-  if (typingProgress.size > 40) typingProgress.clear();
+  if (count <= 0 || !shopAudioUnlocked) return;
+
+  if (activeTypingId !== id) {
+    stopTypingSound();
+    activeTypingId = id;
+    playShopSound("typing");
+  }
+
+  // Stop if the notice disappears before reaching its last character.
+  if (typingIdleTimeout !== null) clearTimeout(typingIdleTimeout);
+  typingIdleTimeout = setTimeout(() => {
+    if (activeTypingId === id) stopTypingSound();
+  }, 150);
 }
 
 // Compare UI state before and after a click, so empty/disabled areas stay silent.
@@ -795,7 +815,7 @@ function drawDayOneTutorial() {
     tutorialTextStartedAt = millis();
   }
   const characters = min(hint.length, floor((millis() - tutorialTextStartedAt) / 23));
-  soundTypingTick("tutorial:" + tutorialTextStartedAt, characters);
+  soundTypingTick("tutorial:" + tutorialTextStartedAt, characters, hint.length);
   push();
   noStroke(); fill(40,29,25,225);
   // Keep larger subtitles centered in the bottom bar, below the trade controls.
@@ -1682,7 +1702,7 @@ function suspiciousTradeConsequence() {
 // Reuse the tutorial's letter-by-letter reveal for brief notices.
 function typedNotice(message, startedAt, withSound = true) {
   const letters = constrain(floor((millis() - startedAt) / 23) + 1, 0, message.length);
-  if (withSound) soundTypingTick(startedAt + ":" + message, letters);
+  if (withSound) soundTypingTick(startedAt + ":" + message, letters, message.length);
   return message.slice(0, letters);
 }
 
