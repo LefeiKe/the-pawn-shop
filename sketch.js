@@ -573,6 +573,7 @@ function startStorageOverflow(entries, source = "customer", supplierOrder = null
 function finishStorageChallenge(won) {
   let purchase = tetrisPurchase;
   if (won) {
+    playCashSound();
     storageBonus += 3;
     // Existing inventory and reserved deliveries stay protected.
     const free = max(0, shopCapacity() - inventory.length - reservedStorage());
@@ -1968,7 +1969,7 @@ function handleShopClick() {
     }
     const commit = () => {
       money -= cost;
-      playCashSound();
+      if (!needsStorageChallenge(boughtItems.length)) playCashSound();
       for (let entry of boughtItems) dailyLog.push({type:"BUY", name:products[entry.product].name, amount:entry.boughtFor});
       storeOrOverflow(boughtItems);
       pawnChangeScore(2);
@@ -2584,7 +2585,7 @@ function buySupplierItems(quantity, confirmed = false) {
 
   const completeOrder = () => {
     money -= total;
-    playCashSound();
+    if (!needsStorageChallenge(quantity)) playCashSound();
     let order = {product:productIndex, quantity:quantity,
                  boughtFor:total / quantity, deliveryDay:dayNumber + 1};
     let items = Array.from({length:quantity},
