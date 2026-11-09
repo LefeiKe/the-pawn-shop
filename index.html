@@ -4,7 +4,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>Mini Pawn Shop</title>
+    <title>Pixel Pat's Pawns and Parcels</title>
     <link href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.11.11/p5.min.js"></script>
     <style>
@@ -87,6 +87,21 @@
             height: 576px;
         }
 
+        /* Margot's puzzle fills the same frameless 864 x 576 shop cover. */
+        #posh-game-window {
+            width: 864px;
+            height: 576px;
+            padding: 0;
+            border: 0;
+            box-shadow: none;
+            background: #000;
+        }
+
+        #posh-game-frame {
+            width: 100%;
+            height: 100%;
+        }
+
         #close-posh-game {
             background: #9c3f34;
             border: 0;
@@ -103,18 +118,92 @@
     </style>
 
     <style>
-        body {
+        html, body {
+            min-height: 100%;
             margin: 0;
+        }
+
+        body {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #000;
+            color: #ead09f;
+            font-family: "Pixelify Sans", sans-serif;
         }
     
         canvas {
             display: block;
+            image-rendering: pixelated;
+        }
+
+        .page-shell {
+            width: 864px;
+            max-width: 100%;
+            padding: 24px 0;
+            text-align: center;
+        }
+
+        .page-title {
+            margin: 0 0 4px;
+            color: #e6bf73;
+            font-size: 32px;
+            font-weight: 700;
+            letter-spacing: 1px;
+        }
+
+        .page-tagline {
+            margin: 0 0 18px;
+            color: #d0a06e;
+            font-size: 18px;
+        }
+
+        .page-description {
+            margin: 0 0 18px;
+            color: #ead09f;
+            font-size: 16px;
+        }
+
+        .page-credits {
+            margin: 16px 0 0;
+            color: #d0a06e;
+            font-size: 16px;
+            line-height: 1.5;
+        }
+
+        .page-credits strong {
+            color: #e6bf73;
+            font-weight: 600;
+        }
+
+        #mute-toggle {
+            position: fixed;
+            right: 20px;
+            bottom: 20px;
+            z-index: 20;
+            padding: 9px 16px;
+            border: 2px solid #e6bf73;
+            background: #41281c;
+            color: #ead09f;
+            font: 600 17px "Pixelify Sans", sans-serif;
+            cursor: pointer;
+        }
+
+        #mute-toggle:hover, #mute-toggle:focus-visible {
+            background: #915b33;
         }
     </style>
     
 </head>
 
 <body>
+    <main class="page-shell">
+      <header>
+        <h1 class="page-title">Pixel Pat's Pawns and Parcels</h1>
+        <p class="page-tagline">Every treasure has a story. Every trade is a gamble.</p>
+        <p class="page-description">Step behind the counter for 28 days of bargaining, curious customers, and unexpected challenges.</p>
+      </header>
     <div id="game">
         <div id="posh-game-overlay" hidden>
             <div id="posh-game-window">
@@ -143,8 +232,40 @@
             </div>
         </div>
     </div>
-    
+      <footer class="page-credits">
+        <div><strong>NYU Interactive Computing — Midterm Project</strong></div>
+        <div>Created by Lefei Ke, Margot Anderson, Shuangran Zhao, and Abdullah Noor</div>
+      </footer>
+    </main>
+    <button id="mute-toggle" type="button" aria-pressed="false" aria-label="Mute all game audio">SOUND: ON</button>
+
     <script src="sketch.js"></script>
+    <script>
+      // The shop and its three embedded mini-games share a single mute state.
+      let allGameAudioMuted = false;
+      const audioFrames = ["posh-game-frame", "tetris-game-frame", "memory-game-frame"]
+        .map(id => document.getElementById(id));
+      function syncMiniGameMute(frame) {
+        if (frame.contentWindow) {
+          frame.contentWindow.postMessage({ type: "shopAudioMute", muted: allGameAudioMuted }, window.location.origin);
+        }
+      }
+      function updateGameMute(muted) {
+        allGameAudioMuted = muted;
+        for (const sound of Object.values(shopAudio)) sound.muted = muted;
+        for (const frame of audioFrames) syncMiniGameMute(frame);
+        const button = document.getElementById("mute-toggle");
+        button.textContent = muted ? "SOUND: OFF" : "SOUND: ON";
+        button.setAttribute("aria-pressed", String(muted));
+        button.setAttribute("aria-label", muted ? "Unmute all game audio" : "Mute all game audio");
+      }
+      for (const frame of audioFrames) {
+        frame.addEventListener("load", () => syncMiniGameMute(frame));
+      }
+      document.getElementById("mute-toggle").addEventListener("click", () => {
+        updateGameMute(!allGameAudioMuted);
+      });
+    </script>
 
 </body>
 

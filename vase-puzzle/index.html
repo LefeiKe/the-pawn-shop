@@ -22,15 +22,47 @@
             width: 100%;
         }
 
+        body {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #000;
+            color: #ead09f;
+            font-family: "Pixelify Sans", sans-serif;
+        }
+
         canvas {
             display: block;
             height: auto !important;
             width: 100% !important;
+            image-rendering: pixelated;
         }
     </style>
 
 </head>
 
-<body></body>
+<body>
+    <script>
+      // Mini-game canvases run in iframes, so their clicks need their own sound.
+      const miniClick = new Audio("../sounds/click.mp3");
+      function playMiniClick() {
+        miniClick.currentTime = 0;
+        miniClick.play().catch(() => {});
+      }
+      const miniFlip = new Audio("../sounds/bookflip.mp3");
+      function playMiniFlip() {
+        miniFlip.currentTime = 0;
+        miniFlip.play().catch(() => {});
+      }
+      // Match the main game's 50% playback volume.
+      for (const sound of [miniClick, miniFlip]) sound.volume = 0.5;
+      window.addEventListener("message", event => {
+        if (event.source !== window.parent || event.origin !== window.location.origin ||
+            event.data?.type !== "shopAudioMute") return;
+        const muted = event.data.muted === true;
+        for (const sound of [miniClick, miniFlip]) sound.muted = muted;
+      });
+    </script>
+</body>
 
 </html>

@@ -46,11 +46,17 @@ async function setup() {
     vaseSpriteSheet = await loadImage('images/vases.png');
     shopBg = await loadImage('../images/shop.png');
 
-    gameState = "start";
-
     selectedVaseIndex = random([0, 1, 2, 3]);
-
     startPuzzle(selectedVaseIndex);
+
+    // The shop's "I'll have a stab at it" button already starts the challenge.
+    // Keep the intro screen only when opening the mini-game on its own.
+    if (window.parent !== window) {
+        gameState = "play";
+        puzzleStartedAt = millis();
+    } else {
+        gameState = "start";
+    }
 }
 
 function draw() {
@@ -292,6 +298,7 @@ function pixelBoard(x, y, w, h) {
 
 function mousePressed() {
     if (gameState === "start") {
+        playMiniClick();
         gameState = "play";
         puzzleStartedAt = millis();
         return;
@@ -299,6 +306,7 @@ function mousePressed() {
 
     if (gameState === "play") {
         if (mouseOverButton(shuffleX, shuffleY, shuffleW)) {
+            playMiniClick();
             shuffleBoard(80);
             return;
         }
@@ -319,6 +327,7 @@ function mousePressed() {
 
     if (gameState === "win") {
         if (!completionReported) {
+            playMiniClick();
             completionReported = true;
             window.parent.postMessage({
                 type: "vasePuzzleCompleted",
@@ -348,6 +357,7 @@ function mouseReleased() {
     let dragDistance = dist(mouseX, mouseY, dragStartX, dragStartY);
     if (dragDistance <= dragThreshold) {
         selectedPiece.rotatePiece();
+        playMiniFlip();
     } else if (selectedPiece.isNearEmpty()) {
             let originX = selectedPiece.boardX + selectedPiece.col * selectedPiece.size;
             let originY = selectedPiece.boardY + selectedPiece.row * selectedPiece.size;
@@ -359,9 +369,11 @@ function mouseReleased() {
 
             if (distToEmpty < totalDist * 0.5) {
                 selectedPiece.tryMove();
+                playMiniFlip();
             }
         } else {
             selectedPiece.rotatePiece();
+            playMiniFlip();
         }
 
     selectedPiece = null;

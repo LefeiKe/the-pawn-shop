@@ -8,8 +8,51 @@
     <script src="memory-sketch.js"></script>
 
     <link href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+      html, body {
+        width: 100%;
+        min-height: 100%;
+        margin: 0;
+      }
+      body {
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+        background: #000;
+        color: #ead09f;
+        font-family: "Pixelify Sans", sans-serif;
+      }
+      canvas {
+        display: block;
+        image-rendering: pixelated;
+      }
+    </style>
 </head>
 
-<body style="margin: 0; width: 100vw; height: 100vh; display: flex; align-items: center; justify-content: center; overflow: hidden; background: #000;">
+<body>
+
+    <script>
+      // Mini-game canvases run in iframes, so their clicks need their own sound.
+      const miniClick = new Audio("../sounds/click.mp3");
+      function playMiniClick() {
+        miniClick.currentTime = 0;
+        miniClick.play().catch(() => {});
+      }
+      const miniCash = new Audio("../sounds/cash.mp3");
+      function playMiniCash() {
+        miniCash.currentTime = 0;
+        miniCash.play().catch(() => {});
+      }
+      // Match the main game's 70% playback volume.
+      for (const sound of [miniClick, miniCash]) sound.volume = 0.7;
+      window.addEventListener("message", event => {
+        if (event.source !== window.parent || event.origin !== window.location.origin ||
+            event.data?.type !== "shopAudioMute") return;
+        const muted = event.data.muted === true;
+        for (const sound of [miniClick, miniCash]) sound.muted = muted;
+      });
+    </script>
 </body>
 </html>

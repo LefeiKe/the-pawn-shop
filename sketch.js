@@ -2,6 +2,103 @@
 // MAIN GAME
 // ============================================================
 
+// Shop audio; playback is unlocked by the first player interaction.
+const shopAudio = {
+  bgm: new Audio("sounds/bgm.mp3"),
+  click: new Audio("sounds/click.mp3"),
+  cash: new Audio("sounds/cash.mp3"),
+  flip: new Audio("sounds/bookflip.mp3"),
+  pat: new Audio("sounds/pattalk.mp3"),
+  typing: new Audio("sounds/typewriting.mp3"),
+  ring: new Audio("sounds/ring.mp3")
+};
+// Apply the same 30% playback-volume reduction to BGM and every effect.
+const GAME_AUDIO_VOLUME = 0.7;
+for (const sound of Object.values(shopAudio)) {
+  sound.preload = "auto";
+  sound.volume = GAME_AUDIO_VOLUME;
+}
+shopAudio.bgm.loop = true;
+shopAudio.ring.loop = true;
+let shopAudioUnlocked = false;
+let cashHandledClick = false;
+let activeTypingId = null;
+let typingIdleTimeout = null;
+shopAudio.typing.loop = true;
+const TYPEWRITER_MS = 30;
+
+function playShopSound(name) {
+  if (!shopAudioUnlocked) return;
+  const sound = shopAudio[name];
+  if (!sound) return;
+  sound.currentTime = 0;
+  sound.play().catch(() => {});
+}
+function unlockShopAudio() {
+  if (shopAudioUnlocked) return;
+  shopAudioUnlocked = true;
+  shopAudio.bgm.play().catch(() => {});
+  if (phonePending && !phoneCall) playShopSound("ring");
+}
+function stopPhoneRing() {
+  shopAudio.ring.pause();
+  shopAudio.ring.currentTime = 0;
+}
+function playPatVoice() {
+  if (!shopAudioUnlocked) return;
+  // Keep a triggered Pat line playing to its natural end, even if its board closes.
+  if (!shopAudio.pat.paused && !shopAudio.pat.ended) return;
+  shopAudio.pat.currentTime = 0;
+  shopAudio.pat.play().catch(() => {});
+}
+function playCashSound() {
+  cashHandledClick = true;
+  playShopSound("cash");
+}
+function stopTypingSound() {
+  if (typingIdleTimeout !== null) clearTimeout(typingIdleTimeout);
+  typingIdleTimeout = null;
+  shopAudio.typing.pause();
+  shopAudio.typing.currentTime = 0;
+  activeTypingId = null;
+}
+
+function soundTypingTick(id, count, total) {
+  // Start with the first visible character, stop on the final one.
+  if (count >= total || total === 0) {
+    if (activeTypingId === id) stopTypingSound();
+    return;
+  }
+  if (count <= 0 || !shopAudioUnlocked) return;
+
+  if (activeTypingId !== id) {
+    stopTypingSound();
+    activeTypingId = id;
+    playShopSound("typing");
+  }
+
+  // Stop if the notice disappears before reaching its last character.
+  if (typingIdleTimeout !== null) clearTimeout(typingIdleTimeout);
+  typingIdleTimeout = setTimeout(() => {
+    if (activeTypingId === id) stopTypingSound();
+  }, 150);
+}
+
+// Compare UI state before and after a click, so empty/disabled areas stay silent.
+function responsiveClickState() {
+  return JSON.stringify([
+    showIntro, showReceipt, showBag, showBudgetWarning, gameOver, shopMenu,
+    phonePending, phoneCall, helloPage, pawnIntroType, poshOfferActive,
+    tetrisPromptActive, inspectorPhase, dayNumber, money, inventory.length,
+    currentCustomer?.state, shopBargained, pawnMessage, message, phoneHint,
+    selectedSupplier, supplierMessage, pendingQuantity, upgradePage, bagPage,
+    buyerItemPage, selectedItems, selectedWholesaleItems, phoneSelected,
+    customersLeft, completedVaseIndexes.length
+  ]);
+}
+function playNewBoardSound() {
+  playShopSound("flip");
+}
 let customerRoute = [
   { x: 170, y: 510 },  // 0: Enter through left door
   { x: 170, y: 410 },  // 1: Walk up
@@ -69,6 +166,11 @@ class Customer {
     if (this.x === target.x && this.y === target.y) {
       if (this.routeIndex === 4 && this.state === "entering") {
         this.state = "waiting";
+        // Reveal each customer's trade screen with a page flip. A first-time
+        // customer-type introduction has its own flip before the trade screen.
+        if (this === currentCustomer && pawnIntroSeen[this.type] !== false) {
+          playNewBoardSound();
+        }
       } else if (this.routeIndex === 7) {
         this.state = "gone";
       } else {
@@ -234,6 +336,8 @@ function chooseFinalEnding() {
 
 function finishGame(result) {
   ending = result;
+  playNewBoardSound();
+  playPatVoice();
   endingShownAt = millis();
   endingScroll = 0;
   gameOver = true;
@@ -257,6 +361,7 @@ function settleDay() {
     bankruptcyNotice = true;
   }
   showReceipt = true;
+  playNewBoardSound();
 }
 
 
@@ -427,6 +532,7 @@ function showPoshGame() {
 function showPoshOffer() {
   if (poshOfferActive) return;
   poshOfferActive = true;
+  playNewBoardSound();
   poshOfferPausedShop = !gamePaused;
   if (poshOfferPausedShop) togglePause();
 }
@@ -478,6 +584,8 @@ function needsStorageChallenge(quantity) {
 }
 
 function requestStorageChallenge(source, purchase) {
+  playNewBoardSound();
+  if (!tetrisIntroduced) playPatVoice();
   tetrisAcceptPurchase = purchase;
   tetrisPromptActive = true;
 }
@@ -495,6 +603,7 @@ function startStorageOverflow(entries, source = "customer", supplierOrder = null
 function finishStorageChallenge(won) {
   let purchase = tetrisPurchase;
   if (won) {
+    playCashSound();
     storageBonus += 3;
     // Existing inventory and reserved deliveries stay protected.
     const free = max(0, shopCapacity() - inventory.length - reservedStorage());
@@ -670,14 +779,30 @@ function togglePause() {
 }
 
 // Day 1 contextual walkthrough. It never pauses play or captures input.
+const FIRST_TRADE_CELEBRATION = "Nice, you just completed your first trade!";
+const FIRST_TRADE_PAUSE_MS = 3000;
+let firstTradeCelebrationStartedAt = 0;
 function dayOneTutorialHint() {
   if (showReceipt || showBag) return "";
   if (tutorialTradesServed === 0 && tutorialWelcomeStartedAt > 0) {
     const welcome = "Welcome to your first day at the shop! Let's learn the ropes together!";
-    const typingTime = welcome.length * 23;
+    const typingTime = welcome.length * TYPEWRITER_MS;
     if (millis() - tutorialWelcomeStartedAt < typingTime + 3000) return welcome;
   }
   const step = tutorialTradesServed;
+  if (step === 1) {
+    // Show the congratulation as its own subtitle, then pause before the BAG tip.
+    const celebrationDuration = FIRST_TRADE_CELEBRATION.length * TYPEWRITER_MS + FIRST_TRADE_PAUSE_MS;
+    if (!firstTradeCelebrationStartedAt ||
+        millis() - firstTradeCelebrationStartedAt < celebrationDuration) {
+      return FIRST_TRADE_CELEBRATION;
+    }
+    // Keep this instruction visible between customers, even after BAG is opened.
+    // The next buyer's tutorial takes over once their trade screen appears.
+    if (!pawnTradeActive()) {
+      return "Take a peek at BAG to see your purchase. Watch that storage space!";
+    }
+  }
   if (pawnTradeActive()) {
     if (step === 0) return "Our first seller! Buying costs cash, but you can resell the item for a profit.";
     if (step === 1) return "Here comes a buyer! Check their budget and category, then pick an item to sell.";
@@ -691,7 +816,7 @@ function dayOneTutorialHint() {
     return "";
   }
   if (step === 0) return "See the customer count at the top right? We'll close up once everyone's served.";
-  if (step === 1) return tutorialBagSeen ? "" : "Take a peek at BAG to see your purchase. Watch that storage space!";
+  if (step === 1) return "";
   if (step === 2) return "That's the trick, kiddo. Buy low, sell high!";
   if (step === 3) return "Keep an eye on your cash, kiddo. Clear weekly debt within three days to keep the shop open.";
   if (step === 4) return "Check REPUTATION to see how folks feel about you. Good relationships help with bargains.";
@@ -714,8 +839,12 @@ function drawDayOneTutorial() {
   if (hint !== tutorialTypedText) {
     tutorialTypedText = hint;
     tutorialTextStartedAt = millis();
+    if (hint === FIRST_TRADE_CELEBRATION && !firstTradeCelebrationStartedAt) {
+      firstTradeCelebrationStartedAt = tutorialTextStartedAt;
+    }
   }
-  const characters = min(hint.length, floor((millis() - tutorialTextStartedAt) / 23));
+  const characters = min(hint.length, floor((millis() - tutorialTextStartedAt) / TYPEWRITER_MS));
+  soundTypingTick("tutorial:" + tutorialTextStartedAt, characters, hint.length);
   push();
   noStroke(); fill(40,29,25,225);
   // Keep larger subtitles centered in the bottom bar, below the trade controls.
@@ -1164,6 +1293,7 @@ function handleBasicClick() {
 
           // Pay for every item
           money -= total;
+          playCashSound();
 
           // Add every item to inventory
           for (let index of currentTrade.items) {
@@ -1346,6 +1476,7 @@ function pawnStartIntroIfNeeded() {
   if (pawnIntroSeen[t] === false) {
     pawnIntroSeen[t] = true;
     pawnIntroType = t;
+    playNewBoardSound();
     pawnIntroPausedGame = !gamePaused;
     if (pawnIntroPausedGame) togglePause();
   }
@@ -1354,6 +1485,8 @@ function pawnCloseIntro() {
   pawnIntroType = '';
   if (pawnIntroPausedGame) togglePause();
   pawnIntroPausedGame = false;
+  // The customer's trade screen is now revealed beneath the introduction.
+  playNewBoardSound();
 }
 let pawnRows = []; // [{index,x,y,w,h}] - current clickable buyer rows
 
@@ -1495,6 +1628,7 @@ function handleCustomerClick() {
       }));
       const commit = () => {
         money -= total;
+        playCashSound();
         for (let item of bought) dailyLog.push({type:'BUY', name:products[item.product].name, amount:item.boughtFor});
         storeOrOverflow(bought);
         pawnChangeScore(2); finishTrade();
@@ -1597,8 +1731,9 @@ function suspiciousTradeConsequence() {
 }
 
 // Reuse the tutorial's letter-by-letter reveal for brief notices.
-function typedNotice(message, startedAt) {
-  const letters = constrain(floor((millis() - startedAt) / 23) + 1, 0, message.length);
+function typedNotice(message, startedAt, withSound = true) {
+  const letters = constrain(floor((millis() - startedAt) / TYPEWRITER_MS) + 1, 0, message.length);
+  if (withSound) soundTypingTick(startedAt + ":" + message, letters, message.length);
   return message.slice(0, letters);
 }
 
@@ -1611,7 +1746,7 @@ function drawReputationNotice() {
   textAlign(CENTER);
   textStyle(NORMAL);
   textSize(16);
-  text(typedNotice(reputationNotice, reputationNoticeUntil - 4000), 432, 145);
+  text(typedNotice(reputationNotice, reputationNoticeUntil - 4000, dayNumber !== 1), 432, 145);
   pop();
 }
 
@@ -1858,6 +1993,7 @@ function handleShopClick() {
         return;
       }
       money -= cost;
+      playCashSound();
       const bought = [];
       for (const index of items) {
         const paid = Number((products[index].value * shopTradeMultiplier).toFixed(2));
@@ -1882,6 +2018,7 @@ function handleShopClick() {
     }
     const commit = () => {
       money -= cost;
+      if (!needsStorageChallenge(boughtItems.length)) playCashSound();
       for (let entry of boughtItems) dailyLog.push({type:"BUY", name:products[entry.product].name, amount:entry.boughtFor});
       storeOrOverflow(boughtItems);
       pawnChangeScore(2);
@@ -2228,6 +2365,7 @@ function phoneRentAmount(day) {
 
 function phoneStart(eventName) {
   phonePending = eventName;
+  playShopSound("ring");
   phoneSelected = [];
   if (eventName === 'hello') helloPage = 0;
   phoneSavedPause = !gamePaused;
@@ -2251,6 +2389,7 @@ function phoneCheckEvents() {
 }
 
 function phoneEndCall() {
+  stopPhoneRing();
   if (phoneCall === 'hello') {
     welcomeCallCompleted = true;
     tutorialWelcomeStartedAt = millis();
@@ -2345,6 +2484,7 @@ function recordInspectionResult(correctAnswers) {
   if (inspectorPhase === 'awaiting') {
     inspectorResultText = nextInspectorResponse(latestInspectionGrade);
     inspectorPhase = 'result';
+    playNewBoardSound();
   }
 }
 
@@ -2370,6 +2510,7 @@ function moveInspector() {
   inspectorActor.move();
   if (inspectorPhase === 'entering' && inspectorActor.state === 'waiting') {
     inspectorPhase = 'intro';
+    playNewBoardSound();
     inspectorNoticePausedGame = !gamePaused;
     if (inspectorNoticePausedGame) togglePause();
   } else if (inspectorPhase === 'leaving' && inspectorActor.state === 'gone') {
@@ -2492,6 +2633,7 @@ function buySupplierItems(quantity, confirmed = false) {
 
   const completeOrder = () => {
     money -= total;
+    if (!needsStorageChallenge(quantity)) playCashSound();
     let order = {product:productIndex, quantity:quantity,
                  boughtFor:total / quantity, deliveryDay:dayNumber + 1};
     let items = Array.from({length:quantity},
@@ -2818,6 +2960,11 @@ function phoneSellSelection() {
 
 
 function mousePressed() {
+  unlockShopAudio();
+  cashHandledClick = false;
+  const beforeClick = responsiveClickState();
+  const beforeState = JSON.parse(beforeClick);
+  try {
   if (bankruptcyNotice && !phoneCall && !phonePending) {
     if (pawnHit(312,425,240,32)) bankruptcyNotice = false;
     return;
@@ -2857,6 +3004,11 @@ function mousePressed() {
     if (pawnHit(phoneX,phoneY,phoneW,phoneH)) {
       phoneCall = phonePending;
       phonePending = '';
+      stopPhoneRing();
+      if (phoneCall === 'hello' || phoneCall === 'upgrades' ||
+          phoneCall === 'rentReveal' || phoneCall === 'rent') {
+        playPatVoice();
+      }
     }
     return;
   }
@@ -2917,7 +3069,7 @@ function mousePressed() {
       }
     } else if (pawnHit(330, 433, 204, 32) && phoneCall === "hello" && helloPage === 0) {
       helloPage = 1;
-      return;
+          return;
     } else if (pawnHit(330, 433, 204, 32) && phoneCall !== "orderConfirmed") {
       phoneEndCall();
       return;
@@ -2949,6 +3101,16 @@ function mousePressed() {
     return;
   }
   handleTradeClick();
+  } finally {
+    const afterClick = responsiveClickState();
+    if (afterClick !== beforeClick && !cashHandledClick) playShopSound("click");
+    if ((!beforeState[2] && showBag) ||
+        (!beforeState[5] && shopMenu) ||
+        (!beforeState[3] && showBudgetWarning) ||
+        (!beforeState[7] && phoneCall)) {
+      playNewBoardSound();
+    }
+  }
 };
 
 
@@ -2990,6 +3152,7 @@ function testJumpToDay(day) {
     tutorialTypedText = "";
     tutorialTextStartedAt = 0;
     tutorialWelcomeStartedAt = millis();
+    firstTradeCelebrationStartedAt = 0;
   }
   nextInspectionDay = day >= 3 ? day : 3;
   inspectorPhase = '';
@@ -3151,6 +3314,9 @@ function draw() {
       drawInfo();
       drawClock();
       drawBagIcon();
+      // Draw persistent controls before modal screens darken the background.
+      // Their existing click handlers remain unchanged.
+      if (!gameOver && !pawnIntroType) shopDrawTabs();
     }
 
     if (closing) {
@@ -3176,8 +3342,6 @@ function draw() {
         drawGameOver();
     }
   if(pawnTradeActive()) pawnTradeBoard();
-  // Keep the bag icon visible above the customer trading panel.
-  if (welcomeCallCompleted && pawnTradeActive() && !showBag && !shopMenu) drawBagIcon();
     pawnStartIntroIfNeeded();
   if (poshGamePending && pawnTradeActive() && !pawnIntroType) {
     showPoshOffer();
@@ -3188,7 +3352,6 @@ function draw() {
   if (pawnIntroType) pawnDrawIntro();
 
   if (!showIntro && welcomeCallCompleted && !gameOver && !pawnIntroType) {
-    shopDrawTabs();
       if (shopMenu === "people") shopDrawPeople();
       if (shopMenu === "upgrades") shopDrawUpgrades();
   }
@@ -3202,7 +3365,7 @@ function draw() {
       stroke(30, 20, 15);
       strokeWeight(3);
       fill(255);
-      text(typedNotice(customerReaction, customerReactionUntil - 3000), width / 2, height - 75);
+      text(typedNotice(customerReaction, customerReactionUntil - 3000, false), width / 2, height - 75);
       pop();
     }
 
@@ -3379,6 +3542,7 @@ function restartGame() {
   tutorialTypedText = "";
   tutorialTextStartedAt = 0;
   tutorialWelcomeStartedAt = 0;
+  firstTradeCelebrationStartedAt = 0;
   shopMessage = "";
   shopBargained = false;
   shopTradeMultiplier = 1;
@@ -3565,6 +3729,7 @@ function completeBuyerSale() {
   // Receive money
   money += actual;
   totalSalesEarned += actual;
+  playCashSound();
 
   // Remove sold items from inventory
   selectedItems.sort((a, b) => b - a);
@@ -4027,6 +4192,7 @@ function shopTryBargain() {
   let succeeded = dayNumber === 1 && tutorialTradesServed === 3 ? true :
                   dayNumber === 1 && tutorialTradesServed === 4 ? false : random() < chance;
   if (succeeded) {
+    playCashSound(); // A successful negotiation uses cash instead of the click cue.
     const improvement = pawnVisitor.type === 'Bargain' ? 0.20 : 0.10;
     if (currentTrade.type === "sell") shopTradeMultiplier *= 1 - improvement;
     else currentTrade.markup *= 1 + improvement;

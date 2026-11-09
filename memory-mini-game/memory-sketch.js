@@ -425,6 +425,7 @@ function mousePressed() {
         if (localMouseX > 330 && localMouseX < 470 &&
             localMouseY > 415 && localMouseY < 455) {
 
+            playMiniClick();
             questionStartTime = millis();
             gameState = "question";
         }
@@ -439,6 +440,7 @@ function mousePressed() {
                 if (localMouseX > x - 65 && localMouseX < x + 65 &&
                     localMouseY > y - 45 && localMouseY < y + 40) {
 
+                    playMiniClick();
                     priceHidden[i] = !priceHidden[i];
                 }
             }
@@ -474,10 +476,12 @@ function mousePressed() {
             ) {
 
                 if (answers[i] === correctAnswer) {
+                    playMiniCash();
                     score++;
                     gameState = "correct";
                 }
                 else {
+                    playMiniClick();
                     gameState = "incorrect";
                 }
 
@@ -494,6 +498,7 @@ function mousePressed() {
             localMouseX > 300 && localMouseX < 500 &&
             localMouseY > 330 && localMouseY < 390
         ) {
+            playMiniClick();
             questionNumber++;
 
             if (questionNumber <= totalQuestions) {
@@ -529,6 +534,7 @@ function mousePressed() {
             }
 
             // Send the result to the main game
+            playMiniClick();
             window.parent.postMessage({
                 type: "memoryGameComplete",
                 score: score,
