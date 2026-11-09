@@ -22,6 +22,7 @@ let cashHandledClick = false;
 let activeTypingId = null;
 let typingIdleTimeout = null;
 shopAudio.typing.loop = true;
+const TYPEWRITER_MS = 30;
 
 function playShopSound(name) {
   if (!shopAudioUnlocked) return;
@@ -773,7 +774,7 @@ function dayOneTutorialHint() {
   if (showReceipt || showBag) return "";
   if (tutorialTradesServed === 0 && tutorialWelcomeStartedAt > 0) {
     const welcome = "Welcome to your first day at the shop! Let's learn the ropes together!";
-    const typingTime = welcome.length * 23;
+    const typingTime = welcome.length * TYPEWRITER_MS;
     if (millis() - tutorialWelcomeStartedAt < typingTime + 3000) return welcome;
   }
   const step = tutorialTradesServed;
@@ -814,7 +815,7 @@ function drawDayOneTutorial() {
     tutorialTypedText = hint;
     tutorialTextStartedAt = millis();
   }
-  const characters = min(hint.length, floor((millis() - tutorialTextStartedAt) / 23));
+  const characters = min(hint.length, floor((millis() - tutorialTextStartedAt) / TYPEWRITER_MS));
   soundTypingTick("tutorial:" + tutorialTextStartedAt, characters, hint.length);
   push();
   noStroke(); fill(40,29,25,225);
@@ -1701,7 +1702,7 @@ function suspiciousTradeConsequence() {
 
 // Reuse the tutorial's letter-by-letter reveal for brief notices.
 function typedNotice(message, startedAt, withSound = true) {
-  const letters = constrain(floor((millis() - startedAt) / 23) + 1, 0, message.length);
+  const letters = constrain(floor((millis() - startedAt) / TYPEWRITER_MS) + 1, 0, message.length);
   if (withSound) soundTypingTick(startedAt + ":" + message, letters, message.length);
   return message.slice(0, letters);
 }
